@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المصاريف العامة - قاعة KARATE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { fontFamily: { sans: ['Tajawal', 'Cairo', 'sans-serif'], } }
+            }
+        }
+    </script>
+
+    <!-- إعدادات Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <style> body { font-family: 'Tajawal', sans-serif; } </style>
+</head>
+<body class="bg-slate-50 transition-colors duration-200">
+    <header class="header-wrapper sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm mb-8 print:hidden">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 py-3">
+            <div class="flex justify-between items-center w-full relative">
+                <div class="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                    <button onclick="toggleMobileMenu()" class="md:hidden text-slate-600 hover:text-blue-600 focus:outline-none p-2 rounded-xl hover:bg-slate-100 transition-colors shadow-sm border border-slate-200 bg-white relative z-10">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <a href="index.html" class="absolute right-1/2 translate-x-1/2 md:relative md:right-auto md:translate-x-0 flex-shrink-0 text-xl font-black text-slate-800 flex items-center gap-2">
+                        <span class="text-2xl">🥋</span>
+                        <span class="inline">KARATE</span>
+                    </a>
+                </div>
+                
+                <nav class="hidden md:flex items-center gap-1 flex-grow justify-center">
+                    <a href="index.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
+                    <a href="attendance.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+                    <a href="payments.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المدفوعات</a>
+                    <a href="expenses.html" class="px-3 py-2 rounded-xl font-bold text-sm bg-blue-600 text-white shadow">المصاريف</a>
+                    <a href="report.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+                    <a href="kimono.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المخزون</a>
+                </nav>
+
+                <div class="flex items-center gap-2 flex-shrink-0 border-r-2 border-slate-200 pr-4 mr-2 md:border-r-2 md:pr-4">
+                    <a href="settings.html" class="bg-slate-500 hover:bg-slate-600 text-white p-2.5 rounded-xl transition-all shadow-md transform" title="الإعدادات">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav id="mobileMenu" class="hidden fixed inset-0 z-[100] bg-white/95 backdrop-blur-xl flex-col items-center justify-center gap-6 p-8 md:hidden animate-[slideDownFull_0.3s_ease-out]">
+        <button onclick="toggleMobileMenu()" class="absolute top-6 right-6 text-slate-500 hover:text-red-500 p-3 bg-slate-100 hover:bg-red-50 rounded-full transition-colors">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <a href="index.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
+        <a href="attendance.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+        <a href="payments.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المدفوعات</a>
+        <a href="expenses.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl bg-blue-600 text-white shadow-lg">المصاريف</a>
+        <a href="report.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+        <a href="kimono.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المخزون</a>
+        <a href="settings.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الإعدادات</a>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="border-b border-slate-200 pb-4 mb-6">
+                    <h1 class="text-2xl font-bold text-slate-800">تسجيل مصروف جديد</h1>
+                    <p class="text-slate-500 mt-1">إضافة النفقات الخاصة بالقاعة والمركز.</p>
+                </div>
+                <form id="expenseForm" class="space-y-4">
+                    <div><label for="expDate" class="block text-sm font-semibold text-slate-700 mb-1">تاريخ المصروف:</label><input type="date" id="expDate" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold"></div>
+                    
+                    <div>
+                        <label for="expCategory" class="block text-sm font-semibold text-slate-700 mb-1">نوع المصروف:</label>
+                        <select id="expCategory" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold">
+                            <option value="عتاد رياضي">عتاد رياضي (بساط، واقيات، إلخ)</option>
+                            <option value="شهادات وأحزمة">شهادات وأحزمة</option>
+                            <option value="بطاقات انخراط">بطاقات انخراط (Badges)</option>
+                            <option value="تأمين المركز">تأمين داخل المركز</option>
+                            <option value="صيانة وإصلاح">صيانة وإصلاح</option>
+                            <option value="أخرى">مصاريف أخرى</option>
+                        </select>
+                    </div>
+                    
+                    <div><label for="expAmount" class="block text-sm font-semibold text-slate-700 mb-1">المبلغ (د.ج):</label><input type="number" id="expAmount" min="0" step="10" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-bold"></div>
+                    
+                    <div><label for="expNote" class="block text-sm font-semibold text-slate-700 mb-1">تفاصيل إضافية (اختياري):</label><input type="text" id="expNote" placeholder="مثال: شراء 10 أحزمة صفراء" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800"></div>
+                    
+                    <button type="submit" class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg py-3 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">حفظ المصروف</button>
+                </form>
+            </div>
+        </div>
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div class="border-b border-slate-200 pb-4 mb-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-slate-800">سجل المصاريف العامة</h2>
+            </div>
+            <div id="expensesList" class="overflow-x-auto"></div>
+        </div>
+    </main>
+
+    <script src="expenses.js"></script>
+</body>
+</html>

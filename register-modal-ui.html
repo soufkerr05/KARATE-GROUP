@@ -1,0 +1,95 @@
+<!-- Registration Modal -->
+<div id="registerModal" class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm" style="display: none; font-family: 'Tajawal', sans-serif;" dir="rtl">
+    
+    <!-- Modal Content -->
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg relative flex flex-col overflow-hidden">
+        
+        <!-- Close Button (Absolute Top-Left) -->
+        <button onclick="closeRegisterModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-700 transition-colors p-1" aria-label="إغلاق">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
+            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                <!-- User Plus Icon -->
+                <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                </svg>
+                تسجيل رياضي جديد
+            </h2>
+        </div>
+
+        <!-- Form Body (Flex Column) -->
+        <div class="p-6 overflow-y-auto max-h-[85vh]">
+            <form id="registerForm" class="flex flex-col space-y-4">
+                
+                <!-- Names Grid (2 columns) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="firstName" class="block text-sm font-semibold text-slate-700 mb-1">الاسم</label>
+                        <input type="text" id="firstName" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800">
+                    </div>
+                    <div>
+                        <label for="lastName" class="block text-sm font-semibold text-slate-700 mb-1">اللقب</label>
+                        <input type="text" id="lastName" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800">
+                    </div>
+                </div>
+
+                <!-- Date of Birth -->
+                <div>
+                    <label for="dob" class="block text-sm font-semibold text-slate-700 mb-1">تاريخ الميلاد</label>
+                    <input type="date" id="dob" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800">
+                </div>
+
+                <!-- Guardian Grid (2 columns) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="guardianName" class="block text-sm font-semibold text-slate-700 mb-1">اسم الولي</label>
+                        <input type="text" id="guardianName" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800">
+                    </div>
+                    <div>
+                        <label for="guardianPhone" class="block text-sm font-semibold text-slate-700 mb-1">رقم هاتف الولي</label>
+                        <input type="tel" id="guardianPhone" dir="ltr" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800 text-right">
+                    </div>
+                </div>
+
+                <!-- Subscription Date -->
+                <div>
+                    <label for="subDate" class="block text-sm font-semibold text-slate-700 mb-1">تاريخ الاشتراك</label>
+                    <input type="date" id="subDate" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800">
+                </div>
+
+                <!-- Documents Section -->
+                <div class="pt-2">
+                    <label class="block text-sm font-semibold text-slate-700 mb-3 border-b pb-2">الملف الإداري</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="docBirth" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span class="text-sm text-slate-600">شهادة ميلاد</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="docPhotos" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span class="text-sm text-slate-600">صور شمسية</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="docMedical" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span class="text-sm text-slate-600">شهادة طبية</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="docGuardian" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span class="text-sm text-slate-600">تصريح أبوي</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-3 px-4 rounded-md transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                    إضافة الرياضي
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

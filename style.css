@@ -1,0 +1,291 @@
+/* تنظيف التنسيقات القديمة والاعتماد على Tailwind CSS */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap');
+
+body, input, select, button, textarea { 
+    font-family: 'Tajawal', 'Cairo', sans-serif !important; 
+}
+
+/* --- تنسيق الحقول (Inputs) الكبيرة والاحترافية --- */
+.form-group input, 
+.form-group select,
+form input[type="text"],
+form input[type="date"],
+form input[type="tel"],
+form input[type="number"],
+form input[type="month"] {
+    padding: 16px 20px !important;
+    font-size: 16px !important;
+    border-radius: 12px !important;
+    border: 1px solid #cbd5e1;
+    background-color: #f8fafc;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-group input:focus, 
+.form-group select:focus,
+form input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25) !important;
+    background-color: #ffffff !important;
+    outline: none;
+}
+
+/* --- تنسيق الأزرار (Buttons) الرئيسية لتبدو ضخمة واحترافية --- */
+form button[type="submit"], 
+.container > #reportContainer > button,
+.container > .form-group button {
+    padding: 18px 24px !important;
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+}
+
+/* ألوان افتراضية لأزرار الصفحات العادية */
+.container > form button[type="submit"], 
+.container > #reportContainer > button,
+.container > .form-group button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+}
+
+form button[type="submit"]:hover, 
+.container > #reportContainer > button:hover,
+.container > .form-group button:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.container > form button[type="submit"]:hover, 
+.container > #reportContainer > button:hover,
+.container > .form-group button:hover {
+    background-color: #1d4ed8;
+}
+
+.expired-row { background-color: #fef2f2 !important; }
+.expired-row:hover { background-color: #fee2e2 !important; }
+
+.navbar { overflow: hidden; transition: all 0.3s ease; }
+.navbar a { float: right; display: block; color: #f8fafc; text-align: center; padding: 14px 16px; text-decoration: none; transition: 0.3s; font-weight: 500; }
+.navbar a:hover { background-color: rgba(255, 255, 255, 0.1); }
+.navbar a.active { background-color: #2563eb; color: white; font-weight: bold; border-radius: 6px; }
+
+/* إعدادات الحاوية العلوية الجديدة (تقسيم شريط التنقل) */
+.header-wrapper {
+    transition: transform 0.4s cubic-bezier(0.3, 0, 0.2, 1);
+    animation: navSlideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.header-hidden { transform: translateY(-150%) !important; }
+.menu-container { flex-grow: 1; }
+.add-btn-container { flex-shrink: 0; margin-right: 15px; z-index: 10; display: flex; gap: 8px; }
+.icon-add-btn {
+    background-color: #10b981;
+    color: white;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, background-color 0.2s;
+    border: none;
+    cursor: pointer;
+}
+.icon-add-btn:hover { background-color: #059669; transform: scale(1.05); }
+.icon-add-btn svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.checkbox-cell { text-align: center; }
+
+/* تنسيقات النافذة المنبثقة (Modal) مع حركات احترافية (Animations) */
+@keyframes backdropFade {
+    0% { background-color: rgba(15, 23, 42, 0); backdrop-filter: blur(0px); }
+    100% { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+}
+@keyframes modalPop {
+    0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; animation: backdropFade 0.3s ease-out forwards; }
+.modal-content { background-color: #fff; margin: 5% auto; padding: 24px; width: 95%; max-width: 550px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 10px 15px -3px rgba(0, 0, 0, 0.1); animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.close-btn { color: #94a3b8; float: left; font-size: 32px; line-height: 1; font-weight: bold; cursor: pointer; transition: all 0.2s ease; background: #f1f5f9; width: 40px; height: 40px; text-align: center; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.close-btn:hover, .close-btn:focus { color: #ef4444; background: #fee2e2; text-decoration: none; transform: rotate(90deg); }
+.clickable-name { color: #2563eb; cursor: pointer; text-decoration: none; font-weight: bold; transition: color 0.2s; }
+.clickable-name:hover { color: #1d4ed8; text-decoration: underline; }
+ul.history-list { list-style-type: none; padding: 0; margin-top: 15px; }
+ul.history-list li { padding: 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; margin-bottom: 8px; border-radius: 6px; }
+
+/* تنسيقات الطباعة (تخفي الأزرار والقوائم عند الطباعة) */
+@media print {
+    .navbar, .no-print, button { display: none !important; }
+    body { background-color: #fff; padding: 0; }
+    .container { box-shadow: none; max-width: 100%; border: none; padding: 0; }
+}
+
+/* إعدادات القائمة المرنة للهاتف */
+.navbar .icon { display: none; }
+@media screen and (max-width: 768px) {
+    .navbar a:not(.icon) { display: none; }
+    .navbar a.icon { float: right; display: block; font-size: 24px; margin-right: 10px; margin-left: 0; padding: 10px 16px; }
+    .navbar.responsive { position: relative; display: flex; flex-direction: column; padding-top: 45px; }
+    .navbar.responsive a.icon { position: absolute; right: 10px; top: 5px; left: auto; }
+    .navbar.responsive a:not(.icon) { float: none; display: block; text-align: right; width: 100%; box-sizing: border-box; }
+    .header-wrapper { align-items: flex-start; }
+    .add-btn-container { position: absolute; left: 10px; top: 10px; margin-right: 0; }
+}
+
+/* وضع الدارك مود (Dark Mode) */
+body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
+body.dark-mode .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
+body.dark-mode .bg-slate-100, body.dark-mode .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; }
+body.dark-mode .text-slate-800, body.dark-mode .text-slate-700 { color: #f8fafc !important; }
+body.dark-mode .text-slate-600, body.dark-mode .text-slate-500 { color: #cbd5e1 !important; }
+body.dark-mode .border-slate-100, body.dark-mode .border-slate-200 { border-color: #334155 !important; }
+body.dark-mode .border-slate-300 { border-color: #475569 !important; }
+body.dark-mode .modal-content { background-color: #1e293b !important; color: #f8fafc !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+body.dark-mode table, body.dark-mode thead, body.dark-mode tr { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+body.dark-mode th { background-color: #334155 !important; color: #f8fafc !important; border-color: #475569 !important; }
+body.dark-mode td { border-color: #334155 !important; }
+body.dark-mode ul.history-list li { background-color: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+body.dark-mode .text-blue-600 { color: #60a5fa !important; }
+body.dark-mode tr:hover, body.dark-mode .athlete-row:hover { background-color: #334155 !important; }
+body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #f8fafc !important; border-color: #475569 !important; }
+body.dark-mode input:focus, body.dark-mode select:focus { background-color: #1e293b !important; border-color: #3b82f6 !important; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3) !important; }
+body.dark-mode .header-wrapper { background-color: rgba(15, 23, 42, 0.85) !important; border: 1px solid #334155; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+body.dark-mode .bg-blue-50 { background-color: #1e3a8a !important; border-color: #1e40af !important; }
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3 { color: #f8fafc !important; border-color: #3b82f6 !important; }
+body.dark-mode .expired-row { background-color: #7f1d1d !important; }
+body.dark-mode .expired-row:hover { background-color: #991b1b !important; }
+body.dark-mode .close-btn { background: #334155; color: #cbd5e1; }
+body.dark-mode .close-btn:hover { background: #7f1d1d; color: #f8fafc; }
+body.dark-mode .bg-indigo-50 { background-color: #312e81 !important; color: #e0e7ff !important; border-color: #4338ca !important; }
+
+/* حاويات مسح البيانات والاستعادة والتنبيهات في الوضع الليلي */
+body.dark-mode .bg-red-50 { background-color: #450a0a !important; border-color: #7f1d1d !important; }
+body.dark-mode .bg-red-100 { background-color: #7f1d1d !important; color: #fecaca !important; border-color: #991b1b !important; }
+body.dark-mode .border-red-100, body.dark-mode .border-red-200 { border-color: #7f1d1d !important; }
+body.dark-mode .text-red-800 { color: #fecaca !important; }
+body.dark-mode .text-red-700, body.dark-mode .text-red-600 { color: #fca5a5 !important; }
+
+body.dark-mode .bg-emerald-50 { background-color: #022c22 !important; border-color: #064e3b !important; }
+body.dark-mode .bg-emerald-100 { background-color: #064e3b !important; color: #a7f3d0 !important; border-color: #047857 !important; }
+body.dark-mode .border-emerald-100, body.dark-mode .border-emerald-200 { border-color: #064e3b !important; }
+body.dark-mode .text-emerald-800 { color: #a7f3d0 !important; }
+body.dark-mode .text-emerald-700, body.dark-mode .text-emerald-600 { color: #6ee7b7 !important; }
+
+/* تحسينات لصفحة التقرير المالي في الوضع الليلي */
+body.dark-mode .bg-green-100 { background-color: #14532d !important; color: #bbf7d0 !important; border-color: #166534 !important; }
+body.dark-mode .text-green-600 { color: #86efac !important; }
+
+body.dark-mode .bg-blue-100 { background-color: #1e3a8a !important; color: #bfdbfe !important; border-color: #1e40af !important; }
+body.dark-mode .text-blue-700 { color: #93c5fd !important; }
+
+body.dark-mode .bg-indigo-100 { background-color: #312e81 !important; color: #c7d2fe !important; border-color: #3730a3 !important; }
+body.dark-mode .text-indigo-700, body.dark-mode .text-indigo-600 { color: #a5b4fc !important; }
+
+body.dark-mode .bg-slate-200 { background-color: #334155 !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+
+/* إصلاح القائمة المنسدلة (Mobile Menu) وشريط التنقل في الوضع الليلي */
+body.dark-mode #mobileMenu { background-color: rgba(15, 23, 42, 0.98) !important; }
+body.dark-mode #mobileMenu a:not(.bg-blue-600) { color: #cbd5e1 !important; }
+body.dark-mode #mobileMenu a:not(.bg-blue-600):hover { background-color: #1e293b !important; color: #fff !important; }
+body.dark-mode #mobileMenu button { background-color: #1e293b !important; color: #94a3b8 !important; }
+body.dark-mode #mobileMenu button:hover { background-color: #7f1d1d !important; color: #fff !important; }
+body.dark-mode .header-wrapper nav a:not(.bg-blue-600):hover { background-color: #1e293b !important; color: #fff !important; }
+
+/* تفاصيل الرياضي المخفية (تظهر عند التمرير) */
+.athlete-row { transition: background-color 0.3s; }
+.athlete-row:hover { background-color: #f8f9fa; }
+.expired-row:hover { background-color: #f5c6cb !important; }
+
+.athlete-details {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    font-size: 13px;
+    color: #475569;
+    margin-top: 0;
+    white-space: normal;
+    word-wrap: break-word;
+}
+.athlete-row:hover .athlete-details {
+    max-height: 250px;
+    opacity: 1;
+    margin-top: 10px;
+}
+
+/* تجاوب جميع الجداول والعناصر مع شاشات الهواتف */
+@media screen and (max-width: 768px) {
+    table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; } /* إخفاء رأس الجدول الافتراضي */
+    tr { margin-bottom: 16px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: white; }
+    td { display: flex; justify-content: space-between; align-items: flex-start; border: none; border-bottom: 1px solid #f1f5f9; padding: 12px 5px; text-align: left; }
+    td:last-child { border-bottom: none; }
+    td::before { content: attr(data-label); font-weight: bold; color: #334155; text-align: right; margin-left: 10px; flex-shrink: 0; }
+    
+    td.actions-cell { display: block; text-align: center; margin-top: 10px; }
+    td.actions-cell::before { display: none; }
+    
+    /* إصلاح تداخل النصوص في الخلايا التي تحتوي على معلومات مركبة مثل الرياضي أو الولي */
+    td[data-label="الرياضي"],
+    td[data-label="الاسم واللقب"],
+    td[data-label="اسم الولي"] {
+        display: block;
+        text-align: right;
+    }
+    td[data-label="الرياضي"]::before,
+    td[data-label="الاسم واللقب"]::before,
+    td[data-label="اسم الولي"]::before {
+        display: none;
+    }
+
+    td button { margin-left: 0; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
+    td button:last-child { margin-bottom: 0; }
+}
+
+/* --- حركات الانتقال بين الصفحات (Page Transitions) --- */
+@keyframes navSlideDown {
+    0% { opacity: 0; transform: translateY(-30px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+main {
+    animation: contentFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes contentFadeIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDownFull {
+    0% { opacity: 0; transform: translateY(-100%); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* --- تأثيرات حركية (Hover Animations) لعناصر شريط التنقل --- */
+.header-wrapper nav a {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.header-wrapper nav a:not(.bg-blue-600):hover {
+    transform: translateY(-2px);
+    background-color: #f1f5f9;
+}
+
+.header-wrapper nav a.bg-blue-600 {
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3) !important;
+}
+
+.header-wrapper nav a.bg-blue-600:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.4) !important;
+}

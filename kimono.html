@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مطابقة حسابات البدلات</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- إعدادات Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+
+    <!-- SheetJS (xlsx) for reading Excel files directly -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .pulse-border {
+            animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { border-color: rgba(239, 68, 68, 0.5); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        }
+        
+        .modal-overlay {
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <header class="header-wrapper sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm mb-8 print:hidden">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 py-3">
+            <div class="flex justify-between items-center w-full relative">
+                <!-- اليمين: زر القائمة والشعار -->
+                <div class="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                    <button onclick="toggleMobileMenu()" class="md:hidden text-slate-600 hover:text-blue-600 focus:outline-none p-2 rounded-xl hover:bg-slate-100 transition-colors shadow-sm border border-slate-200 bg-white relative z-10">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <a href="index.html" class="absolute right-1/2 translate-x-1/2 md:relative md:right-auto md:translate-x-0 flex-shrink-0 text-xl font-black text-slate-800 flex items-center gap-2">
+                        <span class="text-2xl">🥋</span>
+                        <span class="inline">KARATE</span>
+                    </a>
+                </div>
+                
+                <!-- الوسط: الصفحات للشاشات الكبيرة -->
+                <nav class="hidden md:flex items-center gap-1 flex-grow justify-center">
+                    <a href="index.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
+                    <a href="attendance.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+                    <a href="payments.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المدفوعات</a>
+                    <a href="expenses.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
+                    <a href="report.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+                    <a href="kimono.html" class="px-3 py-2 rounded-xl font-bold text-sm bg-blue-600 text-white shadow">المخزون</a>
+                </nav>
+
+                <!-- اليسار: أيقونات الإضافة والإجراءات -->
+                <div class="flex items-center gap-2 flex-shrink-0 border-r-2 border-slate-200 pr-4 mr-2 md:border-r-2 md:pr-4">
+                <button onclick="window.location.href='index.html?add=true'" class="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5" title="إضافة رياضي">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                </button>
+                <a href="settings.html" class="bg-slate-500 hover:bg-slate-600 text-white p-2.5 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5" title="الإعدادات">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- القائمة المنسدلة للهواتف -->
+    <nav id="mobileMenu" class="hidden fixed inset-0 z-[100] bg-white/95 backdrop-blur-xl flex-col items-center justify-center gap-6 p-8 md:hidden animate-[slideDownFull_0.3s_ease-out]">
+        <button onclick="toggleMobileMenu()" class="absolute top-6 right-6 text-slate-500 hover:text-red-500 p-3 bg-slate-100 hover:bg-red-50 rounded-full transition-colors">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <a href="index.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
+        <a href="attendance.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+        <a href="payments.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المدفوعات</a>
+        <a href="expenses.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
+        <a href="report.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+        <a href="kimono.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl bg-blue-600 text-white shadow-lg">المخزون</a>
+        <a href="settings.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الإعدادات</a>
+    </nav>
+    <script>
+        function toggleMobileMenu() { document.getElementById("mobileMenu").classList.toggle("hidden"); document.getElementById("mobileMenu").classList.toggle("flex"); document.body.classList.toggle("overflow-hidden"); }
+        function applyTheme() {
+            const theme = localStorage.getItem('theme') || 'system';
+            if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.body.classList.add('dark-mode'); } 
+            else { document.body.classList.remove('dark-mode'); }
+        }
+        applyTheme();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if ((localStorage.getItem('theme') || 'system') === 'system') applyTheme(); });
+    </script>
+    <div id="app-container">
+        <!-- Loading View -->
+        <div id="loading-view" class="min-h-screen flex items-center justify-center">
+            <p class="text-xl font-bold text-slate-500 animate-pulse">جاري تحميل البيانات...</p>
+        </div>
+
+        <!-- Upload View -->
+        <div id="upload-view" class="hidden min-h-screen flex items-center justify-center bg-slate-50 p-4" dir="rtl">
+            <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border border-slate-100">
+                <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6" id="icon-upload"></div>
+                <h1 class="text-3xl font-black mb-3 text-slate-800">مطابقة البدلات</h1>
+                <p class="text-slate-500 mb-8 leading-relaxed">لم يتم العثور على بيانات. يرجى رفع ملف الإكسيل لعرض الإحصائيات أو قم بالإضافة يدوياً.</p>
+                <div id="error-msg" class="hidden bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-bold border border-red-100"></div>
+                <label class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl cursor-pointer transition shadow-md hover:shadow-lg font-bold flex items-center justify-center gap-3 w-full">
+                    <span id="icon-package-upload"></span> اختيار ملف الإكسيل
+                    <input type="file" id="file-upload" accept=".xlsx" class="hidden" />
+                </label>
+                <button id="btn-force-start" class="mt-4 text-blue-600 hover:text-blue-800 font-bold underline text-sm">تخطي وبدء إدخال البيانات يدوياً</button>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="hidden min-h-screen p-4 md:p-8 bg-slate-50" dir="rtl">
+            <div class="max-w-7xl mx-auto">
+                <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div>
+                        <h1 class="text-3xl font-black text-slate-800 flex items-center gap-3">
+                            <span class="text-4xl">🥋</span> نظام مطابقة حسابات البدلات
+                        </h1>
+                        <p class="text-slate-500 mt-2 font-medium">متابعة دقيقة لحركة البدلات مالياً وعينياً لمنع اختلاط الحسابات</p>
+                    </div>
+                    <a href="index.html" class="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition shadow-md font-bold">
+                        العودة للرئيسية <span id="icon-arrow-left"></span>
+                    </a>
+                </header>
+
+                <!-- Critical Alert -->
+                <div id="debt-alert" class="hidden mb-8 bg-red-50 border-2 border-red-500 p-6 rounded-2xl flex items-center gap-4 shadow-sm pulse-border">
+                    <div class="p-3 bg-red-500 text-white rounded-xl shadow-sm" id="icon-alert"></div>
+                    <div>
+                        <h3 class="text-xl font-black text-red-800 mb-1">تنبيه: يوجد ديون معلقة للتاجر!</h3>
+                        <p class="text-red-600 font-medium">إجمالي المبالغ المستحقة غير المدفوعة للتاجر تبلغ <strong id="debt-merchant-val">0</strong>، يرجى تسويتها.</p>
+                    </div>
+                </div>
+
+                <!-- Dashboard Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 flex flex-col justify-between hover:shadow-md transition">
+                        <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-blue-50 text-blue-600 rounded-xl" id="icon-stat-commend"></div><p class="text-slate-600 font-bold">إجمالي المأخوذ</p></div>
+                        <div>
+                            <p class="text-3xl font-black text-slate-800"><span id="stat-commendQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
+                            <p class="text-sm font-bold text-blue-600 mt-2 bg-blue-50 inline-block px-3 py-1 rounded-lg">قيمة: <span id="stat-commendV">0</span> د.ج</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-emerald-100 flex flex-col justify-between hover:shadow-md transition">
+                        <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl" id="icon-stat-livre"></div><p class="text-slate-600 font-bold">إجمالي الموزع</p></div>
+                        <div>
+                            <p class="text-3xl font-black text-slate-800"><span id="stat-livreQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
+                            <p class="text-sm font-bold text-emerald-600 mt-2 bg-emerald-50 inline-block px-3 py-1 rounded-lg">قيمة: <span id="stat-livreV">0</span> د.ج</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-amber-100 flex flex-col justify-between hover:shadow-md transition">
+                        <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-amber-50 text-amber-600 rounded-xl" id="icon-stat-paid"></div><p class="text-slate-600 font-bold">إجمالي المدفوع للتاجر</p></div>
+                        <div>
+                            <p class="text-3xl font-black text-amber-600"><span id="stat-paidV">0</span> <span class="text-lg text-amber-600/60 font-normal">د.ج</span></p>
+                            <p class="text-sm font-bold text-amber-700 mt-2 bg-amber-50 inline-block px-3 py-1 rounded-lg">الكمية المقابلة: <span id="stat-paidQ">0</span> قطعة</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition">
+                        <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-slate-100 text-slate-600 rounded-xl" id="icon-stat-retour"></div><p class="text-slate-600 font-bold">إجمالي المرتجع</p></div>
+                        <div>
+                            <p class="text-3xl font-black text-slate-800"><span id="stat-retourQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
+                            <p class="text-sm font-bold text-slate-600 mt-2 bg-slate-100 inline-block px-3 py-1 rounded-lg">قيمة: <span id="stat-retourV">0</span> د.ج</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Bottom Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <div class="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-700 flex items-center justify-between overflow-hidden relative">
+                        <div class="absolute -left-6 -top-6 w-32 h-32 bg-slate-700/50 rounded-full blur-2xl"></div>
+                        <div class="relative z-10">
+                            <p class="text-slate-400 font-bold mb-2 uppercase tracking-wider text-sm">المخزون بالقاعة (المتبقي)</p>
+                            <p class="text-3xl font-black text-white"><span id="stat-stockQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
+                        </div>
+                        <div class="p-4 bg-slate-800 text-slate-300 rounded-2xl border border-slate-700 relative z-10" id="icon-stock"></div>
+                    </div>
+                    <div id="card-debt-merchant" class="rounded-2xl p-6 shadow-lg border flex items-center justify-between overflow-hidden relative">
+                        <div id="card-debt-merchant-bg" class="absolute -left-6 -top-6 w-32 h-32 rounded-full blur-2xl"></div>
+                        <div class="relative z-10">
+                            <p id="card-debt-merchant-label" class="font-bold mb-2 uppercase tracking-wider text-sm">ديون التاجر (لم تدفع)</p>
+                            <p class="text-3xl font-black text-white"><span id="stat-debtMerchant">0</span> <span id="card-debt-merchant-currency" class="text-lg font-normal">د.ج</span></p>
+                        </div>
+                        <div id="icon-debt-merchant" class="p-4 rounded-2xl border relative z-10"></div>
+                    </div>
+                    <div class="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-700 flex items-center justify-between overflow-hidden relative">
+                        <div class="absolute -left-6 -top-6 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl"></div>
+                        <div class="relative z-10">
+                            <p class="text-slate-400 font-bold mb-2 uppercase tracking-wider text-sm">ديون الرياضيين (موزع ولم يحصل)</p>
+                            <p class="text-3xl font-black text-amber-400"><span id="stat-debtAthletes">0</span> <span class="text-lg text-amber-400/60 font-normal">د.ج</span></p>
+                        </div>
+                        <div class="p-4 bg-slate-800/80 text-amber-400 rounded-2xl border border-slate-700 relative z-10" id="icon-debt-athletes"></div>
+                    </div>
+                </div>
+
+                <!-- Table Section -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col relative">
+                    <div id="tabs-header" class="flex overflow-x-auto bg-slate-50 border-b border-slate-200 hide-scrollbar"></div>
+                    <div class="p-6">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                            <div>
+                                <h2 id="tab-title" class="text-xl font-black text-slate-800"></h2>
+                                <p id="tab-desc" class="text-slate-500 text-sm font-medium mt-1"></p>
+                            </div>
+                            <button id="btn-add-record" class="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl shadow-md transition font-bold">
+                                <span id="icon-plus"></span> إضافة سجل
+                            </button>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-3 w-full justify-end mb-4">
+                            <div class="relative">
+                                <input type="date" id="filter-date" class="pl-4 pr-10 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm w-full bg-slate-50 font-bold text-slate-700" />
+                            </div>
+                            <div class="relative">
+                                <select id="filter-type" class="pl-8 pr-10 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm w-full appearance-none bg-slate-50 font-bold text-slate-700">
+                                    <option value="All">جميع الأنواع</option>
+                                    <option value="250">بذلة 250</option>
+                                    <option value="180">بذلة 180</option>
+                                    <option value="145">بذلة 145</option>
+                                </select>
+                                <div class="absolute right-3 top-2.5 text-slate-400 pointer-events-none" id="icon-filter"></div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-xl border border-slate-200">
+                            <table class="w-full text-right">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
+                                    <tr>
+                                        <th class="px-6 py-4 font-black">التاريخ</th>
+                                        <th class="px-6 py-4 font-black">نوع البذلة</th>
+                                        <th class="px-6 py-4 font-black">الكمية</th>
+                                        <th class="px-6 py-4 font-black">القيمة المالية (د.ج)</th>
+                                        <th class="px-6 py-4 font-black text-center">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                        <div id="table-summary" class="hidden mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm font-bold text-slate-600 text-center"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Modal -->
+        <div id="tx-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4" dir="rtl">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-[fade-in_0.2s_ease-out]">
+                <div id="modal-header" class="px-6 py-4 border-b flex justify-between items-center">
+                    <h3 id="modal-title" class="text-xl font-bold flex items-center gap-2"></h3>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-slate-700 transition">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <form id="tx-form" class="p-6">
+                    <input type="hidden" id="tx-id" />
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">التاريخ</label>
+                            <input type="date" id="tx-date" required class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">نوع البذلة</label>
+                            <select id="tx-type" required class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                <option value="250">بذلة 250</option>
+                                <option value="180">بذلة 180</option>
+                                <option value="145">بذلة 145</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">الكمية</label>
+                            <input type="number" id="tx-qty" min="1" required class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-black" />
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2">
+                            <p class="text-sm text-slate-500 font-bold mb-1">القيمة المالية الإجمالية المحسوبة:</p>
+                            <p class="text-2xl font-black text-slate-800"><span id="tx-calc-val">0</span> <span class="text-sm font-normal">د.ج</span></p>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex gap-3">
+                        <button type="submit" id="btn-save-tx" class="flex-1 text-white font-bold py-3 rounded-xl transition shadow-md">حفظ</button>
+                        <button type="button" id="btn-cancel-tx" class="px-6 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition">إلغاء</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const Icons = {
+            DollarSign: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`,
+            Package: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`,
+            TrendingUp: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`,
+            AlertCircle: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+            RefreshCcw: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10"></path><path d="M3.51 15A9 9 0 0 0 18.36 18.36L23 14"></path></svg>`,
+            ArrowLeft: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`,
+            Filter: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`,
+            Users: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+            Upload: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
+            Plus: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+            Edit: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
+            Trash: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`
+        };
+
+        const PRICES = { '250': 2500, '180': 1800, '145': 1450 };
+        const TYPE_COLORS = {
+            '250': { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-200' },
+            '180': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' },
+            '145': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-200' }
+        };
+
+        const state = {
+            isLoading: true,
+            dataLoaded: false,
+            commendData: [],
+            livreData: [],
+            paidData: [],
+            retourData: [],
+            activeTab: 'commend',
+            filterDate: '',
+            filterType: 'All'
+        };
+
+        const TABS = [
+            { id: 'commend', label: 'جدول التوريد', icon: Icons.Package, color: 'blue', desc: 'البدلات المأخوذة من التاجر', statusText: 'التوريد' },
+            { id: 'livre', label: 'جدول التوزيع', icon: Icons.Users, color: 'emerald', desc: 'البدلات التي خرجت للرياضيين', statusText: 'التوزيع' },
+            { id: 'paid', label: 'جدول المدفوعات', icon: Icons.DollarSign, color: 'amber', desc: 'المبالغ المدفوعة فعلياً للتاجر', statusText: 'الدفع' },
+            { id: 'retour', label: 'جدول المرتجعات', icon: Icons.RefreshCcw, color: 'slate', desc: 'البدلات المعادة للتاجر', statusText: 'المرتجع' },
+        ];
+
+        // Inject Icons
+        document.getElementById('icon-upload').innerHTML = Icons.Upload;
+        document.getElementById('icon-package-upload').innerHTML = Icons.Package;
+        document.getElementById('icon-arrow-left').innerHTML = Icons.ArrowLeft;
+        document.getElementById('icon-alert').innerHTML = Icons.AlertCircle;
+        document.getElementById('icon-stat-commend').innerHTML = Icons.Package;
+        document.getElementById('icon-stat-livre').innerHTML = Icons.Users;
+        document.getElementById('icon-stat-paid').innerHTML = Icons.DollarSign;
+        document.getElementById('icon-stat-retour').innerHTML = Icons.RefreshCcw;
+        document.getElementById('icon-stock').innerHTML = Icons.Package;
+        document.getElementById('icon-debt-merchant').innerHTML = Icons.TrendingUp;
+        document.getElementById('icon-debt-athletes').innerHTML = Icons.Users;
+        document.getElementById('icon-plus').innerHTML = Icons.Plus;
+        document.getElementById('icon-filter').innerHTML = Icons.Filter;
+
+        const excelDateToJSDate = (serial) => {
+            if (!serial) return '';
+            if (typeof serial === 'number') {
+                const date = new Date(Math.round((serial - 25569) * 86400 * 1000));
+                return date.toISOString().split('T')[0];
+            }
+            return String(serial);
+        };
+
+        async function init() {
+            state.isLoading = true;
+            updateViews();
+            
+            try {
+                const [resCommend, resLivre, resPaid, resRetour] = await Promise.all([
+                    _supabase.from('kimono_commend').select('*'),
+                    _supabase.from('kimono_livre').select('*'),
+                    _supabase.from('kimono_paid').select('*'),
+                    _supabase.from('kimono_retour').select('*')
+                ]);
+                
+                state.commendData = resCommend.data || [];
+                state.livreData = resLivre.data || [];
+                state.paidData = resPaid.data || [];
+                state.retourData = resRetour.data || [];
+                
+                if(state.commendData.length > 0 || state.livreData.length > 0 || state.paidData.length > 0 || state.retourData.length > 0) {
+                    state.dataLoaded = true;
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                state.isLoading = false;
+                updateViews();
+            }
+        }
+
+        function parseExcelData(buffer) {
+            try {
+                const wb = window.XLSX.read(buffer, { type: 'array' });
+                const sheet = wb.Sheets['Kimono'];
+                if (!sheet) throw new Error("ورقة 'Kimono' غير موجودة في الملف!");
+                const jsonData = window.XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                
+                let commendList = [], livreList = [], paidList = [], retourList = [];
+                const parseSection = (row, idx250, idx180, idx145, idxDate, typeName) => {
+                    const q250 = parseInt(row[idx250]) || 0;
+                    const q180 = parseInt(row[idx180]) || 0;
+                    const q145 = parseInt(row[idx145]) || 0;
+                    const rawDate = row[idxDate];
+                    const entries = [];
+                    if (q250 > 0 || q180 > 0 || q145 > 0) {
+                        const dateStr = rawDate ? excelDateToJSDate(rawDate) : 'غير محدد';
+                        const idBase = Math.random().toString(36).substr(2, 9);
+                        if (q250 > 0) entries.push({ id: idBase + '1', date: dateStr, type: '250', quantity: q250, value: q250 * PRICES['250'], status: typeName });
+                        if (q180 > 0) entries.push({ id: idBase + '2', date: dateStr, type: '180', quantity: q180, value: q180 * PRICES['180'], status: typeName });
+                        if (q145 > 0) entries.push({ id: idBase + '3', date: dateStr, type: '145', quantity: q145, value: q145 * PRICES['145'], status: typeName });
+                    }
+                    return entries;
+                };
+
+                for (let i = 4; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    if (!row || row.length === 0) continue;
+                    if (typeof row[20] === 'string' && row[20].includes('Total')) continue;
+                    if (typeof row[0] === 'string' && row[0].includes('Total')) continue;
+
+                    commendList.push(...parseSection(row, 0, 1, 2, 3, 'التوريد'));
+                    livreList.push(...parseSection(row, 5, 6, 7, 8, 'التوزيع'));
+                    paidList.push(...parseSection(row, 10, 11, 12, 13, 'الدفع'));
+                    retourList.push(...parseSection(row, 15, 16, 17, 18, 'المرتجع'));
+                }
+                state.commendData = commendList;
+                state.livreData = livreList;
+                state.paidData = paidList;
+                state.retourData = retourList;
+                state.dataLoaded = true;
+                document.getElementById('error-msg').classList.add('hidden');
+                updateViews();
+            } catch (err) {
+                console.error(err);
+                const errDiv = document.getElementById('error-msg');
+                errDiv.innerText = err.message || "حدث خطأ أثناء قراءة الملف.";
+                errDiv.classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('file-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => parseExcelData(evt.target.result);
+            reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('btn-force-start').addEventListener('click', () => {
+            state.dataLoaded = true;
+            updateViews();
+        });
+
+        function updateViews() {
+            document.getElementById('loading-view').classList.toggle('hidden', !state.isLoading);
+            document.getElementById('upload-view').classList.toggle('hidden', state.isLoading || state.dataLoaded);
+            document.getElementById('dashboard-view').classList.toggle('hidden', state.isLoading || !state.dataLoaded);
+            
+            if (state.dataLoaded) {
+                calculateAndRenderStats();
+                renderTabsHeader();
+                renderTable();
+            }
+        }
+
+        function calculateAndRenderStats() {
+            const sQ = arr => arr.reduce((acc, curr) => acc + curr.quantity, 0);
+            const sV = arr => arr.reduce((acc, curr) => acc + curr.value, 0);
+
+            const commendQ = sQ(state.commendData), commendV = sV(state.commendData);
+            const livreQ = sQ(state.livreData), livreV = sV(state.livreData);
+            const paidQ = sQ(state.paidData), paidV = sV(state.paidData);
+            const retourQ = sQ(state.retourData), retourV = sV(state.retourData);
+
+            const stockQ = commendQ - livreQ - retourQ;
+            const debtMerchant = commendV - retourV - paidV;
+            const debtAthletes = livreV - paidV;
+
+            document.getElementById('stat-commendQ').innerText = commendQ.toLocaleString();
+            document.getElementById('stat-commendV').innerText = commendV.toLocaleString();
+            document.getElementById('stat-livreQ').innerText = livreQ.toLocaleString();
+            document.getElementById('stat-livreV').innerText = livreV.toLocaleString();
+            document.getElementById('stat-paidV').innerText = paidV.toLocaleString();
+            document.getElementById('stat-paidQ').innerText = paidQ.toLocaleString();
+            document.getElementById('stat-retourQ').innerText = retourQ.toLocaleString();
+            document.getElementById('stat-retourV').innerText = retourV.toLocaleString();
+            
+            document.getElementById('stat-stockQ').innerText = stockQ.toLocaleString();
+            document.getElementById('stat-debtAthletes').innerText = debtAthletes.toLocaleString();
+            document.getElementById('stat-debtMerchant').innerText = debtMerchant.toLocaleString();
+
+            const alertBox = document.getElementById('debt-alert');
+            const debtCard = document.getElementById('card-debt-merchant');
+            const debtCardBg = document.getElementById('card-debt-merchant-bg');
+            const debtCardLabel = document.getElementById('card-debt-merchant-label');
+            const debtCardCurrency = document.getElementById('card-debt-merchant-currency');
+            const debtCardIcon = document.getElementById('icon-debt-merchant');
+            
+            if (debtMerchant > 0) {
+                alertBox.classList.remove('hidden');
+                document.getElementById('debt-merchant-val').innerText = debtMerchant.toLocaleString() + ' د.ج';
+                debtCard.className = "rounded-2xl p-6 shadow-lg border flex items-center justify-between overflow-hidden relative bg-red-600 border-red-500";
+                debtCardBg.className = "absolute -left-6 -top-6 w-32 h-32 bg-red-500/50 rounded-full blur-2xl";
+                debtCardLabel.className = "font-bold mb-2 uppercase tracking-wider text-sm text-red-200";
+                debtCardCurrency.className = "text-lg font-normal text-red-200";
+                debtCardIcon.className = "p-4 rounded-2xl border relative z-10 bg-red-700 text-red-200 border-red-500";
+            } else {
+                alertBox.classList.add('hidden');
+                debtCard.className = "rounded-2xl p-6 shadow-lg border flex items-center justify-between overflow-hidden relative bg-slate-900 border-slate-700";
+                debtCardBg.className = "absolute -left-6 -top-6 w-32 h-32 rounded-full blur-2xl";
+                debtCardLabel.className = "font-bold mb-2 uppercase tracking-wider text-sm text-slate-400";
+                debtCardCurrency.className = "text-lg font-normal text-slate-400";
+                debtCardIcon.className = "p-4 rounded-2xl border relative z-10 bg-slate-800 text-slate-300 border-slate-700";
+            }
+        }
+
+        function renderTabsHeader() {
+            const container = document.getElementById('tabs-header');
+            container.innerHTML = TABS.map(tab => `
+                <button onclick="setActiveTab('${tab.id}')" 
+                    class="flex items-center gap-3 px-6 py-4 font-bold whitespace-nowrap transition ${state.activeTab === tab.id ? `text-${tab.color}-700 bg-white border-b-2 border-${tab.color}-600` : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border-b-2 border-transparent'}">
+                    ${tab.icon} ${tab.label}
+                </button>
+            `).join('');
+            
+            const activeTabInfo = TABS.find(t => t.id === state.activeTab);
+            document.getElementById('tab-title').innerText = activeTabInfo.label;
+            document.getElementById('tab-desc').innerText = activeTabInfo.desc;
+            
+            const btnAdd = document.getElementById('btn-add-record');
+            btnAdd.className = `flex items-center gap-2 px-5 py-2.5 text-white rounded-xl shadow-md transition font-bold bg-${activeTabInfo.color}-600 hover:bg-${activeTabInfo.color}-700`;
+        }
+
+        function setActiveTab(id) {
+            state.activeTab = id;
+            state.filterDate = '';
+            state.filterType = 'All';
+            document.getElementById('filter-date').value = '';
+            document.getElementById('filter-type').value = 'All';
+            renderTabsHeader();
+            renderTable();
+        }
+
+        document.getElementById('filter-date').addEventListener('input', e => { state.filterDate = e.target.value; renderTable(); });
+        document.getElementById('filter-type').addEventListener('change', e => { state.filterType = e.target.value; renderTable(); });
+
+        function renderTable() {
+            const activeTabInfo = TABS.find(t => t.id === state.activeTab);
+            let data = state[state.activeTab + 'Data'];
+
+            if (state.filterType !== 'All') data = data.filter(d => d.type === state.filterType);
+            if (state.filterDate !== '') data = data.filter(d => d.date === state.filterDate);
+
+            data.sort((a, b) => {
+                if (a.date === 'غير محدد') return 1;
+                if (b.date === 'غير محدد') return -1;
+                return b.date.localeCompare(a.date);
+            });
+
+            const tbody = document.getElementById('table-body');
+            if (data.length > 0) {
+                tbody.innerHTML = data.map(row => {
+                    const colorObj = TYPE_COLORS[row.type];
+                    return `
+                    <tr class="hover:bg-slate-50/80 transition group">
+                        <td class="px-6 py-4 text-slate-600 font-bold text-sm" dir="ltr" data-label="التاريخ">${row.date}</td>
+                        <td class="px-6 py-4" data-label="نوع البذلة">
+                            <span class="inline-block px-3 py-1 rounded-lg text-sm font-bold border ${colorObj.bg} ${colorObj.text} ${colorObj.border}">نوع ${row.type}</span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-800 font-black text-lg" data-label="الكمية">${row.quantity}</td>
+                        <td class="px-6 py-4 text-slate-800 font-black text-lg" data-label="القيمة المالية (د.ج)">${row.value.toLocaleString()}</td>
+                        <td class="px-6 py-4 text-center actions-cell" data-label="إجراءات">
+                            <div class="flex flex-col sm:flex-row items-center justify-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <button onclick="openModal(true, '${row.id}')" class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="تعديل">${Icons.Edit}</button>
+                                <button onclick="deleteTransaction('${row.id}')" class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition" title="حذف">${Icons.Trash}</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colSpan="5" class="px-6 py-16 text-center text-slate-400"><div class="flex flex-col items-center gap-3">${Icons.Package}<p class="font-bold">لا توجد بيانات مطابقة لخيارات الفرز</p></div></td></tr>`;
+            }
+
+            const summary = document.getElementById('table-summary');
+            if (data.length > 0) {
+                const totQ = data.reduce((acc, c) => acc + c.quantity, 0);
+                const totV = data.reduce((acc, c) => acc + c.value, 0);
+                summary.innerHTML = `<span>إجمالي الأسطر: ${data.length}</span><span>إجمالي الكمية: ${totQ} قطعة</span><span class="text-slate-800">القيمة الإجمالية: ${totV.toLocaleString()} د.ج</span>`;
+                summary.classList.remove('hidden');
+            } else {
+                summary.classList.add('hidden');
+            }
+        }
+
+        // Modal Operations
+        document.getElementById('btn-add-record').addEventListener('click', () => openModal(false));
+        document.getElementById('btn-close-modal').addEventListener('click', closeModal);
+        document.getElementById('btn-cancel-tx').addEventListener('click', closeModal);
+        
+        document.getElementById('tx-qty').addEventListener('input', calculateTxValue);
+        document.getElementById('tx-type').addEventListener('change', calculateTxValue);
+
+        function calculateTxValue() {
+            const qty = parseInt(document.getElementById('tx-qty').value) || 0;
+            const type = document.getElementById('tx-type').value;
+            document.getElementById('tx-calc-val').innerText = (qty * PRICES[type]).toLocaleString();
+        }
+
+        function openModal(isEdit, id = null) {
+            const activeTabInfo = TABS.find(t => t.id === state.activeTab);
+            document.getElementById('modal-header').className = `px-6 py-4 border-b flex justify-between items-center bg-${activeTabInfo.color}-50`;
+            document.getElementById('modal-title').innerHTML = `${activeTabInfo.icon} ${isEdit ? 'تعديل السجل' : 'إضافة سجل جديد'} - ${activeTabInfo.label}`;
+            document.getElementById('modal-title').className = `text-xl font-bold flex items-center gap-2 text-${activeTabInfo.color}-800`;
+            document.getElementById('btn-save-tx').className = `flex-1 text-white font-bold py-3 rounded-xl transition shadow-md bg-${activeTabInfo.color}-600 hover:bg-${activeTabInfo.color}-700`;
+            document.getElementById('btn-save-tx').innerText = isEdit ? 'حفظ التعديلات' : 'إضافة';
+
+            if (isEdit) {
+                const row = state[state.activeTab + 'Data'].find(d => d.id === id);
+                document.getElementById('tx-id').value = row.id;
+                document.getElementById('tx-date').value = row.date;
+                document.getElementById('tx-type').value = row.type;
+                document.getElementById('tx-qty').value = row.quantity;
+            } else {
+                document.getElementById('tx-id').value = '';
+                document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('tx-type').value = '250';
+                document.getElementById('tx-qty').value = 1;
+            }
+            
+            calculateTxValue();
+            document.getElementById('tx-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('tx-modal').classList.add('hidden');
+            document.getElementById('tx-form').reset();
+        }
+
+        document.getElementById('tx-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('tx-id').value;
+            const activeTabInfo = TABS.find(t => t.id === state.activeTab);
+            
+            const tx = {
+                date: document.getElementById('tx-date').value,
+                type: document.getElementById('tx-type').value,
+                quantity: parseInt(document.getElementById('tx-qty').value),
+            };
+            tx.value = tx.quantity * PRICES[tx.type];
+            tx.status = activeTabInfo.statusText;
+
+            const tableName = 'kimono_' + state.activeTab;
+
+            if (id) {
+                tx.id = id;
+                const { error } = await _supabase.from(tableName).update(tx).eq('id', id);
+                if (error) return alert('حدث خطأ أثناء التعديل.');
+                
+                const arr = state[state.activeTab + 'Data'];
+                const idx = arr.findIndex(d => d.id === id);
+                if (idx !== -1) arr[idx] = tx;
+            } else {
+                const { data, error } = await _supabase.from(tableName).insert([tx]).select();
+                if (error) return alert('حدث خطأ أثناء الإضافة.');
+                
+                if (data && data.length > 0) {
+                    state[state.activeTab + 'Data'].unshift(data[0]);
+                }
+            }
+            
+            closeModal();
+            updateViews();
+        });
+
+        async function deleteTransaction(id) {
+            if(confirm('هل أنت متأكد من رغبتك في حذف هذا السجل؟')) {
+                const tableName = 'kimono_' + state.activeTab;
+                const { error } = await _supabase.from(tableName).delete().eq('id', id);
+                if (error) return alert('حدث خطأ أثناء الحذف.');
+                
+                state[state.activeTab + 'Data'] = state[state.activeTab + 'Data'].filter(t => t.id !== id);
+                updateViews();
+            }
+        }
+
+        init();
+    </script>
+    </script>
+</body>
+</html>

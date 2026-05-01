@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الرياضيين - قاعة KARATE</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- إعدادات Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .modal-overlay {
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <header class="header-wrapper sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm mb-8 print:hidden">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 py-3">
+            <div class="flex justify-between items-center w-full relative">
+                <!-- اليمين: زر القائمة والشعار -->
+                <div class="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                    <button onclick="toggleMobileMenu()" class="md:hidden text-slate-600 hover:text-blue-600 focus:outline-none p-2 rounded-xl hover:bg-slate-100 transition-colors shadow-sm border border-slate-200 bg-white relative z-10">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <a href="index.html" class="absolute right-1/2 translate-x-1/2 md:relative md:right-auto md:translate-x-0 flex-shrink-0 text-xl font-black text-slate-800 flex items-center gap-2">
+                        <span class="text-2xl">🥋</span>
+                        <span class="inline">KARATE</span>
+                    </a>
+                </div>
+                
+                <!-- الوسط: الصفحات للشاشات الكبيرة -->
+                <nav class="hidden md:flex items-center gap-1 flex-grow justify-center">
+                    <a href="index.html" class="px-3 py-2 rounded-xl font-bold text-sm bg-blue-600 text-white shadow">إدارة الرياضيين</a>
+                    <a href="attendance.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+                    <a href="payments.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المدفوعات</a>
+                    <a href="expenses.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
+                    <a href="report.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+                    <a href="kimono.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المخزون</a>
+                </nav>
+            
+                <!-- اليسار: أيقونات الإضافة والإجراءات -->
+                <div class="flex items-center gap-2 flex-shrink-0 border-r-2 border-slate-200 pr-4 mr-2 md:border-r-2 md:pr-4">
+                <button onclick="openRegisterModal()" class="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5" title="إضافة رياضي">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                </button>
+                <a href="settings.html" class="bg-slate-500 hover:bg-slate-600 text-white p-2.5 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5" title="الإعدادات">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- القائمة المنسدلة للهواتف -->
+    <nav id="mobileMenu" class="hidden fixed inset-0 z-[100] bg-white/95 backdrop-blur-xl flex-col items-center justify-center gap-6 p-8 md:hidden animate-[slideDownFull_0.3s_ease-out]">
+        <button onclick="toggleMobileMenu()" class="absolute top-6 right-6 text-slate-500 hover:text-red-500 p-3 bg-slate-100 hover:bg-red-50 rounded-full transition-colors">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <a href="index.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl bg-blue-600 text-white shadow-lg">إدارة الرياضيين</a>
+        <a href="attendance.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+        <a href="payments.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المدفوعات</a>
+        <a href="expenses.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
+        <a href="report.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+        <a href="kimono.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المخزون</a>
+        <a href="settings.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الإعدادات</a>
+    </nav>
+    <main class="max-w-7xl mx-auto px-4 md:px-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-slate-200 pb-4 gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">قائمة الرياضيين</h2>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <label for="sortAthletes" class="text-sm font-bold text-slate-600 whitespace-nowrap">ترتيب حسب:</label>
+                    <select id="sortAthletes" onchange="renderTable()" class="w-full md:w-auto p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700 bg-slate-50 transition-all cursor-pointer">
+                        <option value="default">تاريخ الإضافة (الأحدث)</option>
+                        <option value="expired">صلاحية الاشتراك (المنتهية أولاً)</option>
+                        <option value="alpha">الترتيب الأبجدي (أ - ي)</option>
+                        <option value="subDate">تاريخ التسجيل (الأحدث)</option>
+                        <option value="dob">تاريخ الميلاد (الأصغر سناً)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="athletesList" class="overflow-x-auto">
+                <!-- Athlete list will be rendered here by script.js -->
+            </div>
+        </div>
+    </main>
+
+    <!-- نافذة تعديل الملف الإداري -->
+    <div id="editDocsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg relative flex flex-col overflow-hidden animate-[fade-in_0.2s_ease-out]">
+            <button onclick="closeEditModal()" class="absolute top-4 left-4 text-slate-400 hover:text-red-500 transition-colors p-1" aria-label="إغلاق">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3">✏️ تعديل بيانات الرياضي</h2>
+                <div id="editAthleteName" class="mt-3 text-md bg-blue-50 p-3 rounded-lg border border-blue-100 text-blue-800 font-bold"></div>
+            </div>
+
+            <div class="p-6 overflow-y-auto max-h-[75vh]">
+                <form id="editDocsForm" class="flex flex-col space-y-4">
+                    <input type="hidden" id="editAthleteId">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-1">الاسم:</label><input type="text" id="editFirstName" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white" required></div>
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-1">اللقب:</label><input type="text" id="editLastName" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white" required></div>
+                    </div>
+                    <div><label class="block text-sm font-semibold text-slate-700 mb-1">تاريخ الميلاد:</label><input type="date" id="editDob" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white" required></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-1">اسم الولي:</label><input type="text" id="editGuardianName" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white" required></div>
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-1">رقم هاتف الولي:</label><input type="tel" id="editGuardianPhone" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white" required></div>
+                    </div>
+                    <div><label class="block text-sm font-semibold text-slate-700 mb-1">تاريخ الاشتراك:</label><input type="date" id="editSubDate" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white" required></div>
+                    
+                    <fieldset class="pt-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-3 border-b pb-2">الملف الإداري:</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="editDocBirth" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"> <span class="text-sm text-slate-600">2 شهادة ميلاد</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="editDocPhotos" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"> <span class="text-sm text-slate-600">2 صور</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="editDocMedical" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"> <span class="text-sm text-slate-600">1 شهادة طبية</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="editDocGuardian" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"> <span class="text-sm text-slate-600">1 تصريح الولي</span></label>
+                        </div>
+                    </fieldset>
+                    <button type="submit" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-3 px-4 rounded-md transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">حفظ التعديلات</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تسجيل رياضي جديد -->
+    <div id="registerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg relative flex flex-col overflow-hidden animate-[fade-in_0.2s_ease-out]">
+            <button onclick="closeRegisterModal()" class="absolute top-4 left-4 text-slate-400 hover:text-red-500 transition-colors p-1" aria-label="إغلاق">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+    
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                    <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                    تسجيل رياضي جديد
+                </h2>
+            </div>
+    
+            <div class="p-6 overflow-y-auto max-h-[85vh]">
+                <form id="registerForm" class="flex flex-col space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label for="firstName" class="block text-sm font-semibold text-slate-700 mb-1">الاسم</label><input type="text" id="firstName" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800"></div>
+                        <div><label for="lastName" class="block text-sm font-semibold text-slate-700 mb-1">اللقب</label><input type="text" id="lastName" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800"></div>
+                    </div>
+                    <div><label for="dob" class="block text-sm font-semibold text-slate-700 mb-1">تاريخ الميلاد</label><input type="date" id="dob" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800"></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label for="guardianName" class="block text-sm font-semibold text-slate-700 mb-1">اسم الولي</label><input type="text" id="guardianName" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800"></div>
+                        <div><label for="guardianPhone" class="block text-sm font-semibold text-slate-700 mb-1">رقم هاتف الولي</label><input type="tel" id="guardianPhone" dir="ltr" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800 text-right"></div>
+                    </div>
+                    <div><label for="subDate" class="block text-sm font-semibold text-slate-700 mb-1">تاريخ الاشتراك</label><input type="date" id="subDate" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-slate-800"></div>
+                    
+                    <fieldset class="pt-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-3 border-b pb-2">الملف الإداري:</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="docBirth" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"> <span class="text-sm text-slate-600">شهادة ميلاد</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="docPhotos" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"> <span class="text-sm text-slate-600">صور شمسية</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="docMedical" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"> <span class="text-sm text-slate-600">شهادة طبية</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="docGuardian" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"> <span class="text-sm text-slate-600">تصريح أبوي</span></label>
+                        </div>
+                    </fieldset>
+    
+                    <button type="submit" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-3 px-4 rounded-md transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">إضافة الرياضي</button>
+                </form>
+            </div>
+        </div>
+    </div>
+                
+    <script src="script.js"></script>
+</body>
+</html>
