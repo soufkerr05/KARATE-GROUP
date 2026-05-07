@@ -7,7 +7,7 @@
     <script>
         const authTime = localStorage.getItem('karate_auth_time');
         const parsedTime = parseInt(authTime, 10);
-        if (authTime && !isNaN(parsedTime) && (Date.now() - parsedTime) < 3600000) {
+        if (authTime && !isNaN(parsedTime) && (Date.now() - parsedTime) < 21600000) {
             window.location.replace('index.html');
         } else {
             localStorage.removeItem('karate_auth');

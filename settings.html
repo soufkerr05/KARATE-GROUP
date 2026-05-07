@@ -8,7 +8,7 @@
         const authTime = localStorage.getItem('karate_auth_time');
         const parsedTime = parseInt(authTime, 10);
         const timeElapsed = Date.now() - parsedTime;
-        if (!authTime || isNaN(parsedTime) || timeElapsed > 3600000) {
+        if (!authTime || isNaN(parsedTime) || timeElapsed > 21600000) {
             localStorage.removeItem('karate_auth');
             localStorage.removeItem('karate_auth_time');
             window.location.replace('login.html');
@@ -17,7 +17,7 @@
                 localStorage.removeItem('karate_auth');
                 localStorage.removeItem('karate_auth_time');
                 window.location.replace('login.html');
-            }, 3600000 - timeElapsed);
+            }, 21600000 - timeElapsed);
         }
     </script>
     <title>الإعدادات - قاعة KARATE</title>
