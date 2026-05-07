@@ -9,7 +9,8 @@ async function fetchAthletes() {
     if (error) {
         console.error("خطأ في جلب بيانات الرياضيين:", error);
     } else {
-        athletes = data || [];
+        const allAthletes = data || [];
+        athletes = allAthletes.filter(a => !a.isArchived); // إخفاء الرياضيين في الأرشيف
         renderAttendanceTable();
     }
 }

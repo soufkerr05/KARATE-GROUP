@@ -14,7 +14,8 @@ async function fetchAthletes() {
     if (athletesRes.error) {
         console.error("خطأ في جلب بيانات الرياضيين:", athletesRes.error);
     } else {
-        athletes = athletesRes.data || [];
+        const allAthletes = athletesRes.data || [];
+        athletes = allAthletes.filter(a => !a.isArchived); // إخفاء الرياضيين في الأرشيف
         const allPayments = paymentsRes.data || [];
         
         // دمج المدفوعات مع الرياضيين للعرض

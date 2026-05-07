@@ -1,5 +1,6 @@
 // جلب البيانات من Supabase أو إنشاء مصفوفة فارغة
 let athletes = [];
+let viewMode = 'active'; // تحديد وضع العرض (نشطين أو الأرشيف)
 const form = document.getElementById('registerForm');
 const listContainer = document.getElementById('athletesList');
 
@@ -27,6 +28,7 @@ form.addEventListener('submit', async function(e) {
         attendance: 0, // يبدأ الحضور بـ 0
         attendanceDates: [], // مصفوفة لتخزين تواريخ الحضور لتجنب التكرار
         sessionsLimit: 12, // عدد الحصص الافتراضي
+        isArchived: false, // تحديد أن الرياضي نشط وليس في الأرشيف
         docs: {
             birth: document.getElementById('docBirth') ? document.getElementById('docBirth').checked : false,
             photos: document.getElementById('docPhotos') ? document.getElementById('docPhotos').checked : false,
@@ -62,6 +64,32 @@ async function deleteAthlete(id) {
         const { error } = await _supabase.from('athletes').delete().eq('id', id);
         if (error) console.error(error);
         fetchAthletes();
+    }
+}
+
+// دالة تبديل العرض بين النشطين والأرشيف
+function switchView(mode) {
+    viewMode = mode;
+    const btnActive = document.getElementById('btnViewActive');
+    const btnArchived = document.getElementById('btnViewArchived');
+    
+    if (mode === 'active') {
+        btnActive.className = "px-4 py-2 rounded-lg text-sm font-bold bg-white text-blue-600 shadow-sm transition-all w-1/2 sm:w-auto";
+        btnArchived.className = "px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-700 transition-all w-1/2 sm:w-auto";
+    } else {
+        btnArchived.className = "px-4 py-2 rounded-lg text-sm font-bold bg-white text-blue-600 shadow-sm transition-all w-1/2 sm:w-auto";
+        btnActive.className = "px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-700 transition-all w-1/2 sm:w-auto";
+    }
+    renderTable();
+}
+
+// دالة أرشفة أو استعادة الرياضي
+async function toggleArchive(id, status) {
+    const action = status ? 'أرشفة' : 'استعادة';
+    if (confirm(`هل أنت متأكد من رغبتك في ${action} هذا الرياضي؟`)) {
+        const { error } = await _supabase.from('athletes').update({ isArchived: status }).eq('id', id);
+        if (error) { console.error(error); alert('حدث خطأ أثناء العملية.'); }
+        else { fetchAthletes(); }
     }
 }
 
@@ -147,11 +175,14 @@ window.onclick = function(event) {
 
 // دالة عرض الجدول
 function renderTable() {
-    if (athletes.length === 0) {
+    const filteredAthletes = athletes.filter(a => viewMode === 'active' ? !a.isArchived : a.isArchived);
+
+    if (filteredAthletes.length === 0) {
+        const msg = viewMode === 'active' ? 'لا يوجد رياضيين نشطين مسجلين حالياً. قم بإضافة رياضي جديد للبدء.' : 'قائمة الأرشيف فارغة.';
         listContainer.innerHTML = `
             <div class="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                 <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" alt="Empty" class="w-24 h-24 mx-auto mb-4 opacity-60 hover:opacity-100 transition">
-                <p class="text-slate-500 text-lg font-semibold">لا يوجد رياضيين مسجلين حالياً. قم بإضافة رياضي جديد للبدء.</p>
+                <p class="text-slate-500 text-lg font-semibold">${msg}</p>
             </div>
         `;
         return;
@@ -160,7 +191,7 @@ function renderTable() {
     const sortSelect = document.getElementById('sortAthletes');
     const sortValue = sortSelect ? sortSelect.value : 'default';
 
-    let sortedAthletes = [...athletes];
+    let sortedAthletes = [...filteredAthletes];
 
     switch(sortValue) {
         case 'alpha':
@@ -224,6 +255,10 @@ function renderTable() {
                 </td>
                 <td class="p-4 align-middle actions-cell text-center" data-label="إجراءات">
                     <button class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="editDocs(${athlete.id})">تعديل</button>
+                    ${viewMode === 'active' 
+                        ? `<button class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="toggleArchive(${athlete.id}, true)">أرشفة</button>`
+                        : `<button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="toggleArchive(${athlete.id}, false)">استعادة</button>`
+                    }
                     <button class="bg-rose-500 hover:bg-rose-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5" onclick="deleteAthlete(${athlete.id})">حذف</button>
                 </td>
             </tr>
