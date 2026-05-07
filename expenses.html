@@ -3,6 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- جدار الحماية المباشر -->
+    <script>
+        const authTime = localStorage.getItem('karate_auth_time');
+        const parsedTime = parseInt(authTime, 10);
+        const timeElapsed = Date.now() - parsedTime;
+        if (!authTime || isNaN(parsedTime) || timeElapsed > 3600000) {
+            localStorage.removeItem('karate_auth');
+            localStorage.removeItem('karate_auth_time');
+            window.location.replace('login.html');
+        } else {
+            setTimeout(() => {
+                localStorage.removeItem('karate_auth');
+                localStorage.removeItem('karate_auth_time');
+                window.location.replace('login.html');
+            }, 3600000 - timeElapsed);
+        }
+    </script>
     <title>المصاريف العامة - قاعة KARATE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
