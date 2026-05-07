@@ -88,7 +88,10 @@ async function toggleArchive(id, status) {
     const action = status ? 'أرشفة' : 'استعادة';
     if (confirm(`هل أنت متأكد من رغبتك في ${action} هذا الرياضي؟`)) {
         const { error } = await _supabase.from('athletes').update({ isArchived: status }).eq('id', id);
-        if (error) { console.error(error); alert('حدث خطأ أثناء العملية.'); }
+        if (error) { 
+            console.error("تفاصيل الخطأ:", error); 
+            alert('حدث خطأ: ' + error.message + '\n\n(تأكد من أنك قمت بإضافة عمود "isArchived" في جدول athletes على Supabase)'); 
+        }
         else { fetchAthletes(); }
     }
 }
