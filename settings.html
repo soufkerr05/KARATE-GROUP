@@ -151,6 +151,21 @@
                         </button>
                     </div>
                 </section>
+
+                <!-- قسم تسجيل الخروج -->
+                <section>
+                    <h2 class="text-xl font-bold text-slate-800 mb-4 border-r-4 border-slate-500 pr-3">الحساب</h2>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-lg mb-1">تسجيل الخروج</h3>
+                            <p class="text-sm text-slate-500">الخروج من الحساب الحالي والعودة إلى شاشة تسجيل الدخول.</p>
+                        </div>
+                        <button onclick="logoutUser()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-6 rounded-lg transition-all shadow-md flex-shrink-0 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            تسجيل الخروج
+                        </button>
+                    </div>
+                </section>
             </div>
         </div>
     </main>
@@ -258,6 +273,15 @@
                     localStorage.removeItem('karate_backup');
                     window.location.reload();
                 }
+            }
+        }
+
+        // دالة تسجيل الخروج
+        function logoutUser() {
+            if (confirm('هل أنت متأكد أنك تريد تسجيل الخروج؟')) {
+                localStorage.removeItem('karate_auth');
+                localStorage.removeItem('karate_auth_time');
+                window.location.replace('login.html');
             }
         }
     </script>
