@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- جدار الحماية -->
+    <script>
+        const authTime = localStorage.getItem('karate_auth_time');
+        const parsedTime = parseInt(authTime, 10);
+        const timeElapsed = Date.now() - parsedTime;
+        if (!authTime || isNaN(parsedTime) || timeElapsed > 21600000) {
+            localStorage.removeItem('karate_auth');
+            localStorage.removeItem('karate_auth_time');
+            window.location.replace('login.html');
+        }
+    </script>
+    <title>لوحة الإحصائيات - قاعة KARATE</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Tajawal', 'Cairo', 'sans-serif'], } } } }
+    </script>
+    
+    <!-- مكتبات خارجية -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="supabase-config.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .stat-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <header class="header-wrapper sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm mb-8 print:hidden">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 py-3">
+            <div class="flex justify-between items-center w-full relative">
+                <div class="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                    <button onclick="toggleMobileMenu()" class="md:hidden text-slate-600 hover:text-blue-600 focus:outline-none p-2 rounded-xl hover:bg-slate-100 transition-colors shadow-sm border border-slate-200 bg-white relative z-10">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <a href="index.html" class="absolute right-1/2 translate-x-1/2 md:relative md:right-auto md:translate-x-0 flex-shrink-0 text-xl font-black text-slate-800 flex items-center gap-2">
+                        <span class="text-2xl">📊</span>
+                        <span class="inline">KARATE</span>
+                    </a>
+                </div>
+                
+                <nav class="hidden md:flex items-center gap-1 flex-grow justify-center">
+                    <a href="index.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
+                    <a href="attendance.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+                    <a href="payments.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المدفوعات</a>
+                    <a href="expenses.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
+                    <a href="report.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+                    <a href="kimono.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المخزون</a>
+                    <a href="dashboard.html" class="px-3 py-2 rounded-xl font-bold text-sm bg-blue-600 text-white shadow">الإحصائيات</a>
+                </nav>
+
+                <!-- زر الإعدادات -->
+                <div class="hidden md:flex items-center gap-2 flex-shrink-0 border-r-2 border-slate-200 pr-4 mr-2 md:border-r-2 md:pr-4">
+                    <a href="settings.html" class="bg-slate-500 hover:bg-slate-600 text-white p-2.5 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5" title="الإعدادات">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav id="mobileMenu" class="hidden fixed inset-0 z-[100] bg-white/95 backdrop-blur-xl flex-col items-center justify-center gap-6 p-8 md:hidden animate-[slideDownFull_0.3s_ease-out]">
+        <button onclick="toggleMobileMenu()" class="absolute top-6 right-6 text-slate-500 hover:text-red-500 p-3 bg-slate-100 hover:bg-red-50 rounded-full transition-colors">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <a href="index.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
+        <a href="attendance.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+        <a href="payments.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المدفوعات</a>
+        <a href="expenses.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
+        <a href="report.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+        <a href="kimono.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المخزون</a>
+        <a href="dashboard.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl bg-blue-600 text-white shadow-lg">الإحصائيات</a>
+        <a href="settings.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الإعدادات</a>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 md:px-8 mb-12">
+        <div class="mb-8 border-b border-slate-200 pb-4">
+            <h2 class="text-3xl font-black text-slate-800">إحصائيات الرياضيين</h2>
+            <p class="text-slate-500 mt-2 font-medium">نظرة عامة على أعداد وتوزيع الرياضيين في النادي.</p>
+        </div>
+
+        <!-- العدادات -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            <div class="stat-card bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center">
+                <div class="text-slate-500 text-sm font-bold mb-1">العدد الكلي</div>
+                <div class="text-3xl font-black text-slate-800" id="statTotal">0</div>
+            </div>
+            <div class="stat-card bg-emerald-50 p-4 rounded-2xl shadow-sm border border-emerald-100 text-center">
+                <div class="text-emerald-700 text-sm font-bold mb-1">النشطين</div>
+                <div class="text-3xl font-black text-emerald-600" id="statActive">0</div>
+            </div>
+            <div class="stat-card bg-slate-100 p-4 rounded-2xl shadow-sm border border-slate-200 text-center">
+                <div class="text-slate-600 text-sm font-bold mb-1">غير النشطين (الأرشيف)</div>
+                <div class="text-3xl font-black text-slate-700" id="statInactive">0</div>
+            </div>
+            <div class="stat-card bg-amber-50 p-4 rounded-2xl shadow-sm border border-amber-100 text-center">
+                <div class="text-amber-700 text-sm font-bold mb-1">الجدد هذا الشهر</div>
+                <div class="text-3xl font-black text-amber-600" id="statNew">0</div>
+            </div>
+            <div class="stat-card bg-blue-50 p-4 rounded-2xl shadow-sm border border-blue-100 text-center">
+                <div class="text-blue-700 text-sm font-bold mb-1">الذكور (نشطين)</div>
+                <div class="text-3xl font-black text-blue-600" id="statMales">0</div>
+            </div>
+            <div class="stat-card bg-pink-50 p-4 rounded-2xl shadow-sm border border-pink-100 text-center">
+                <div class="text-pink-700 text-sm font-bold mb-1">الإناث (نشطين)</div>
+                <div class="text-3xl font-black text-pink-600" id="statFemales">0</div>
+            </div>
+        </div>
+
+        <!-- رسم بياني للأعمار -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+            <h3 class="text-lg font-bold text-slate-800 mb-4 border-r-4 border-indigo-500 pr-2">توزيع الرياضيين النشطين حسب العمر</h3>
+            <div class="relative h-72 w-full"><canvas id="ageChart"></canvas></div>
+        </div>
+
+        <!-- إحصائيات الحضور -->
+        <div class="mb-8 border-b border-slate-200 pb-4 mt-12">
+            <h2 class="text-3xl font-black text-slate-800">إحصائيات الحضور</h2>
+            <p class="text-slate-500 mt-2 font-medium">متابعة تفصيلية لحضور وغياب الرياضيين.</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+            <div class="stat-card bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center">
+                <div class="text-slate-500 text-sm font-bold mb-1">المتوسط الأسبوعي</div>
+                <div class="text-3xl font-black text-blue-600" id="statWeeklyAvg">0</div>
+            </div>
+            <div class="stat-card bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center">
+                <div class="text-slate-500 text-sm font-bold mb-1">المتوسط الشهري</div>
+                <div class="text-3xl font-black text-indigo-600" id="statMonthlyAvg">0</div>
+            </div>
+            <div class="stat-card bg-emerald-50 p-4 rounded-2xl shadow-sm border border-emerald-100 text-center">
+                <div class="text-emerald-700 text-sm font-bold mb-1">أعلى حضور لحصة</div>
+                <div class="text-3xl font-black text-emerald-600" id="statHighestSession">0</div>
+                <div class="text-xs text-emerald-500 font-bold mt-1" id="statHighestDate">-</div>
+            </div>
+            <div class="stat-card bg-rose-50 p-4 rounded-2xl shadow-sm border border-rose-100 text-center">
+                <div class="text-rose-700 text-sm font-bold mb-1">أقل حضور لحصة</div>
+                <div class="text-3xl font-black text-rose-600" id="statLowestSession">0</div>
+                <div class="text-xs text-rose-500 font-bold mt-1" id="statLowestDate">-</div>
+            </div>
+            <div class="stat-card bg-amber-50 p-4 rounded-2xl shadow-sm border border-amber-100 text-center">
+                <div class="text-amber-700 text-sm font-bold mb-1">الغياب الإجمالي (النشطين)</div>
+                <div class="text-3xl font-black text-amber-600" id="statAbsenceRate">0%</div>
+            </div>
+        </div>
+
+        <!-- رسم بياني للحضور (10 حصص) -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+            <h3 class="text-lg font-bold text-slate-800 mb-4 border-r-4 border-blue-500 pr-2">عدد الحضور في آخر 10 حصص</h3>
+            <div class="relative h-72 w-full"><canvas id="attendanceChart"></canvas></div>
+        </div>
+
+        <!-- جداول الالتزام -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- الأكثر التزاماً -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-emerald-700 border-r-4 border-emerald-500 pr-2">الرياضيون الأكثر التزاماً</h3>
+                </div>
+                <div class="hidden md:flex justify-between items-center px-4 py-2 bg-slate-50 text-slate-500 text-sm font-semibold rounded-lg mb-3">
+                    <div class="flex-grow">الرياضي</div>
+                    <div class="w-16 text-center">الحضور</div>
+                    <div class="w-20 text-center">الغياب</div>
+                </div>
+                <div class="flex-grow max-h-80 overflow-y-auto pl-1 pr-1 pb-1" style="scrollbar-width: thin;">
+                    <div id="topCommittedList" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+            <!-- الأقل التزاماً -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-rose-700 border-r-4 border-rose-500 pr-2">الرياضيون الأقل التزاماً (أعلى غياب)</h3>
+                </div>
+                <div class="hidden md:flex justify-between items-center px-4 py-2 bg-slate-50 text-slate-500 text-sm font-semibold rounded-lg mb-3">
+                    <div class="flex-grow">الرياضي</div>
+                    <div class="w-16 text-center">الحضور</div>
+                    <div class="w-20 text-center">الغياب</div>
+                </div>
+                <div class="flex-grow max-h-80 overflow-y-auto pl-1 pr-1 pb-1" style="scrollbar-width: thin;">
+                    <div id="leastCommittedList" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- إحصائيات الاشتراكات والدفع -->
+        <div class="mb-8 border-b border-slate-200 pb-4 mt-12">
+            <h2 class="text-3xl font-black text-slate-800">إحصائيات الاشتراكات والدفع</h2>
+            <p class="text-slate-500 mt-2 font-medium">متابعة المداخيل وحالة اشتراكات الرياضيين.</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+            <div class="stat-card bg-emerald-50 p-4 rounded-2xl shadow-sm border border-emerald-100 text-center">
+                <div class="text-emerald-700 text-sm font-bold mb-1">اشتراكات نشطة</div>
+                <div class="text-3xl font-black text-emerald-600" id="statActiveSubs">0</div>
+            </div>
+            <div class="stat-card bg-rose-50 p-4 rounded-2xl shadow-sm border border-rose-100 text-center">
+                <div class="text-rose-700 text-sm font-bold mb-1">اشتراكات منتهية</div>
+                <div class="text-3xl font-black text-rose-600" id="statExpiredSubs">0</div>
+            </div>
+            <div class="stat-card bg-amber-50 p-4 rounded-2xl shadow-sm border border-amber-100 text-center">
+                <div class="text-amber-700 text-sm font-bold mb-1">متأخرون في الدفع</div>
+                <div class="text-3xl font-black text-amber-600" id="statLatePayments">0</div>
+            </div>
+            <div class="stat-card bg-blue-50 p-4 rounded-2xl shadow-sm border border-blue-100 text-center">
+                <div class="text-blue-700 text-sm font-bold mb-1">الإيرادات الشهرية</div>
+                <div class="text-2xl md:text-3xl font-black text-blue-600" id="statMonthlyRevenue">0 د.ج</div>
+            </div>
+            <div class="stat-card bg-indigo-50 p-4 rounded-2xl shadow-sm border border-indigo-100 text-center">
+                <div class="text-indigo-700 text-sm font-bold mb-1">نسبة التجديد (الشهر)</div>
+                <div class="text-3xl font-black text-indigo-600" id="statRenewalRate">0%</div>
+            </div>
+        </div>
+
+        <!-- جدول المتأخرين في الدفع -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-rose-700 border-r-4 border-rose-500 pr-2">الرياضيون المتأخرون في الدفع (اشتراك منتهي)</h3>
+            </div>
+            <div class="overflow-x-auto flex-grow max-h-80 overflow-y-auto">
+                <table class="w-full text-right text-sm commitment-table">
+                    <thead class="bg-slate-50 text-slate-500 sticky top-0">
+                        <tr>
+                            <th class="p-3 font-semibold">الرياضي</th>
+                            <th class="p-3 font-semibold">تاريخ الاشتراك</th>
+                            <th class="p-3 font-semibold text-center">الحصص المستهلكة</th>
+                            <th class="p-3 font-semibold">رقم ولي الأمر</th>
+                        </tr>
+                    </thead>
+                    <tbody id="latePaymentsTable" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // جلب البيانات من جدول الرياضيين
+                const { data: athletes, error } = await _supabase.from('athletes').select('*');
+                if (error) throw error;
+        
+                const allAthletes = athletes || [];
+                const activeAthletes = allAthletes.filter(a => !a.isArchived);
+                const inactiveAthletes = allAthletes.filter(a => a.isArchived);
+        
+                const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+                const newThisMonth = activeAthletes.filter(a => a.subDate && a.subDate.startsWith(currentMonth)).length;
+        
+                const malesCount = activeAthletes.filter(a => a.gender === 'ذكر').length;
+                const femalesCount = activeAthletes.filter(a => a.gender === 'أنثى').length;
+        
+                // تحديث العدادات في واجهة المستخدم
+                document.getElementById('statTotal').innerText = allAthletes.length;
+                document.getElementById('statActive').innerText = activeAthletes.length;
+                document.getElementById('statInactive').innerText = inactiveAthletes.length;
+                document.getElementById('statNew').innerText = newThisMonth;
+                document.getElementById('statMales').innerText = malesCount;
+                document.getElementById('statFemales').innerText = femalesCount;
+        
+                // حساب توزيع الأعمار للرياضيين النشطين
+                let rawAgeGroups = {};
+                activeAthletes.forEach(a => {
+                    if (a.dob) {
+                        const birthYear = new Date(a.dob).getFullYear();
+                        const currentYear = new Date().getFullYear();
+                        const age = currentYear - birthYear;
+                        const ageLabel = age + ' سنة';
+                        rawAgeGroups[ageLabel] = (rawAgeGroups[ageLabel] || 0) + 1;
+                    }
+                });
+        
+                // ترتيب الفئات العمرية من الأصغر للأكبر
+                let ageGroups = {};
+                Object.keys(rawAgeGroups).sort((a, b) => parseInt(a) - parseInt(b)).forEach(key => {
+                    ageGroups[key] = rawAgeGroups[key];
+                });
+        
+                // رسم المخطط البياني
+                const ctxAge = document.getElementById('ageChart');
+                if (ctxAge) {
+                    new Chart(ctxAge.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(ageGroups),
+                            datasets: [{
+                                label: 'عدد الرياضيين',
+                                data: Object.values(ageGroups),
+                                backgroundColor: '#6366f1', // لون نيلجي يتوافق مع التصميم
+                                borderRadius: 6,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                        }
+                    });
+                }
+
+                // --- إحصائيات الحضور ---
+                const sessionCounts = {};
+                activeAthletes.forEach(a => {
+                    if (a.attendanceDates && Array.isArray(a.attendanceDates)) {
+                        a.attendanceDates.forEach(date => {
+                            sessionCounts[date] = (sessionCounts[date] || 0) + 1;
+                        });
+                    }
+                });
+
+                const sortedDates = Object.keys(sessionCounts).sort();
+                
+                // آخر 10 حصص
+                const last10Dates = sortedDates.slice(-10);
+                const last10Counts = last10Dates.map(d => sessionCounts[d]);
+
+                // أعلى وأقل حصة حضوراً
+                let highestSessionCount = 0, highestSessionDate = '-';
+                let lowestSessionCount = Infinity, lowestSessionDate = '-';
+                let totalAttendanceCount = 0;
+
+                sortedDates.forEach(date => {
+                    const count = sessionCounts[date];
+                    totalAttendanceCount += count;
+                    if (count > highestSessionCount) { highestSessionCount = count; highestSessionDate = date; }
+                    if (count < lowestSessionCount) { lowestSessionCount = count; lowestSessionDate = date; }
+                });
+                if (sortedDates.length === 0) lowestSessionCount = 0;
+
+                // المتوسط الأسبوعي والشهري (بافتراض 3 حصص أسبوعياً كمعيار)
+                let avgPerSession = sortedDates.length > 0 ? (totalAttendanceCount / sortedDates.length) : 0;
+                let weeklyAvg = Math.round(avgPerSession * 3);
+                let monthlyAvg = Math.round(avgPerSession * 12);
+
+                // نسبة الغياب الإجمالية بناءً على الحد الأقصى للحصص لكل رياضي
+                let totalExpected = 0;
+                let totalActual = 0;
+                activeAthletes.forEach(a => {
+                    totalExpected += (a.sessionsLimit || 12);
+                    totalActual += (a.attendance || 0);
+                });
+                let overallAbsenceRate = totalExpected > 0 ? Math.round(((totalExpected - totalActual) / totalExpected) * 100) : 0;
+                if (overallAbsenceRate < 0) overallAbsenceRate = 0;
+
+                document.getElementById('statWeeklyAvg').innerText = weeklyAvg;
+                document.getElementById('statMonthlyAvg').innerText = monthlyAvg;
+                document.getElementById('statHighestSession').innerText = highestSessionCount;
+                document.getElementById('statHighestDate').innerText = highestSessionDate;
+                document.getElementById('statLowestSession').innerText = lowestSessionCount;
+                document.getElementById('statLowestDate').innerText = lowestSessionDate;
+                document.getElementById('statAbsenceRate').innerText = overallAbsenceRate + '%';
+
+                // رسم بياني لآخر 10 حصص
+                const ctxAttendance = document.getElementById('attendanceChart');
+                if (ctxAttendance) {
+                    new Chart(ctxAttendance.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: last10Dates.length > 0 ? last10Dates : ['لا توجد حصص'],
+                            datasets: [{
+                                label: 'عدد الحضور',
+                                data: last10Counts.length > 0 ? last10Counts : [0],
+                                borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderWidth: 3, fill: true, tension: 0.4,
+                                pointBackgroundColor: '#2563eb', pointRadius: 5
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                    });
+                }
+
+                // ترتيب الالتزام للرياضيين النشطين
+                const commitmentData = activeAthletes.map(a => {
+                    const limit = a.sessionsLimit || 12;
+                    const att = a.attendance || 0;
+                    const absence = Math.max(0, limit - att);
+                    const absenceRate = Math.round((absence / limit) * 100);
+                    return { ...a, absence, absenceRate, att };
+                });
+
+                const topCommitted = [...commitmentData].sort((a, b) => b.att - a.att).slice(0, 10);
+                const leastCommitted = [...commitmentData].sort((a, b) => b.absenceRate - a.absenceRate).slice(0, 10); // الأعلى في نسبة الغياب
+
+                const buildListHtml = (data) => {
+                    if (data.length === 0) return `<div class="p-4 text-center text-slate-500">لا توجد بيانات.</div>`;
+                    return data.map(a => `
+                        <div class="flex items-center justify-between p-3 sm:p-4 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
+                            <div class="font-bold text-slate-700 flex-grow text-sm sm:text-base truncate pl-2">${a.firstName} ${a.lastName}</div>
+                            <div class="flex items-center gap-4 sm:gap-6 flex-shrink-0">
+                                <div class="text-center w-12 sm:w-16">
+                                    <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">حضور</span>
+                                    <span class="font-black text-emerald-600 text-sm sm:text-base">${a.att}</span>
+                                </div>
+                                <div class="text-center w-14 sm:w-20 border-r border-slate-100 md:border-none pr-4 md:pr-0">
+                                    <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">غياب</span>
+                                    <div class="flex flex-col items-center">
+                                        <span class="text-rose-600 font-bold text-sm sm:text-base">${a.absence}</span>
+                                        <span class="text-[10px] text-slate-400 leading-none mt-1" dir="ltr">${a.absenceRate}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                };
+
+                document.getElementById('topCommittedList').innerHTML = buildListHtml(topCommitted);
+                document.getElementById('leastCommittedList').innerHTML = buildListHtml(leastCommitted);
+
+                // --- إحصائيات الاشتراكات والدفع ---
+                const { data: payments, error: paymentsError } = await _supabase.from('payments').select('*');
+                if (paymentsError) throw paymentsError;
+                const allPayments = payments || [];
+
+                const activeSubsCount = activeAthletes.filter(a => a.attendance < (a.sessionsLimit || 12)).length;
+                const expiredSubs = activeAthletes.filter(a => a.attendance >= (a.sessionsLimit || 12));
+                const expiredSubsCount = expiredSubs.length;
+                
+                const latePaymentsCount = expiredSubsCount; // المتأخرون هم نفسهم أصحاب الاشتراكات المنتهية
+
+                const monthlyRevenue = allPayments
+                    .filter(p => p.date && p.date.startsWith(currentMonth))
+                    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+
+                // حساب الرياضيين الذين جددوا اشتراكاتهم هذا الشهر
+                const renewedAthletesThisMonth = new Set(
+                    allPayments.filter(p => p.date && p.date.startsWith(currentMonth) && p.type === 'subscription').map(p => p.athlete_id)
+                ).size;
+                
+                const renewalRate = activeAthletes.length > 0 ? Math.round((renewedAthletesThisMonth / activeAthletes.length) * 100) : 0;
+
+                document.getElementById('statActiveSubs').innerText = activeSubsCount;
+                document.getElementById('statExpiredSubs').innerText = expiredSubsCount;
+                document.getElementById('statLatePayments').innerText = latePaymentsCount;
+                document.getElementById('statMonthlyRevenue').innerText = monthlyRevenue.toLocaleString() + ' د.ج';
+                document.getElementById('statRenewalRate').innerText = renewalRate + '%';
+
+                const lateTable = document.getElementById('latePaymentsTable');
+                if (expiredSubs.length === 0) {
+                    lateTable.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">لا يوجد رياضيون متأخرون في الدفع حالياً.</td></tr>`;
+                } else {
+                    expiredSubs.sort((a, b) => (b.attendance - (b.sessionsLimit || 12)) - (a.attendance - (a.sessionsLimit || 12)));
+                    lateTable.innerHTML = expiredSubs.map(a => `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-3 font-bold text-slate-700 leading-tight">${a.firstName} ${a.lastName}</td>
+                            <td class="p-3 text-center">
+                                <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">الاشتراك</span>
+                                <span class="text-slate-600 font-bold text-xs">${a.subDate || '-'}</span>
+                            </td>
+                            <td class="p-3 text-center">
+                                <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">الحصص</span>
+                                <span class="bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded text-xs">${a.attendance}/${a.sessionsLimit || 12}</span>
+                            </td>
+                            <td class="p-3 text-center">
+                                <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">الهاتف</span>
+                                <a href="tel:${a.guardianPhone}" class="text-blue-500 hover:underline dir-ltr inline-block font-bold text-xs">${a.guardianPhone || 'لا يوجد'}</a>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+            } catch (err) {
+                console.error('Error fetching athletes stats:', err);
+            }
+        });
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById("mobileMenu");
+            menu.classList.toggle("hidden");
+            menu.classList.toggle("flex");
+            document.body.classList.toggle("overflow-hidden");
+        }
+
+        // تطبيق الوضع الليلي عند التحميل
+        function applyTheme() {
+            const theme = localStorage.getItem('theme') || 'system';
+            if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+        applyTheme();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if ((localStorage.getItem('theme') || 'system') === 'system') applyTheme();
+        });
+    </script>
+</body>
+</html>

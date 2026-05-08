@@ -249,6 +249,28 @@ body.dark-mode .header-wrapper nav a:not(.bg-blue-600):hover { background-color:
 
     td button { margin-left: 0; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
     td button:last-child { margin-bottom: 0; }
+    
+    /* تنسيق أفقي لجداول الالتزام (الأكثر والأقل التزاماً) في وضع الهاتف */
+    table.commitment-table tr {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+    }
+    table.commitment-table td {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0;
+        border: none;
+    }
+    table.commitment-table td::before { display: none !important; }
+    table.commitment-table td:first-child {
+        align-items: flex-start;
+        flex-grow: 1;
+    }
 }
 
 /* --- حركات الانتقال بين الصفحات (Page Transitions) --- */

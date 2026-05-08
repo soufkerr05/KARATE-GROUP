@@ -21,6 +21,7 @@ form.addEventListener('submit', async function(e) {
     const newAthlete = {
         firstName: document.getElementById('firstName').value,
         lastName: document.getElementById('lastName').value,
+        gender: document.getElementById('gender').value,
         dob: document.getElementById('dob').value,
         guardianName: document.getElementById('guardianName').value,
         guardianPhone: document.getElementById('guardianPhone').value,
@@ -114,6 +115,7 @@ function editDocs(id) {
         
         document.getElementById('editFirstName').value = athlete.firstName || '';
         document.getElementById('editLastName').value = athlete.lastName || '';
+        document.getElementById('editGender').value = athlete.gender || 'ذكر';
         document.getElementById('editDob').value = athlete.dob || '';
         document.getElementById('editGuardianName').value = athlete.guardianName || '';
         document.getElementById('editGuardianPhone').value = athlete.guardianPhone || '';
@@ -144,6 +146,7 @@ document.getElementById('editDocsForm').addEventListener('submit', async functio
         const updatedData = {
             firstName: document.getElementById('editFirstName').value,
             lastName: document.getElementById('editLastName').value,
+            gender: document.getElementById('editGender').value,
             dob: document.getElementById('editDob').value,
             guardianName: document.getElementById('editGuardianName').value,
             guardianPhone: document.getElementById('editGuardianPhone').value,
@@ -178,7 +181,23 @@ window.onclick = function(event) {
 
 // دالة عرض الجدول
 function renderTable() {
-    const filteredAthletes = athletes.filter(a => viewMode === 'active' ? !a.isArchived : a.isArchived);
+    let filteredAthletes = athletes.filter(a => viewMode === 'active' ? !a.isArchived : a.isArchived);
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput && searchInput.value.trim() !== '') {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        filteredAthletes = filteredAthletes.filter(a => {
+            const fullName = `${a.firstName || ''} ${a.lastName || ''}`.toLowerCase();
+            const reversedName = `${a.lastName || ''} ${a.firstName || ''}`.toLowerCase();
+            const guardianName = (a.guardianName || '').toLowerCase();
+            const phone = (a.guardianPhone || '').toLowerCase();
+            
+            return fullName.includes(searchTerm) || 
+                   reversedName.includes(searchTerm) || 
+                   guardianName.includes(searchTerm) || 
+                   phone.includes(searchTerm);
+        });
+    }
 
     if (filteredAthletes.length === 0) {
         const msg = viewMode === 'active' ? 'لا يوجد رياضيين نشطين مسجلين حالياً. قم بإضافة رياضي جديد للبدء.' : 'قائمة الأرشيف فارغة.';
@@ -249,6 +268,7 @@ function renderTable() {
                         ${isExpired ? '<span class="mr-3 bg-red-100 text-red-700 px-2.5 py-1 rounded-lg text-xs font-black border border-red-200 flex items-center gap-1 shadow-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>اشتراك منتهي</span>' : ''}
                     </div>
                     <div class="athlete-details">
+                        <div class="mb-1"><span class="font-semibold text-slate-600">الجنس:</span> ${athlete.gender || 'غير محدد'}</div>
                         <div class="mb-1"><span class="font-semibold text-slate-600">تاريخ الميلاد:</span> ${athlete.dob}</div>
                         <div class="mb-1"><span class="font-semibold text-slate-600">اسم الولي:</span> ${athlete.guardianName || 'غير مسجل'}</div>
                         <div class="mb-1"><span class="font-semibold text-slate-600">رقم الهاتف:</span> <a href="tel:${athlete.guardianPhone || ''}" class="text-blue-600 hover:underline">${athlete.guardianPhone || 'غير مسجل'}</a></div>
