@@ -84,15 +84,12 @@ function renderAttendanceTable() {
     const sessionDate = sessionDateInput.value;
 
     let html = `
-        <table class="w-full text-right border-collapse bg-white rounded-lg overflow-hidden">
-            <thead class="bg-slate-100 text-slate-600 border-b-2 border-slate-200">
-                <tr>
-                    <th class="p-4 font-semibold">الاسم واللقب</th>
-                    <th class="p-4 font-semibold text-center">حالة الاشتراك</th>
-                    <th class="p-4 font-semibold text-center">حاضر؟</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div class="hidden md:flex justify-between items-center px-4 py-3 bg-slate-50 text-slate-500 text-sm font-semibold rounded-lg mb-3 border border-slate-100">
+            <div class="flex-grow">الاسم واللقب</div>
+            <div class="w-32 text-center">حالة الاشتراك</div>
+            <div class="w-32 text-center">تأكيد الحضور</div>
+        </div>
+        <div class="flex flex-col gap-3">
     `;
 
     athletes.forEach(athlete => {
@@ -101,26 +98,43 @@ function renderAttendanceTable() {
         const isExpired = athlete.attendance >= limit;
         const alreadyAttended = athlete.attendanceDates.includes(sessionDate);
         html += `
-            <tr class="border-b border-slate-100 hover:bg-slate-50 transition duration-200 ${isExpired ? 'expired-row' : ''}">
-                <td class="p-4 align-middle" data-label="الاسم واللقب">
-                    <div class="flex items-center">
-                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(athlete.firstName)}+${encodeURIComponent(athlete.lastName)}&background=10b981&color=fff&rounded=true&font-size=0.4" class="w-10 h-10 ml-3 shadow-sm border border-slate-200 rounded-full hidden sm:block" alt="Avatar">
-                        <span class="clickable-name text-lg" onclick="showAthleteHistory(${athlete.id})">${athlete.firstName} ${athlete.lastName}</span>
+            <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white border ${isExpired ? 'border-red-200' : 'border-slate-100'} rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer ${isExpired ? 'bg-red-50/30' : ''}" onclick="toggleAttendanceCheckbox(event, 'checkbox-${athlete.id}')">
+                
+                <div class="flex items-center mb-4 md:mb-0 flex-grow">
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(athlete.firstName)}+${encodeURIComponent(athlete.lastName)}&background=${isExpired ? 'ef4444' : '10b981'}&color=fff&rounded=true&font-size=0.4" class="w-12 h-12 ml-4 shadow-sm border-2 border-white rounded-full hidden sm:block" alt="Avatar">
+                    <div class="flex flex-col">
+                        <span class="clickable-name text-lg font-bold text-slate-800 cursor-pointer hover:text-blue-600 transition-colors" onclick="showAthleteHistory(${athlete.id})">${athlete.firstName} ${athlete.lastName}</span>
+                        ${isExpired ? '<span class="text-xs text-red-500 font-bold mt-0.5">تجاوز الحد المسموح للحصص</span>' : ''}
                     </div>
-                </td>
-                <td class="p-4 align-middle text-center" data-label="حالة الاشتراك">
-                    <span class="px-3 py-1 rounded-full text-sm font-bold ${isExpired ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">${isExpired ? 'منتهي' : 'ساري'} (${athlete.attendance} / ${limit})</span>
-                    ${alreadyAttended ? '<br><small class="text-blue-600 font-bold">(تم تسجيل حضوره)</small>' : ''}
-                </td>
-                <td class="p-4 align-middle checkbox-cell actions-cell text-center" data-label="حاضر؟">
-                    <input type="checkbox" name="athlete_attendance" value="${athlete.id}" ${alreadyAttended ? 'disabled' : ''} ${alreadyAttended ? 'checked' : ''} class="w-6 h-6 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer align-middle mr-2">
-                    ${alreadyAttended ? `<button type="button" class="bg-slate-400 hover:bg-slate-500 text-white font-semibold py-1 px-3 rounded shadow-sm transition mr-3 text-sm" onclick="removeAttendanceForDate(${athlete.id})">إلغاء</button>` : ''}
-                </td>
-            </tr>
+                </div>
+
+                <div class="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+                    
+                    <!-- حالة الاشتراك -->
+                    <div class="text-center w-auto md:w-32 md:border-r border-slate-100 md:pr-4">
+                        <span class="text-[10px] text-slate-400 block md:hidden mb-1 font-bold">حالة الاشتراك</span>
+                        <div class="inline-flex flex-col items-center">
+                            <span class="px-3 py-1 rounded-full text-xs font-black ${isExpired ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">
+                                ${isExpired ? 'منتهي' : 'ساري'} (${athlete.attendance}/${limit})
+                            </span>
+                            ${alreadyAttended ? '<span class="text-[10px] text-blue-600 font-bold mt-1.5">(تم التسجيل)</span>' : ''}
+                        </div>
+                    </div>
+
+                    <!-- الحضور -->
+                    <div class="flex flex-col items-center justify-center w-auto md:w-32">
+                        <span class="text-[10px] text-slate-400 block md:hidden mb-1 font-bold">تأكيد الحضور</span>
+                        <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                            <input type="checkbox" id="checkbox-${athlete.id}" name="athlete_attendance" value="${athlete.id}" ${alreadyAttended ? 'disabled checked' : ''} class="w-6 h-6 text-emerald-600 bg-white border-gray-300 rounded focus:ring-emerald-500 focus:ring-2 cursor-pointer shadow-sm">
+                            ${alreadyAttended ? `<button type="button" class="bg-slate-400 hover:bg-rose-500 text-white font-bold py-1 px-2.5 rounded transition text-xs" onclick="removeAttendanceForDate(${athlete.id})" title="إلغاء الحضور">إلغاء</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
     });
 
-    html += `</tbody></table>`;
+    html += `</div>`;
     attendanceList.innerHTML = html;
 }
 
@@ -162,6 +176,18 @@ attendanceForm.addEventListener('submit', async function(e) {
         alert('لم يتم تحديد أي رياضي لتسجيل حضوره.');
     }
 });
+
+// دالة لتحديد مربع الحضور عند الضغط على البطاقة ككل
+function toggleAttendanceCheckbox(event, checkboxId) {
+    // تجاهل الضغط إذا كان على زر الإلغاء، أو اسم الرياضي، أو المربع نفسه (لتجنب التحديد المزدوج)
+    if (event.target.closest('button') || event.target.closest('.clickable-name') || event.target.tagName === 'INPUT') {
+        return;
+    }
+    const checkbox = document.getElementById(checkboxId);
+    if (checkbox && !checkbox.disabled) {
+        checkbox.checked = !checkbox.checked;
+    }
+}
 
 // إغلاق النافذة عند النقر خارجها
 window.onclick = function(event) {
