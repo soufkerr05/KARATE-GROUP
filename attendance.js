@@ -42,6 +42,33 @@ async function removeAttendanceForDate(id) {
     }
 }
 
+// دالة حذف حصة معينة من سجل الحضور (من النافذة المنبثقة)
+async function deleteAttendanceHistory(athleteId, dateStr) {
+    const athlete = athletes.find(a => a.id === athleteId);
+    if (athlete && athlete.attendanceDates && athlete.attendanceDates.includes(dateStr)) {
+        if (confirm(`هل أنت متأكد من حذف الحصة بتاريخ ${dateStr} من سجل هذا الرياضي؟`)) {
+            // إزالة التاريخ من المصفوفة وتقليل عدد الحضور
+            athlete.attendanceDates = athlete.attendanceDates.filter(d => d !== dateStr);
+            if (athlete.attendance > 0) athlete.attendance--;
+            
+            // تحديث قاعدة البيانات
+            const { error } = await _supabase.from('athletes').update({
+                attendanceDates: athlete.attendanceDates,
+                attendance: athlete.attendance
+            }).eq('id', athleteId);
+            
+            if (error) {
+                console.error(error);
+                alert("حدث خطأ أثناء الحذف.");
+            } else {
+                // تحديث الواجهة والنافذة المنبثقة مباشرة
+                renderAttendanceTable();
+                showAthleteHistory(athleteId);
+            }
+        }
+    }
+}
+
 // دالة إظهار النافذة المنبثقة بسجل حضور اللاعب
 function showAthleteHistory(id) {
     const athlete = athletes.find(a => a.id === id);
@@ -53,7 +80,15 @@ function showAthleteHistory(id) {
         if (athlete.attendanceDates && athlete.attendanceDates.length > 0) {
             athlete.attendanceDates.forEach((date, index) => {
                 const li = document.createElement('li');
-                li.innerHTML = `<span class="font-bold text-slate-700">الحصة ${index + 1}:</span> <span class="text-slate-600 ml-2">${date}</span>`;
+                li.className = 'flex justify-between items-center';
+                li.innerHTML = `
+                    <div>
+                        <span class="font-bold text-slate-700">الحصة ${index + 1}:</span> <span class="text-slate-600 ml-2">${date}</span>
+                    </div>
+                    <button class="bg-red-100 hover:bg-red-200 text-red-600 p-1.5 rounded-lg transition-colors shadow-sm" onclick="deleteAttendanceHistory(${athlete.id}, '${date}')" title="حذف الحصة">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
                 list.appendChild(li);
             });
         } else {
