@@ -96,6 +96,7 @@ function renderAttendanceTable() {
         if (!athlete.attendanceDates) athlete.attendanceDates = [];
         const limit = athlete.sessionsLimit || 12;
         const isExpired = athlete.attendance >= limit;
+        const remainingSessions = Math.max(0, limit - athlete.attendance);
         const alreadyAttended = athlete.attendanceDates.includes(sessionDate);
         html += `
             <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white border ${isExpired ? 'border-red-200' : 'border-slate-100'} rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer ${isExpired ? 'bg-red-50/30' : ''}" onclick="toggleAttendanceCheckbox(event, 'checkbox-${athlete.id}')">
@@ -115,7 +116,7 @@ function renderAttendanceTable() {
                         <span class="text-[10px] text-slate-400 block md:hidden mb-1 font-bold">حالة الاشتراك</span>
                         <div class="inline-flex flex-col items-center">
                             <span class="px-3 py-1 rounded-full text-xs font-black ${isExpired ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">
-                                ${isExpired ? 'منتهي' : 'ساري'} (${athlete.attendance}/${limit})
+                                ${isExpired ? 'منتهي' : 'ساري'} (متبقي: ${remainingSessions})
                             </span>
                             ${alreadyAttended ? '<span class="text-[10px] text-blue-600 font-bold mt-1.5">(تم التسجيل)</span>' : ''}
                         </div>
