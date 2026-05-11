@@ -225,6 +225,13 @@ function toggleAttendanceCheckbox(event, checkboxId) {
     }
 }
 
+// دالة لتحديد / إلغاء تحديد الكل
+function toggleAllCheckboxes() {
+    const checkboxes = document.querySelectorAll('input[name="athlete_attendance"]:not(:disabled)');
+    const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => cb.checked = !allChecked);
+}
+
 // إغلاق النافذة عند النقر خارجها
 window.onclick = function(event) {
     const modal = document.getElementById('historyModal');
