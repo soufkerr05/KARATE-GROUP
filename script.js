@@ -240,7 +240,7 @@ function renderTable() {
             <thead class="bg-slate-100 text-slate-600 border-b-2 border-slate-200">
                 <tr>
                     <th class="p-4 font-semibold rounded-tr-lg">الرياضي</th>
-                    <th class="p-4 font-semibold text-center rounded-tl-lg">إجراءات</th>
+                    <th class="p-4 font-semibold text-center rounded-tl-lg admin-only">إجراءات</th>
                 </tr>
             </thead>
             <tbody>
@@ -276,7 +276,7 @@ function renderTable() {
                         <div class="mb-1"><span class="font-semibold text-slate-600">الملف الإداري:</span> ${docStatus}</div>
                     </div>
                 </td>
-                <td class="p-4 align-middle actions-cell text-center" data-label="إجراءات">
+                <td class="p-4 align-middle actions-cell text-center admin-only" data-label="إجراءات">
                     <button class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="editDocs(${athlete.id})">تعديل</button>
                     ${viewMode === 'active' 
                         ? `<button class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="toggleArchive(${athlete.id}, true)">أرشفة</button>`

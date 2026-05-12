@@ -12,6 +12,17 @@ function logoutUser() {
 
 // إضافة زر العودة للأعلى في جميع الصفحات
 window.addEventListener('DOMContentLoaded', () => {
+    // إعدادات دور القراءة فقط (Athlete)
+    if (localStorage.getItem('karate_role') === 'athlete') {
+        document.body.classList.add('role-athlete');
+        // إخفاء الروابط المحمية من شريط التنقل
+        const protectedLinks = document.querySelectorAll('a[href="payments.html"], a[href="expenses.html"], a[href="kimono.html"], a[href="report.html"], a[href="dashboard.html"]');
+        protectedLinks.forEach(link => link.style.display = 'none');
+        // إخفاء أزرار الإضافة
+        const adminButtons = document.querySelectorAll('button[onclick="openRegisterModal()"]');
+        adminButtons.forEach(btn => btn.style.display = 'none');
+    }
+
     const scrollTopBtn = document.createElement('button');
     scrollTopBtn.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"></path></svg>';
     scrollTopBtn.className = 'scroll-to-top print:hidden';

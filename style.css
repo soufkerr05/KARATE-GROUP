@@ -350,3 +350,8 @@ body.dark-mode .scroll-to-top {
 body.dark-mode .scroll-to-top:hover {
     background-color: #60a5fa;
 }
+
+/* --- قيود دور الرياضي (للقراءة فقط) --- */
+body.role-athlete .admin-only {
+    display: none !important;
+}
