@@ -191,6 +191,27 @@
             </div>
         </div>
 
+        <!-- قائمة الحضور ليوم محدد -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 flex flex-col">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b border-slate-100 pb-3 gap-3">
+                <h3 class="text-lg font-bold text-blue-700 border-r-4 border-blue-500 pr-2">قائمة الحضور ليوم محدد</h3>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <label for="attendanceDatePicker" class="text-sm font-bold text-slate-600 whitespace-nowrap">تاريخ الحصة:</label>
+                    <input type="date" id="attendanceDatePicker" class="w-full sm:w-auto p-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700 bg-slate-50 transition-all">
+                </div>
+            </div>
+            <div class="hidden md:flex justify-between items-center px-4 py-2 bg-slate-50 text-slate-500 text-sm font-semibold rounded-lg mb-3">
+                <div class="flex-grow">الرياضي</div>
+                <div class="w-32 text-center">رقم ولي الأمر</div>
+            </div>
+            <div class="flex-grow max-h-80 overflow-y-auto pl-1 pr-1 pb-1" style="scrollbar-width: thin;">
+                <div id="attendanceByDateList" class="flex flex-col gap-2"></div>
+            </div>
+            <div id="attendanceByDateCount" class="mt-4 text-sm font-bold text-slate-600 text-left hidden">
+                إجمالي الحضور: <span id="attendanceByDateCountNumber" class="text-blue-600 text-lg ml-1">0</span>
+            </div>
+        </div>
+
         <!-- إحصائيات الاشتراكات والدفع -->
         <div class="mb-8 border-b border-slate-200 pb-4 mt-12">
             <h2 class="text-3xl font-black text-slate-800">إحصائيات الاشتراكات والدفع</h2>
@@ -240,10 +261,23 @@
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 // جلب البيانات من جدول الرياضيين
-                const { data: athletes, error } = await _supabase.from('athletes').select('*');
-                if (error) throw error;
+                const [athletesRes, paymentsRes] = await Promise.all([
+                    _supabase.from('athletes').select('*'),
+                    _supabase.from('payments').select('*')
+                ]);
+                if (athletesRes.error) throw athletesRes.error;
+                if (paymentsRes.error) throw paymentsRes.error;
         
-                const allAthletes = athletes || [];
+                const allAthletes = athletesRes.data || [];
+                const allPayments = paymentsRes.data || [];
+
+                // تحديث sessionsLimit ديناميكياً
+                allAthletes.forEach(a => {
+                    const subPayments = allPayments.filter(p => p.athlete_id === a.id && (!p.type || p.type === 'subscription'));
+                    const totalPaid = subPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+                    a.sessionsLimit = (totalPaid / 1000) * 12;
+                });
+
                 const activeAthletes = allAthletes.filter(a => !a.isArchived);
                 const inactiveAthletes = allAthletes.filter(a => a.isArchived);
         
@@ -340,7 +374,7 @@
                 let totalExpected = 0;
                 let totalActual = 0;
                 activeAthletes.forEach(a => {
-                    totalExpected += (a.sessionsLimit || 12);
+                    totalExpected += (a.sessionsLimit || 0);
                     totalActual += (a.attendance || 0);
                 });
                 let overallAbsenceRate = totalExpected > 0 ? Math.round(((totalExpected - totalActual) / totalExpected) * 100) : 0;
@@ -375,7 +409,7 @@
 
                 // ترتيب الالتزام للرياضيين النشطين
                 const commitmentData = activeAthletes.map(a => {
-                    const limit = a.sessionsLimit || 12;
+                    const limit = a.sessionsLimit || 0;
                     const att = a.attendance || 0;
                     const absence = Math.max(0, limit - att);
                     const absenceRate = Math.round((absence / limit) * 100);
@@ -410,13 +444,43 @@
                 document.getElementById('topCommittedList').innerHTML = buildListHtml(topCommitted);
                 document.getElementById('leastCommittedList').innerHTML = buildListHtml(leastCommitted);
 
-                // --- إحصائيات الاشتراكات والدفع ---
-                const { data: payments, error: paymentsError } = await _supabase.from('payments').select('*');
-                if (paymentsError) throw paymentsError;
-                const allPayments = payments || [];
+                // --- قائمة الحضور ليوم محدد ---
+                const attendanceDatePicker = document.getElementById('attendanceDatePicker');
+                const attendanceByDateList = document.getElementById('attendanceByDateList');
+                const attendanceByDateCount = document.getElementById('attendanceByDateCount');
+                const attendanceByDateCountNumber = document.getElementById('attendanceByDateCountNumber');
 
-                const activeSubsCount = activeAthletes.filter(a => a.attendance < (a.sessionsLimit || 12)).length;
-                const expiredSubs = activeAthletes.filter(a => a.attendance >= (a.sessionsLimit || 12));
+                const todayStr = new Date().toISOString().split('T')[0];
+                attendanceDatePicker.value = todayStr;
+
+                const renderAttendanceByDate = () => {
+                    const selectedDate = attendanceDatePicker.value;
+                    if (!selectedDate) {
+                        attendanceByDateList.innerHTML = `<div class="p-4 text-center text-slate-500">اختر تاريخاً لعرض قائمة الحضور.</div>`;
+                        attendanceByDateCount.classList.add('hidden');
+                        return;
+                    }
+
+                    const attendees = activeAthletes.filter(a => a.attendanceDates && a.attendanceDates.includes(selectedDate));
+                    
+                    if (attendees.length === 0) {
+                        attendanceByDateList.innerHTML = `<div class="p-4 text-center text-slate-500">لا يوجد حضور مسجل في هذا التاريخ.</div>`;
+                        attendanceByDateCount.classList.add('hidden');
+                        return;
+                    }
+
+                    attendanceByDateList.innerHTML = attendees.map(a => `<div class="flex items-center justify-between p-3 sm:p-4 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"><div class="font-bold text-slate-700 flex-grow text-sm sm:text-base truncate pl-2">${a.firstName} ${a.lastName}</div><div class="text-center w-24 sm:w-32 md:border-none pr-2 sm:pr-0"><span class="text-[10px] text-slate-400 block md:hidden mb-0.5">الهاتف</span><a href="tel:${a.guardianPhone}" class="text-blue-500 hover:underline dir-ltr inline-block font-bold text-[11px] sm:text-sm whitespace-nowrap">${a.guardianPhone || 'لا يوجد'}</a></div></div>`).join('');
+                    
+                    attendanceByDateCountNumber.innerText = attendees.length;
+                    attendanceByDateCount.classList.remove('hidden');
+                };
+
+                attendanceDatePicker.addEventListener('change', renderAttendanceByDate);
+                renderAttendanceByDate(); // عرض قائمة اليوم فوراً
+
+                // --- إحصائيات الاشتراكات والدفع ---
+                const activeSubsCount = activeAthletes.filter(a => a.attendance < (a.sessionsLimit || 0)).length;
+                const expiredSubs = activeAthletes.filter(a => a.attendance >= (a.sessionsLimit || 0));
                 const expiredSubsCount = expiredSubs.length;
                 
                 const latePaymentsCount = expiredSubsCount; // المتأخرون هم نفسهم أصحاب الاشتراكات المنتهية
@@ -442,14 +506,14 @@
                 if (expiredSubs.length === 0) {
                     lateList.innerHTML = `<div class="p-4 text-center text-slate-500">لا يوجد رياضيون متأخرون في الدفع حالياً.</div>`;
                 } else {
-                    expiredSubs.sort((a, b) => (b.attendance - (b.sessionsLimit || 12)) - (a.attendance - (a.sessionsLimit || 12)));
+                    expiredSubs.sort((a, b) => (b.attendance - (b.sessionsLimit || 0)) - (a.attendance - (a.sessionsLimit || 0)));
                     lateList.innerHTML = expiredSubs.map(a => `
                         <div class="flex items-center justify-between p-3 sm:p-4 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
                             <div class="font-bold text-slate-700 flex-grow text-sm sm:text-base truncate pl-2">${a.firstName} ${a.lastName}</div>
                             <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                                 <div class="text-center w-16 sm:w-24">
                                     <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">عدد الحصص</span>
-                                    <span class="bg-rose-100 text-rose-700 font-bold px-2 py-1 rounded text-xs sm:text-sm">${a.attendance - (a.sessionsLimit || 12)}</span>
+                                    <span class="bg-rose-100 text-rose-700 font-bold px-2 py-1 rounded text-xs sm:text-sm">${a.attendance - (a.sessionsLimit || 0)}</span>
                                 </div>
                                 <div class="text-center w-20 sm:w-32 border-r border-slate-100 md:border-none pr-2 sm:pr-0">
                                     <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">الهاتف</span>

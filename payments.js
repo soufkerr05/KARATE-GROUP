@@ -1,9 +1,9 @@
 // جلب البيانات من Supabase
 let athletes = [];
 const paymentForm = document.getElementById('paymentForm');
-const athleteSelect = document.getElementById('athleteSelect');
 const payDateInput = document.getElementById('payDate');
 const paymentsList = document.getElementById('paymentsList');
+let athleteOptionsMap = new Map(); // لحفظ معرف الرياضي بناءً على النص
 
 async function fetchAthletes() {
     const [athletesRes, paymentsRes] = await Promise.all([
@@ -21,6 +21,11 @@ async function fetchAthletes() {
         // دمج المدفوعات مع الرياضيين للعرض
         athletes.forEach(a => {
             a.payments = allPayments.filter(p => p.athlete_id === a.id);
+            
+            // حساب عدد الحصص المستحقة بناءً على الاشتراكات
+            const subPayments = a.payments.filter(p => (!p.type || p.type === 'subscription'));
+            const totalPaid = subPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+            a.sessionsLimit = (totalPaid / 1000) * 12;
         });
 
         renderSelect();
@@ -61,7 +66,10 @@ if (checkInsurance && insuranceAmountContainer) {
 
 // دالة لتعبئة قائمة اختيار الرياضيين
 function renderSelect() {
-    athleteSelect.innerHTML = '<option value="">-- اختر الولي / الرياضي --</option>';
+    const datalist = document.getElementById('athleteDataList');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    athleteOptionsMap.clear();
     
     // تجميع الرياضيين حسب الولي لتجنب الحلقات المتداخلة (O(N) بدلاً من O(N^2))
     const groupedAthletes = new Map();
@@ -75,17 +83,19 @@ function renderSelect() {
     groupedAthletes.forEach((siblings, key) => {
         if (siblings.length > 0) {
             const a = siblings[0];
-            const limit = a.sessionsLimit || 12;
+            const limit = a.sessionsLimit || 0;
             const remaining = limit - a.attendance;
             const athleteNames = siblings.map(x => x.firstName).join(' و ');
             
+            const displayText = typeof key === 'string' ? `${key} (عن: ${athleteNames}) | متبقي: ${remaining} حصة للواحد` : `${a.firstName} ${a.lastName} | متبقي: ${remaining} حصة`;
+            
             const opt = document.createElement('option');
-            opt.value = a.id;
-            opt.textContent = typeof key === 'string' ? `${key} (عن: ${athleteNames}) | متبقي: ${remaining} حصة للواحد` : `${a.firstName} ${a.lastName} | متبقي: ${remaining} حصة`;
+            opt.value = displayText;
             fragment.appendChild(opt);
+            athleteOptionsMap.set(displayText, a.id);
         }
     });
-    athleteSelect.appendChild(fragment);
+    datalist.appendChild(fragment);
 }
 
 // عرض قائمة المدفوعات أسفل النموذج
@@ -201,7 +211,7 @@ async function removePayment(athleteId, paymentId) {
                     if (matchingPayment) {
                         paymentIdsToDelete.push(matchingPayment.id);
                         if (pType === 'subscription') {
-                            athlete.sessionsLimit = Math.max(12, (athlete.sessionsLimit || 12) - sessionsToDeduct);
+                            athlete.sessionsLimit = Math.max(0, (athlete.sessionsLimit || 0) - sessionsToDeduct);
                             updatePromises.push(_supabase.from('athletes').update({ sessionsLimit: athlete.sessionsLimit }).eq('id', athlete.id));
                         }
                     }
@@ -219,7 +229,14 @@ async function removePayment(athleteId, paymentId) {
 // معالجة إرسال نموذج الدفع
 paymentForm.addEventListener('submit', async function(e) {
     e.preventDefault();
-    const id = parseInt(athleteSelect.value);
+    
+    const searchInputStr = document.getElementById('searchAthleteSelect').value;
+    const id = athleteOptionsMap.get(searchInputStr);
+    
+    if (!id) {
+        alert('الرجاء اختيار رياضي صحيح من القائمة المنسدلة.');
+        return;
+    }
     
     const subAmount = parseFloat(document.getElementById('subAmount').value) || 0;
     const uniformAmount = document.getElementById('checkUniform').checked ? (parseFloat(document.getElementById('uniformAmount').value) || 0) : 0;
@@ -231,8 +248,13 @@ paymentForm.addEventListener('submit', async function(e) {
         return;
     }
 
-    if (subAmount > 0 && subAmount % 1000 !== 0) {
-        alert('عذراً، يجب أن يكون مبلغ الاشتراك الشهري من مضاعفات 1000.');
+    if (subAmount > 0 && (subAmount < 1000 || subAmount % 500 !== 0)) {
+        alert('عذراً، يجب أن يبدأ مبلغ الاشتراك الشهري من 1000 د.ج ويكون بمضاعفات 500.');
+        return;
+    }
+
+    if (insuranceAmount > 0 && (insuranceAmount < 500 || insuranceAmount % 500 !== 0)) {
+        alert('عذراً، يجب أن يبدأ مبلغ التأمين الرياضي من 500 د.ج ويكون بمضاعفات 500.');
         return;
     }
 
@@ -254,7 +276,7 @@ paymentForm.addEventListener('submit', async function(e) {
             targetAthletes.forEach(athlete => {
                 if (!athlete.payments) athlete.payments = [];
                 athlete.payments.push({ amount: splitSub, date: payDate, type: 'subscription' });
-                athlete.sessionsLimit = (athlete.sessionsLimit || 12) + addedSessions;
+                athlete.sessionsLimit = (athlete.sessionsLimit || 0) + addedSessions;
             });
             messages.push(`اشتراك شهري (${subAmount} د.ج) -> إجمالي ${addedSessions} حصة مضافة`);
         }
@@ -293,7 +315,7 @@ paymentForm.addEventListener('submit', async function(e) {
             const addedSessions = (splitSub / 1000) * 12;
             targetAthletes.forEach(athlete => {
                 insertPromises.push(_supabase.from('payments').insert([{ athlete_id: athlete.id, amount: splitSub, date: payDate, type: 'subscription' }]));
-                athlete.sessionsLimit = (athlete.sessionsLimit || 12) + addedSessions;
+                athlete.sessionsLimit = (athlete.sessionsLimit || 0) + addedSessions;
                 updatePromises.push(_supabase.from('athletes').update({ sessionsLimit: athlete.sessionsLimit }).eq('id', athlete.id));
             });
         }
@@ -322,6 +344,9 @@ paymentForm.addEventListener('submit', async function(e) {
         document.getElementById('checkInsurance').checked = false;
         document.getElementById('uniformAmountContainer').classList.add('hidden');
         document.getElementById('insuranceAmountContainer').classList.add('hidden');
+        if (document.getElementById('searchAthleteSelect')) {
+            document.getElementById('searchAthleteSelect').value = '';
+        }
 
         fetchAthletes();
     }

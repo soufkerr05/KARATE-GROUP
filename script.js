@@ -5,11 +5,20 @@ const form = document.getElementById('registerForm');
 const listContainer = document.getElementById('athletesList');
 
 async function fetchAthletes() {
-    const { data, error } = await _supabase.from('athletes').select('*');
-    if (error) {
-        console.error("خطأ في جلب بيانات الرياضيين:", error);
+    const [athletesRes, paymentsRes] = await Promise.all([
+        _supabase.from('athletes').select('*'),
+        _supabase.from('payments').select('*')
+    ]);
+    if (athletesRes.error) {
+        console.error("خطأ في جلب بيانات الرياضيين:", athletesRes.error);
     } else {
-        athletes = data || [];
+        const allPayments = paymentsRes.data || [];
+        athletes = athletesRes.data || [];
+        athletes.forEach(a => {
+            const subPayments = allPayments.filter(p => p.athlete_id === a.id && (!p.type || p.type === 'subscription'));
+            const totalPaid = subPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+            a.sessionsLimit = (totalPaid / 1000) * 12;
+        });
         renderTable();
     }
 }
@@ -28,7 +37,7 @@ form.addEventListener('submit', async function(e) {
         subDate: document.getElementById('subDate').value,
         attendance: 0, // يبدأ الحضور بـ 0
         attendanceDates: [], // مصفوفة لتخزين تواريخ الحضور لتجنب التكرار
-        sessionsLimit: 12, // عدد الحصص الافتراضي
+        sessionsLimit: 0, // عدد الحصص يبدأ من صفر حتى يتم الدفع
         isArchived: false, // تحديد أن الرياضي نشط وليس في الأرشيف
         docs: {
             birth: document.getElementById('docBirth') ? document.getElementById('docBirth').checked : false,
@@ -219,6 +228,19 @@ function renderTable() {
         case 'alpha':
             sortedAthletes.sort((a, b) => (a.firstName + ' ' + a.lastName).localeCompare(b.firstName + ' ' + b.lastName, 'ar'));
             break;
+        case 'guardian':
+            sortedAthletes.sort((a, b) => {
+                const gA = (a.guardianName || '').trim();
+                const gB = (b.guardianName || '').trim();
+                if (gA === gB) {
+                    // إذا كان لهم نفس الولي، نرتبهم حسب اسم الرياضي
+                    return (a.firstName + ' ' + a.lastName).localeCompare(b.firstName + ' ' + b.lastName, 'ar');
+                }
+                if (!gA) return 1; // إظهار من ليس لديهم اسم ولي في الأسفل
+                if (!gB) return -1;
+                return gA.localeCompare(gB, 'ar');
+            });
+            break;
         case 'subDate':
             sortedAthletes.sort((a, b) => new Date(b.subDate) - new Date(a.subDate));
             break;
@@ -227,7 +249,7 @@ function renderTable() {
             break;
         case 'expired':
             // حساب عدد الحصص المتجاوزة أو المتبقية وترتيبها بحيث يظهر الأكثر تجاوزاً أولاً
-            sortedAthletes.sort((a, b) => (b.attendance - (b.sessionsLimit || 12)) - (a.attendance - (a.sessionsLimit || 12)));
+            sortedAthletes.sort((a, b) => (b.attendance - (b.sessionsLimit || 0)) - (a.attendance - (a.sessionsLimit || 0)));
             break;
         case 'default':
         default:
@@ -247,7 +269,7 @@ function renderTable() {
     `;
 
     const rowsHtml = sortedAthletes.map(athlete => {
-        const limit = athlete.sessionsLimit || 12;
+        const limit = athlete.sessionsLimit || 0;
         const isExpired = athlete.attendance >= limit;
         
         const docs = athlete.docs || { birth: false, photos: false, medical: false, guardian: false };

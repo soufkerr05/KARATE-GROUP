@@ -5,11 +5,22 @@ const sessionDateInput = document.getElementById('sessionDate');
 const attendanceForm = document.getElementById('attendanceForm');
 
 async function fetchAthletes() {
-    const { data, error } = await _supabase.from('athletes').select('*');
-    if (error) {
-        console.error("خطأ في جلب بيانات الرياضيين:", error);
+    const [athletesRes, paymentsRes] = await Promise.all([
+        _supabase.from('athletes').select('*'),
+        _supabase.from('payments').select('*')
+    ]);
+    if (athletesRes.error) {
+        console.error("خطأ في جلب بيانات الرياضيين:", athletesRes.error);
     } else {
-        const allAthletes = data || [];
+        const allAthletes = athletesRes.data || [];
+        const allPayments = paymentsRes.data || [];
+        
+        allAthletes.forEach(a => {
+            const subPayments = allPayments.filter(p => p.athlete_id === a.id && (!p.type || p.type === 'subscription'));
+            const totalPaid = subPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+            a.sessionsLimit = (totalPaid / 1000) * 12;
+        });
+
         athletes = allAthletes.filter(a => !a.isArchived); // إخفاء الرياضيين في الأرشيف
         renderAttendanceTable();
     }
@@ -105,18 +116,60 @@ function closeModal() {
 
 // دالة عرض قائمة الرياضيين لاختيار الحضور
 function renderAttendanceTable() {
-    if (athletes.length === 0) {
+    let filteredAthletes = athletes;
+    const sessionDate = sessionDateInput.value;
+
+    // تحديث عداد حضور اليوم
+    const attendedTodayCount = athletes.filter(a => a.attendanceDates && a.attendanceDates.includes(sessionDate)).length;
+    const todayAttendanceCountEl = document.getElementById('todayAttendanceCount');
+    if (todayAttendanceCountEl) {
+        todayAttendanceCountEl.innerText = attendedTodayCount;
+    }
+
+    // الفلترة
+    const filterSelect = document.getElementById('filterSelect');
+    if (filterSelect) {
+        const filterValue = filterSelect.value;
+        if (filterValue === 'active') {
+            filteredAthletes = filteredAthletes.filter(a => a.attendance < (a.sessionsLimit || 0));
+        } else if (filterValue === 'expired') {
+            filteredAthletes = filteredAthletes.filter(a => a.attendance >= (a.sessionsLimit || 0));
+        } else if (filterValue === 'attended') {
+            filteredAthletes = filteredAthletes.filter(a => a.attendanceDates && a.attendanceDates.includes(sessionDate));
+        } else if (filterValue === 'not_attended') {
+            filteredAthletes = filteredAthletes.filter(a => !(a.attendanceDates && a.attendanceDates.includes(sessionDate)));
+        }
+    }
+    
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput && searchInput.value.trim() !== '') {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        filteredAthletes = filteredAthletes.filter(a => {
+            const fullName = `${a.firstName || ''} ${a.lastName || ''}`.toLowerCase();
+            const reversedName = `${a.lastName || ''} ${a.firstName || ''}`.toLowerCase();
+            const guardianName = (a.guardianName || '').toLowerCase();
+            const phone = (a.guardianPhone || '').toLowerCase();
+            
+            return fullName.includes(searchTerm) || 
+                   reversedName.includes(searchTerm) || 
+                   guardianName.includes(searchTerm) || 
+                   phone.includes(searchTerm);
+        });
+    }
+
+    if (filteredAthletes.length === 0) {
+        const emptyMessage = athletes.length === 0 ? "لا يوجد رياضيين مسجلين حالياً." : "لا توجد نتائج مطابقة للبحث أو الفلتر.";
         attendanceList.innerHTML = `
             <div class="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                 <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" alt="Empty" class="w-24 h-24 mx-auto mb-4 opacity-60">
-                <p class="text-slate-500 text-lg">لا يوجد رياضيين مسجلين حالياً.</p>
+                <p class="text-slate-500 text-lg">${emptyMessage}</p>
             </div>
         `;
-        document.querySelector('#attendanceForm button').style.display = 'none';
+        document.querySelectorAll('#attendanceForm button').forEach(btn => btn.style.display = 'none');
         return;
+    } else {
+        document.querySelectorAll('#attendanceForm button').forEach(btn => btn.style.display = '');
     }
-
-    const sessionDate = sessionDateInput.value;
 
     let html = `
         <div class="hidden md:flex justify-between items-center px-4 py-3 bg-slate-50 text-slate-500 text-sm font-semibold rounded-lg mb-3 border border-slate-100">
@@ -127,9 +180,9 @@ function renderAttendanceTable() {
         <div class="flex flex-col gap-3">
     `;
 
-    athletes.forEach(athlete => {
+    filteredAthletes.forEach(athlete => {
         if (!athlete.attendanceDates) athlete.attendanceDates = [];
-        const limit = athlete.sessionsLimit || 12;
+        const limit = athlete.sessionsLimit || 0;
         const isExpired = athlete.attendance >= limit;
         const remainingSessions = Math.max(0, limit - athlete.attendance);
         const alreadyAttended = athlete.attendanceDates.includes(sessionDate);
