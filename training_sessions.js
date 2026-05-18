@@ -6,6 +6,7 @@
 /* ---- متغيرات عامة ---- */
 let sessions = [];           // كل الحصص المجلوبة من Supabase
 let currentSessionId = null; // الحصة المفتوحة حالياً في النافذة المنبثقة
+let editingSessionId = null; // ID الحصة التي يتم تعديلها (إن وجد)
 
 /* ---- عناصر DOM ---- */
 const sessionForm     = document.getElementById('sessionForm');
@@ -16,6 +17,24 @@ const sessionsStats   = document.getElementById('sessionsStats');
 
 /* ---- دوال النافذة المنبثقة لإضافة حصة ---- */
 function openAddSessionModal() {
+    editingSessionId = null;
+    document.getElementById('sessionModalTitle').innerHTML = '<span class="text-3xl text-blue-600">📋</span> تسجيل حصة جديدة';
+    document.getElementById('submitSessionBtn').innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg> حفظ الحصة وبدء التدريب`;
+    
+    document.getElementById('sessionTitle').value     = '';
+    document.getElementById('sessionGoal').value      = '';
+    document.getElementById('trainingMethod').value   = '';
+    document.getElementById('manualTrainingMethod').value = '';
+    document.getElementById('manualTrainingMethod').classList.add('hidden');
+    document.getElementById('sessionDuration').value  = '';
+    document.getElementById('evalComprehension').value = '3';
+    document.getElementById('evalDiscipline').value    = '3';
+    document.getElementById('evalEnthusiasm').value    = '3';
+    document.getElementById('sessionDate').value       = new Date().toISOString().split('T')[0];
+    
+    document.getElementById('exercisesContainer').innerHTML = '';
+    addExerciseField();
+
     document.getElementById('addSessionModal').style.display = 'flex';
 }
 function closeAddSessionModal() {
@@ -69,6 +88,107 @@ function removeExerciseField(btn) {
         });
     } else {
         alert('يجب أن تحتوي الحصة على تمرين واحد على الأقل.');
+    }
+}
+
+/* ---- إعداد النافذة لوضع التعديل ---- */
+function openEditSessionModal(id) {
+    const s = sessions.find(x => x.id === id);
+    if (!s) return;
+
+    editingSessionId = id;
+    closeDetailsModal(); // إغلاق نافذة التفاصيل
+
+    document.getElementById('sessionModalTitle').innerHTML = '<span class="text-3xl text-blue-600">✏️</span> تعديل الحصة التدريبية';
+    document.getElementById('submitSessionBtn').innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> حفظ التعديلات`;
+
+    document.getElementById('sessionDate').value = s.session_date;
+    document.getElementById('sessionDuration').value = s.duration_minutes || '';
+    document.getElementById('sessionTitle').value = s.title || '';
+    document.getElementById('sessionGoal').value = s.session_goal || '';
+    
+    const methodSelect = document.getElementById('trainingMethod');
+    const manualInput = document.getElementById('manualTrainingMethod');
+    const standardMethods = ["التدريب الدائري", "الفتري", "المستمر"];
+    
+    if (s.training_method && standardMethods.includes(s.training_method)) {
+        methodSelect.value = s.training_method;
+        manualInput.classList.add('hidden');
+        manualInput.required = false;
+    } else if (s.training_method) {
+        methodSelect.value = 'أخرى';
+        manualInput.value = s.training_method;
+        manualInput.classList.remove('hidden');
+        manualInput.required = true;
+    } else {
+        methodSelect.value = '';
+        manualInput.classList.add('hidden');
+        manualInput.required = false;
+    }
+
+    document.getElementById('evalComprehension').value = s.rating_comprehension || '3';
+    document.getElementById('evalDiscipline').value = s.rating_discipline || '3';
+    document.getElementById('evalEnthusiasm').value = s.rating_enthusiasm || '3';
+
+    rebuildExerciseFields(s.exercises_goals);
+
+    document.getElementById('addSessionModal').style.display = 'flex';
+}
+
+/* ---- تفكيك النص لإعادة ملء حقول التمارين ---- */
+function rebuildExerciseFields(text) {
+    const container = document.getElementById('exercisesContainer');
+    container.innerHTML = '';
+    
+    if (!text || text.trim() === '' || text === '—') {
+        addExerciseField();
+        return;
+    }
+
+    const blocks = text.trim().split(/\n\s*\n/);
+    let hasValidBlocks = false;
+
+    blocks.forEach(block => {
+        const lines = block.split('\n');
+        let name = '', goal = '', note = '';
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed.match(/^\d*\.?\s*التمرين:/)) {
+                name = trimmed.replace(/^\d*\.?\s*التمرين:\s*/, '');
+            } else if (trimmed.startsWith('الهدف:')) {
+                goal = trimmed.replace(/^الهدف:\s*/, '');
+            } else if (trimmed.startsWith('ملاحظة:')) {
+                note = trimmed.replace(/^ملاحظة:\s*/, '');
+            } else {
+                if (note !== '') note += '\n' + trimmed;
+                else if (goal !== '') goal += '\n' + trimmed;
+                else if (name !== '') name += '\n' + trimmed;
+                else name += trimmed;
+            }
+        });
+
+        if (name || goal || note) {
+            addExerciseField();
+            const lastItem = container.lastElementChild;
+            lastItem.querySelector('.exercise-name').value = name;
+            if (goal) lastItem.querySelector('.exercise-goal').value = goal;
+            if (note) lastItem.querySelector('.exercise-note').value = note;
+            
+            lastItem.querySelectorAll('textarea').forEach(ta => {
+                ta.style.height = 'auto';
+                ta.style.height = ta.scrollHeight + 'px';
+            });
+            hasValidBlocks = true;
+        }
+    });
+
+    if (!hasValidBlocks) {
+        addExerciseField();
+        const firstTa = container.lastElementChild.querySelector('.exercise-name');
+        firstTa.value = text;
+        firstTa.style.height = 'auto';
+        firstTa.style.height = firstTa.scrollHeight + 'px';
     }
 }
 
@@ -170,6 +290,21 @@ function startDictation(btn) {
         console.error("خطأ أثناء بدء التسجيل:", e);
     }
 }
+
+/* ---- دالة إظهار/إخفاء طريقة التدريب اليدوية ---- */
+window.toggleManualMethod = function() {
+    const select = document.getElementById('trainingMethod');
+    const manualInput = document.getElementById('manualTrainingMethod');
+    if (select.value === 'أخرى') {
+        manualInput.classList.remove('hidden');
+        manualInput.required = true;
+        manualInput.focus();
+    } else {
+        manualInput.classList.add('hidden');
+        manualInput.required = false;
+        manualInput.value = '';
+    }
+};
 
 // ===================================================================
 // 1. جلب البيانات من Supabase
@@ -278,11 +413,19 @@ function buildSessionCard(s) {
                     <p class="text-slate-400 text-xs mt-0.5 font-semibold">${dateFormatted}</p>
                 </div>
             </div>
-            <div class="flex-shrink-0 flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-black">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                ${s.duration_minutes || 0} دقيقة
+            <div class="flex-shrink-0 flex flex-col items-end gap-2">
+                <div class="flex items-center gap-1.5 bg-purple-50 border border-purple-100 text-purple-700 px-3 py-1.5 rounded-xl text-xs font-black">
+                    🎯 ${s.session_goal || 'غير محدد'}
+                </div>
+                <div class="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-black">
+                    🔄 ${s.training_method || 'غير محدد'}
+                </div>
+                <div class="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-black">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    ${s.duration_minutes || 0} دقيقة
+                </div>
             </div>
         </div>
 
@@ -315,6 +458,7 @@ sessionForm.addEventListener('submit', async function (e) {
     e.preventDefault();
 
     const submitBtn = document.getElementById('submitSessionBtn');
+    const originalBtnText = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = `<svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> جاري الحفظ...`;
 
@@ -337,39 +481,51 @@ sessionForm.addEventListener('submit', async function (e) {
     if (duration <= 0) {
         alert("يرجى إدخال مدة الحصة بشكل صحيح (يجب أن تكون أكبر من صفر).");
         submitBtn.disabled = false;
-        submitBtn.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg> حفظ الحصة وبدء التدريب`;
+        submitBtn.innerHTML = originalBtnText;
         return;
     }
+
+    let method = document.getElementById('trainingMethod').value;
+    if (method === 'أخرى') {
+        method = document.getElementById('manualTrainingMethod').value.trim();
+    }
+
+    const currentSessionObj = editingSessionId ? sessions.find(s => s.id === editingSessionId) : null;
 
     const newSession = {
         session_date:      document.getElementById('sessionDate').value,
         title:             document.getElementById('sessionTitle').value.trim(),
+        session_goal:      document.getElementById('sessionGoal').value,
+        training_method:   method,
         exercises_goals:   exercisesText.trim(),
         duration_minutes:  duration,
-        notes:             ''
+        rating_comprehension: parseInt(document.getElementById('evalComprehension').value) || 3,
+        rating_discipline:    parseInt(document.getElementById('evalDiscipline').value) || 3,
+        rating_enthusiasm:    parseInt(document.getElementById('evalEnthusiasm').value) || 3,
+        notes:             currentSessionObj ? currentSessionObj.notes : ''
     };
 
-    const { error } = await _supabase.from('training_sessions').insert([newSession]);
+    let response;
+    if (editingSessionId) {
+        response = await _supabase.from('training_sessions').update(newSession).eq('id', editingSessionId);
+    } else {
+        response = await _supabase.from('training_sessions').insert([newSession]);
+    }
 
-    if (error) {
-        console.error("خطأ في إضافة الحصة:", error);
-        alert("حدث خطأ أثناء الحفظ: " + error.message);
+    if (response.error) {
+        console.error("خطأ في الحفظ:", response.error);
+        alert("حدث خطأ أثناء الحفظ: " + response.error.message);
         submitBtn.disabled = false;
-        submitBtn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg> حفظ الحصة`;
+        submitBtn.innerHTML = originalBtnText;
         return;
     }
 
-    // تفريغ الحقول وإعادة بناء تمرين واحد
-    document.getElementById('sessionTitle').value     = '';
-    document.getElementById('sessionDuration').value  = '';
-    document.getElementById('exercisesContainer').innerHTML = '';
-    addExerciseField();
-
     submitBtn.disabled = false;
-    submitBtn.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg> حفظ الحصة وبدء التدريب`;
+    submitBtn.innerHTML = originalBtnText;
 
     closeAddSessionModal();
     // تحديث القائمة
+    editingSessionId = null;
     fetchSessions();
 });
 
@@ -387,6 +543,12 @@ function openDetailsModal(id) {
     document.getElementById('detailDate').textContent     = '📅 ' + formatDate(s.session_date);
     document.getElementById('detailDuration').textContent = `⏱️ ${s.duration_minutes || 0} دقيقة`;
     document.getElementById('detailExercises').textContent = s.exercises_goals || '—';
+    document.getElementById('detailGoal').textContent     = s.session_goal || 'غير محدد';
+    document.getElementById('detailMethod').textContent   = s.training_method || 'غير محدد';
+    
+    document.getElementById('detailEvalComprehension').textContent = (s.rating_comprehension || 0) + '/5';
+    document.getElementById('detailEvalDiscipline').textContent    = (s.rating_discipline || 0) + '/5';
+    document.getElementById('detailEvalEnthusiasm').textContent    = (s.rating_enthusiasm || 0) + '/5';
 
     const notesSection = document.getElementById('detailNotesSection');
     const notesEl = document.getElementById('detailNotes');
@@ -478,11 +640,27 @@ function buildPrintHTML(sessionsList, reportTitle) {
                 <div style="display:flex; gap:12px; font-size:10pt; color:#475569; font-weight:700;">
                     <span>📅 ${formatDate(s.session_date)}</span>
                     <span>⏱️ ${s.duration_minutes || 0} دقيقة</span>
+                    <span>🎯 ${s.session_goal || 'غير محدد'}</span>
+                    <span>🔄 ${s.training_method || 'غير محدد'}</span>
                 </div>
             </div>
             <div style="margin-bottom:10px;">
                 <p style="font-size:9pt; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:1px; margin:0 0 6px;">التمارين والأهداف</p>
-                <p style="font-size:11pt; line-height:1.8; color:#1e293b; white-space:pre-line; margin:0; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">${escapeHtml(s.exercises_goals || '—')}</p>
+                ${formatExercisesAsTable(s.exercises_goals)}
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:14px;">
+                <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; text-align:center;">
+                    <span style="font-size:9pt; font-weight:800; color:#64748b; display:block;">الاستيعاب</span>
+                    <span style="font-size:12pt; font-weight:900; color:#2563eb;">${s.rating_comprehension || 0}/5</span>
+                </div>
+                <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; text-align:center;">
+                    <span style="font-size:9pt; font-weight:800; color:#64748b; display:block;">الانضباط</span>
+                    <span style="font-size:12pt; font-weight:900; color:#059669;">${s.rating_discipline || 0}/5</span>
+                </div>
+                <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; text-align:center;">
+                    <span style="font-size:9pt; font-weight:800; color:#64748b; display:block;">الحماس</span>
+                    <span style="font-size:12pt; font-weight:900; color:#d97706;">${s.rating_enthusiasm || 0}/5</span>
+                </div>
             </div>
             ${s.notes ? `
             <div>
@@ -527,6 +705,70 @@ function buildPrintHTML(sessionsList, reportTitle) {
 // ===================================================================
 // 7. دوال مساعدة
 // ===================================================================
+
+/* تحويل نص التمارين إلى جدول للطباعة */
+function formatExercisesAsTable(text) {
+    if (!text || text.trim() === '' || text === '—') return escapeHtml(text || '—');
+
+    // التحقق مما إذا كان النص يتبع النمط المهيكل (تمرين، هدف، ملاحظة)
+    if (!text.includes('التمرين:') && !text.includes('الهدف:')) {
+        return `<p style="font-size:11pt; line-height:1.8; color:#1e293b; white-space:pre-line; margin:0; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">${escapeHtml(text)}</p>`;
+    }
+
+    const blocks = text.trim().split(/\n\s*\n/);
+    let rowsHtml = '';
+
+    blocks.forEach(block => {
+        const lines = block.split('\n');
+        let name = '', goal = '', note = '';
+        
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed.match(/^\d*\.?\s*التمرين:/)) {
+                name = trimmed.replace(/^\d*\.?\s*التمرين:\s*/, '');
+            } else if (trimmed.startsWith('الهدف:')) {
+                goal = trimmed.replace(/^الهدف:\s*/, '');
+            } else if (trimmed.startsWith('ملاحظة:')) {
+                note = trimmed.replace(/^ملاحظة:\s*/, '');
+            } else {
+                // إلحاق الأسطر المتعددة إن وجدت
+                if (note !== '') note += '\n' + trimmed;
+                else if (goal !== '') goal += '\n' + trimmed;
+                else if (name !== '') name += '\n' + trimmed;
+                else name += trimmed;
+            }
+        });
+
+        if (name || goal || note) {
+            rowsHtml += `
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top; white-space: pre-line; color: #1e293b;">${escapeHtml(name)}</td>
+                    <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top; white-space: pre-line; color: #1e293b;">${escapeHtml(goal)}</td>
+                    <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top; white-space: pre-line; color: #1e293b;">${escapeHtml(note)}</td>
+                </tr>
+            `;
+        }
+    });
+
+    if (rowsHtml === '') {
+        return `<p style="font-size:11pt; line-height:1.8; color:#1e293b; white-space:pre-line; margin:0; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">${escapeHtml(text)}</p>`;
+    }
+
+    return `
+        <table style="width: 100%; border-collapse: collapse; font-size: 11pt; background: #fff; margin-top: 5px; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <thead style="background: #f8fafc; color: #475569; font-weight: 800;">
+                <tr>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; width: 34%;">التمرين</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; width: 33%;">الهدف</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; width: 33%;">الملاحظة</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+    `;
+}
 
 /* تنسيق التاريخ إلى صيغة عربية */
 function formatDate(dateStr) {

@@ -15,11 +15,22 @@ CREATE TABLE public.training_sessions (
     -- عنوان الحصة (مثال: "تقنيات الضربات الأمامية")
     title             TEXT        NOT NULL,
 
+    -- هدف الحصة (مثال: هدف بدني، مهاري...)
+    session_goal      TEXT,
+
+    -- طريقة التدريب (مثال: التدريب الدائري، الفتري...)
+    training_method   TEXT,
+
     -- التمارين المستخدمة وأهدافها (نص واسع)
     exercises         TEXT,
 
     -- مدة الحصة بالدقائق
     duration_minutes  INT         CHECK (duration_minutes > 0),
+
+    -- تقييم الحصة (من 1 إلى 5)
+    rating_comprehension INT CHECK (rating_comprehension BETWEEN 1 AND 5),
+    rating_discipline    INT CHECK (rating_discipline BETWEEN 1 AND 5),
+    rating_enthusiasm    INT CHECK (rating_enthusiasm BETWEEN 1 AND 5),
 
     -- ملاحظات إضافية (اختياري)
     notes             TEXT,

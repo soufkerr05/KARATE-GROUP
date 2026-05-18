@@ -275,6 +275,14 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         <span id="detailDuration"></span>
                     </div>
+                    <div class="flex items-center gap-2 bg-purple-50 border border-purple-100 text-purple-700 font-bold px-4 py-2 rounded-xl text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span id="detailGoal"></span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-xl text-sm">
+                        <span class="text-base leading-none">🔄</span>
+                        <span id="detailMethod"></span>
+                    </div>
                 </div>
 
                 <!-- التمارين والأهداف -->
@@ -285,6 +293,28 @@
                     </h3>
                     <div id="detailExercises"
                          class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-700 leading-loose whitespace-pre-line text-sm min-h-[80px]"></div>
+                </div>
+
+                <!-- تقييم الحصة -->
+                <div>
+                    <h3 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        تقييم الحصة
+                    </h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-center">
+                            <div class="text-xs font-bold text-blue-800 mb-1">🧠 الاستيعاب</div>
+                            <div class="text-xl font-black text-blue-600" id="detailEvalComprehension">3/5</div>
+                        </div>
+                        <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                            <div class="text-xs font-bold text-emerald-800 mb-1">⚖️ الانضباط</div>
+                            <div class="text-xl font-black text-emerald-600" id="detailEvalDiscipline">3/5</div>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                            <div class="text-xs font-bold text-amber-800 mb-1">🔥 الحماس</div>
+                            <div class="text-xl font-black text-amber-600" id="detailEvalEnthusiasm">3/5</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- الملاحظات -->
@@ -305,11 +335,18 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                     طباعة هذه الحصة
                 </button>
-                <button onclick="deleteSession(currentSessionId)"
-                        class="flex items-center gap-2 bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold py-2.5 px-5 rounded-xl transition-all text-sm admin-only">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    حذف الحصة
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="openEditSessionModal(currentSessionId)"
+                            class="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-2.5 px-5 rounded-xl transition-all text-sm admin-only">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        تعديل
+                    </button>
+                    <button onclick="deleteSession(currentSessionId)"
+                            class="flex items-center gap-2 bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold py-2.5 px-5 rounded-xl transition-all text-sm admin-only">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        حذف
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -320,7 +357,7 @@
             
             <!-- رأس النافذة -->
             <div class="px-6 py-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                <h2 class="text-2xl font-black text-slate-800 flex items-center gap-3">
+                <h2 id="sessionModalTitle" class="text-2xl font-black text-slate-800 flex items-center gap-3">
                     <span class="text-3xl text-blue-600">📋</span> تسجيل حصة جديدة
                 </h2>
                 <button onclick="closeAddSessionModal()" class="text-slate-400 hover:text-red-500 transition-colors p-2 bg-white rounded-full shadow-sm border border-slate-200">
@@ -331,7 +368,7 @@
             <!-- جسم النافذة والنموذج -->
             <div class="p-6 md:p-8 overflow-y-auto flex-grow">
                 <form id="sessionForm" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <!-- تاريخ الحصة -->
                         <div>
                             <label for="sessionDate" class="block text-sm font-black text-slate-700 mb-2">📅 تاريخ الحصة</label>
@@ -345,13 +382,38 @@
                             <input type="number" id="sessionDuration" min="1" max="300" step="5" placeholder="90" required
                                    class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-black text-lg shadow-inner">
                         </div>
+                        
+                        <!-- طريقة التدريب -->
+                        <div>
+                            <label for="trainingMethod" class="block text-sm font-black text-slate-700 mb-2">🔄 طريقة التدريب</label>
+                            <select id="trainingMethod" onchange="toggleManualMethod()" required class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 text-lg font-bold shadow-inner cursor-pointer appearance-none invalid:text-slate-400">
+                                <option value="" disabled selected hidden>طريقة التدريب...</option>
+                                <option value="التدريب الدائري" class="text-slate-800">التدريب الدائري</option>
+                                <option value="الفتري" class="text-slate-800">الفتري</option>
+                                <option value="المستمر" class="text-slate-800">المستمر</option>
+                                <option value="أخرى" class="text-slate-800">أخرى (إدخال يدوي)</option>
+                            </select>
+                            <input type="text" id="manualTrainingMethod" placeholder="اكتب طريقة التدريب..." class="mt-3 w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 text-lg font-bold shadow-inner hidden">
+                        </div>
                     </div>
 
-                    <!-- عنوان الحصة -->
-                    <div>
-                        <label for="sessionTitle" class="block text-sm font-black text-slate-700 mb-2">🏷️ عنوان الحصة</label>
-                        <input type="text" id="sessionTitle" placeholder="مثال: تقنيات الضربات الأمامية..." required
-                               class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 text-lg font-bold shadow-inner">
+                    <!-- عنوان وهدف الحصة -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="sessionTitle" class="block text-sm font-black text-slate-700 mb-2">🏷️ عنوان الحصة</label>
+                            <input type="text" id="sessionTitle" placeholder="مثال: تقنيات الضربات الأمامية..." required
+                                   class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 text-lg font-bold shadow-inner">
+                        </div>
+                        <div>
+                            <label for="sessionGoal" class="block text-sm font-black text-slate-700 mb-2">🎯 هدف الحصة</label>
+                            <select id="sessionGoal" required class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 text-lg font-bold shadow-inner cursor-pointer appearance-none invalid:text-slate-400">
+                                <option value="" disabled selected hidden>هدف الحصة...</option>
+                                <option value="هدف بدني" class="text-slate-800">هدف بدني</option>
+                                <option value="هدف مهاري" class="text-slate-800">هدف مهاري</option>
+                                <option value="هدف خططي" class="text-slate-800">هدف خططي</option>
+                                <option value="هدف نفسي وتربوي" class="text-slate-800">هدف نفسي وتربوي</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- التمارين والأهداف والملاحظات -->
@@ -362,6 +424,43 @@
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                             إضافة تمرين آخر
                         </button>
+                    </div>
+
+                    <!-- تقييم الحصة -->
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                        <label class="block text-lg font-black text-slate-800 mb-4">⭐ تقييم الحصة (من 1 إلى 5)</label>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="evalComprehension" class="block text-sm font-bold text-slate-700 mb-2">🧠 الاستيعاب</label>
+                                <select id="evalComprehension" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold shadow-inner cursor-pointer bg-white">
+                                    <option value="5">5 - ممتاز</option>
+                                    <option value="4">4 - جيد جداً</option>
+                                    <option value="3" selected>3 - جيد</option>
+                                    <option value="2">2 - مقبول</option>
+                                    <option value="1">1 - ضعيف</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="evalDiscipline" class="block text-sm font-bold text-slate-700 mb-2">⚖️ الانضباط</label>
+                                <select id="evalDiscipline" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold shadow-inner cursor-pointer bg-white">
+                                    <option value="5">5 - ممتاز</option>
+                                    <option value="4">4 - جيد جداً</option>
+                                    <option value="3" selected>3 - جيد</option>
+                                    <option value="2">2 - مقبول</option>
+                                    <option value="1">1 - ضعيف</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="evalEnthusiasm" class="block text-sm font-bold text-slate-700 mb-2">🔥 الحماس</label>
+                                <select id="evalEnthusiasm" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold shadow-inner cursor-pointer bg-white">
+                                    <option value="5">5 - ممتاز</option>
+                                    <option value="4">4 - جيد جداً</option>
+                                    <option value="3" selected>3 - جيد</option>
+                                    <option value="2">2 - مقبول</option>
+                                    <option value="1">1 - ضعيف</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <button type="submit" id="submitSessionBtn"
