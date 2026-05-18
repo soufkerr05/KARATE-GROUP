@@ -33,14 +33,25 @@ function addExerciseField() {
     div.className = 'exercise-item flex flex-col md:flex-row gap-3 border border-slate-200 p-4 rounded-xl bg-slate-50 relative';
     div.innerHTML = `
         <span class="absolute -right-2 -top-2 bg-blue-600 text-white w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold exercise-number">${count}</span>
-        <div class="flex-1">
-            <textarea rows="1" placeholder="اسم التمرين..." required oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" class="exercise-name w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-base bg-white text-slate-800 font-bold shadow-sm resize-none overflow-hidden leading-relaxed"></textarea>
+        <div class="flex-1 relative">
+            <textarea rows="1" placeholder="اسم التمرين..." required oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" class="exercise-name w-full p-3.5 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-base bg-white text-slate-800 font-bold shadow-sm resize-none overflow-hidden leading-relaxed"></textarea>
+            <button type="button" onclick="startDictation(this)" class="absolute left-3 top-3.5 text-slate-400 hover:text-blue-600 transition-colors" title="إدخال صوتي">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+            </button>
         </div>
-        <div class="flex-1">
-            <textarea rows="1" placeholder="الهدف من التمرين..." required oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" class="exercise-goal w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-base bg-white text-slate-800 font-bold shadow-sm resize-none overflow-hidden leading-relaxed"></textarea>
+        <div class="flex-1 relative">
+            <textarea rows="1" placeholder="الهدف من التمرين..." required oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" class="exercise-goal w-full p-3.5 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-base bg-white text-slate-800 font-bold shadow-sm resize-none overflow-hidden leading-relaxed"></textarea>
+            <button type="button" onclick="startDictation(this)" class="absolute left-3 top-3.5 text-slate-400 hover:text-blue-600 transition-colors" title="إدخال صوتي">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+            </button>
         </div>
-        <div class="flex-1 flex gap-2 items-start">
-            <textarea rows="1" placeholder="ملاحظة (اختياري)..." oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" class="exercise-note w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-base bg-white text-slate-800 font-bold shadow-sm resize-none overflow-hidden leading-relaxed"></textarea>
+        <div class="flex-1 flex gap-2 items-start relative">
+            <div class="relative flex-1 w-full">
+                <textarea rows="1" placeholder="ملاحظة (اختياري)..." oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" class="exercise-note w-full p-3.5 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-base bg-white text-slate-800 font-bold shadow-sm resize-none overflow-hidden leading-relaxed"></textarea>
+                <button type="button" onclick="startDictation(this)" class="absolute left-3 top-3.5 text-slate-400 hover:text-blue-600 transition-colors" title="إدخال صوتي">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                </button>
+            </div>
             <button type="button" onclick="removeExerciseField(this)" class="flex-shrink-0 text-red-500 hover:text-white hover:bg-red-500 p-3.5 rounded-xl transition-colors border border-transparent hover:border-red-600 shadow-sm bg-white" title="حذف التمرين">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
@@ -58,6 +69,105 @@ function removeExerciseField(btn) {
         });
     } else {
         alert('يجب أن تحتوي الحصة على تمرين واحد على الأقل.');
+    }
+}
+
+/* ---- متغيرات عالمية للتسجيل الصوتي ---- */
+let globalRecognition = null;
+let currentDictationBtn = null;
+let pendingDictationBtn = null;
+
+/* ---- دالة التسجيل الصوتي (Speech-to-Text) ---- */
+function startDictation(btn) {
+    // التحقق من دعم المتصفح لميزة الإدخال الصوتي
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert('عذراً، متصفحك الحالي لا يدعم ميزة الإدخال الصوتي. جرب استخدام Google Chrome.');
+        return;
+    }
+
+    // إذا كان هناك تسجيل شغال بالفعل
+    if (globalRecognition && currentDictationBtn) {
+        if (currentDictationBtn === btn) {
+            // إيقاف التسجيل لنفس الزر
+            globalRecognition.stop();
+            return;
+        } else {
+            // المستخدم نقر على زر آخر، نوقف الحالي وننتظر حدث onend لتشغيل الجديد
+            pendingDictationBtn = btn;
+            globalRecognition.stop();
+            return;
+        }
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    globalRecognition = new SpeechRecognition();
+
+    // دعم اللغة العربية فقط
+    globalRecognition.lang = 'ar-SA'; 
+    // استمرار التسجيل حتى يقوم المستخدم بإيقافه يدوياً
+    globalRecognition.continuous = true; 
+    globalRecognition.interimResults = false;
+    globalRecognition.maxAlternatives = 1;
+
+    const textarea = btn.previousElementSibling;
+    // الاحتفاظ بالأيقونة الأصلية
+    const originalIcon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>`;
+
+    globalRecognition.onstart = function() {
+        currentDictationBtn = btn;
+        // تغيير شكل الزر ليدل على بدء التسجيل (أيقونة حمراء وامضة)
+        btn.classList.add('text-red-500');
+        btn.classList.remove('text-slate-400');
+        btn.innerHTML = `<svg class="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+    };
+
+    globalRecognition.onresult = function(event) {
+        let newTranscript = '';
+        // استخراج النصوص الجديدة فقط أثناء التسجيل المستمر
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                newTranscript += event.results[i][0].transcript + ' ';
+            }
+        }
+        
+        if (newTranscript.trim() !== '') {
+            // إرفاق النص الجديد بالنص القديم
+            textarea.value = textarea.value.trim() !== '' ? textarea.value + ' ' + newTranscript.trim() : newTranscript.trim();
+            // تحديث ارتفاع مربع النص تلقائياً
+            textarea.dispatchEvent(new Event('input'));
+        }
+    };
+
+    globalRecognition.onerror = function(event) {
+        console.error('خطأ في التعرف على الصوت:', event.error);
+        if (event.error === 'not-allowed') {
+            alert('الرجاء السماح باستخدام الميكروفون من إعدادات المتصفح.');
+        }
+        // لا داعي لتنظيف المتغيرات هنا لأن onend سيعمل دائماً بعد الخطأ
+    };
+
+    globalRecognition.onend = function() {
+        if (currentDictationBtn) {
+            // إعادة الزر لشكله الطبيعي
+            currentDictationBtn.classList.remove('text-red-500');
+            currentDictationBtn.classList.add('text-slate-400');
+            currentDictationBtn.innerHTML = originalIcon;
+            currentDictationBtn = null;
+        }
+        globalRecognition = null;
+
+        // إذا كان هناك زر آخر ينتظر التشغيل (تم الضغط عليه أثناء التسجيل)
+        if (pendingDictationBtn) {
+            const nextBtn = pendingDictationBtn;
+            pendingDictationBtn = null;
+            startDictation(nextBtn); // بدء التسجيل للحقل الجديد بأمان
+        }
+    };
+
+    try {
+        globalRecognition.start();
+    } catch (e) {
+        console.error("خطأ أثناء بدء التسجيل:", e);
     }
 }
 
@@ -146,14 +256,14 @@ function renderSessions() {
 /* ---- بناء بطاقة حصة واحدة ---- */
 function buildSessionCard(s) {
     const dateFormatted = formatDate(s.session_date);
-    const truncExercises = (s.exercises || '').length > 120
-        ? (s.exercises || '').substring(0, 120) + '...'
-        : (s.exercises || '');
+    const truncExercises = (s.exercises_goals || '').length > 120
+        ? (s.exercises_goals || '').substring(0, 120) + '...'
+        : (s.exercises_goals || '');
     const hasNotes = s.notes && s.notes.trim() !== '';
 
     return `
     <div class="session-card bg-white border border-slate-200 rounded-2xl p-5 shadow-sm cursor-pointer"
-         onclick="openDetailsModal(${s.id})">
+         onclick="openDetailsModal('${s.id}')">
         <!-- رأس البطاقة -->
         <div class="flex items-start justify-between gap-3 mb-3">
             <div class="flex items-center gap-3 min-w-0">
@@ -223,11 +333,19 @@ sessionForm.addEventListener('submit', async function (e) {
         }
     });
 
+    const duration = parseInt(document.getElementById('sessionDuration').value) || 0;
+    if (duration <= 0) {
+        alert("يرجى إدخال مدة الحصة بشكل صحيح (يجب أن تكون أكبر من صفر).");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg> حفظ الحصة وبدء التدريب`;
+        return;
+    }
+
     const newSession = {
         session_date:      document.getElementById('sessionDate').value,
         title:             document.getElementById('sessionTitle').value.trim(),
-        exercises:         exercisesText.trim(),
-        duration_minutes:  parseInt(document.getElementById('sessionDuration').value) || 0,
+        exercises_goals:   exercisesText.trim(),
+        duration_minutes:  duration,
         notes:             ''
     };
 
@@ -235,7 +353,7 @@ sessionForm.addEventListener('submit', async function (e) {
 
     if (error) {
         console.error("خطأ في إضافة الحصة:", error);
-        alert("حدث خطأ أثناء حفظ الحصة. يرجى المحاولة مجدداً.");
+        alert("حدث خطأ أثناء الحفظ: " + error.message);
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg> حفظ الحصة`;
         return;
@@ -268,7 +386,7 @@ function openDetailsModal(id) {
     document.getElementById('detailTitle').textContent    = s.title || 'بدون عنوان';
     document.getElementById('detailDate').textContent     = '📅 ' + formatDate(s.session_date);
     document.getElementById('detailDuration').textContent = `⏱️ ${s.duration_minutes || 0} دقيقة`;
-    document.getElementById('detailExercises').textContent = s.exercises || '—';
+    document.getElementById('detailExercises').textContent = s.exercises_goals || '—';
 
     const notesSection = document.getElementById('detailNotesSection');
     const notesEl = document.getElementById('detailNotes');
@@ -364,7 +482,7 @@ function buildPrintHTML(sessionsList, reportTitle) {
             </div>
             <div style="margin-bottom:10px;">
                 <p style="font-size:9pt; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:1px; margin:0 0 6px;">التمارين والأهداف</p>
-                <p style="font-size:11pt; line-height:1.8; color:#1e293b; white-space:pre-line; margin:0; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">${escapeHtml(s.exercises || '—')}</p>
+                <p style="font-size:11pt; line-height:1.8; color:#1e293b; white-space:pre-line; margin:0; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">${escapeHtml(s.exercises_goals || '—')}</p>
             </div>
             ${s.notes ? `
             <div>

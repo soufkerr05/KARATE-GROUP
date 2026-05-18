@@ -36,28 +36,13 @@ CREATE TABLE public.training_sessions (
 -- تفعيل RLS على الجدول
 ALTER TABLE public.training_sessions ENABLE ROW LEVEL SECURITY;
 
--- سياسة: السماح بالقراءة للجميع (anon + authenticated)
-CREATE POLICY "Allow public read"
+-- سياسة: السماح للجميع بجميع العمليات (لأن التطبيق يعتمد على واجهة ومفتاح عام)
+CREATE POLICY "Allow public all operations"
     ON public.training_sessions
-    FOR SELECT
-    USING (true);
-
--- سياسة: السماح بالإضافة والتعديل والحذف فقط للمستخدمين المصادق عليهم
--- (إذا كنت تستخدم Supabase Auth، وإلا احذف هذه السياسات)
-CREATE POLICY "Allow authenticated insert"
-    ON public.training_sessions
-    FOR INSERT
+    FOR ALL
+    TO public
+    USING (true)
     WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated update"
-    ON public.training_sessions
-    FOR UPDATE
-    USING (true);
-
-CREATE POLICY "Allow authenticated delete"
-    ON public.training_sessions
-    FOR DELETE
-    USING (true);
 
 
 -- =====================================================================
