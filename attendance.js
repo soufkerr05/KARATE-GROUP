@@ -116,7 +116,7 @@ function closeModal() {
 
 // دالة عرض قائمة الرياضيين لاختيار الحضور
 function renderAttendanceTable() {
-    let filteredAthletes = athletes;
+    let filteredAthletes = [...athletes];
     const sessionDate = sessionDateInput.value;
 
     // تحديث عداد حضور اليوم
@@ -126,18 +126,26 @@ function renderAttendanceTable() {
         todayAttendanceCountEl.innerText = attendedTodayCount;
     }
 
-    // الفلترة
-    const filterSelect = document.getElementById('filterSelect');
-    if (filterSelect) {
-        const filterValue = filterSelect.value;
-        if (filterValue === 'active') {
-            filteredAthletes = filteredAthletes.filter(a => a.attendance < (a.sessionsLimit || 0));
-        } else if (filterValue === 'expired') {
-            filteredAthletes = filteredAthletes.filter(a => a.attendance >= (a.sessionsLimit || 0));
-        } else if (filterValue === 'attended') {
-            filteredAthletes = filteredAthletes.filter(a => a.attendanceDates && a.attendanceDates.includes(sessionDate));
-        } else if (filterValue === 'not_attended') {
-            filteredAthletes = filteredAthletes.filter(a => !(a.attendanceDates && a.attendanceDates.includes(sessionDate)));
+    // الترتيب
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) {
+        const sortValue = sortSelect.value;
+        if (sortValue === 'alpha') {
+            filteredAthletes.sort((a, b) => (a.firstName + ' ' + a.lastName).localeCompare(b.firstName + ' ' + b.lastName, 'ar'));
+        } else if (sortValue === 'expired') {
+            filteredAthletes.sort((a, b) => (b.attendance - (b.sessionsLimit || 0)) - (a.attendance - (a.sessionsLimit || 0)));
+        } else if (sortValue === 'attended') {
+            filteredAthletes.sort((a, b) => {
+                const aAttended = a.attendanceDates && a.attendanceDates.includes(sessionDate) ? 1 : 0;
+                const bAttended = b.attendanceDates && b.attendanceDates.includes(sessionDate) ? 1 : 0;
+                return bAttended - aAttended;
+            });
+        } else if (sortValue === 'not_attended') {
+            filteredAthletes.sort((a, b) => {
+                const aAttended = a.attendanceDates && a.attendanceDates.includes(sessionDate) ? 1 : 0;
+                const bAttended = b.attendanceDates && b.attendanceDates.includes(sessionDate) ? 1 : 0;
+                return aAttended - bAttended;
+            });
         }
     }
     
