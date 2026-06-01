@@ -121,7 +121,7 @@ async function generateReport() {
                                 <span>${item.name}</span>
                             </div>
                         </td>
-                        <td class="p-4 align-middle" data-label="نوع الدفع">${typeLabels[item.type]}</td>
+                        <td class="p-4 align-middle" data-label="نوع الدفع">${typeLabels[item.type] || '<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold border border-gray-200">غير محدد</span>'}</td>
                         <td class="p-4 font-bold text-indigo-600" data-label="المبلغ المدفوع">${item.amount.toLocaleString()}</td>
                      </tr>`;
         });
@@ -153,7 +153,7 @@ async function generateReport() {
             html += `<tr class="border-b border-slate-100 hover:bg-red-50/30 transition duration-200">
                         <td class="p-4" data-label="تاريخ الصرف">${item.date}</td>
                         <td class="p-4 font-bold text-slate-700" data-label="البيان">${item.name}</td>
-                        <td class="p-4 align-middle" data-label="نوع المصروف">${expTypeLabels[item.type]}</td>
+                        <td class="p-4 align-middle" data-label="نوع المصروف">${expTypeLabels[item.type] || '<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold border border-gray-200">غير محدد</span>'}</td>
                         <td class="p-4 font-black text-red-600" data-label="المبلغ المصروف">${item.amount.toLocaleString()}</td>
                      </tr>`;
         });

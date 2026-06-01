@@ -177,16 +177,16 @@ document.getElementById('editDocsForm').addEventListener('submit', async functio
 });
 
 // إغلاق النافذة عند النقر خارجها
-window.onclick = function(event) {
+window.addEventListener('click', function(event) {
     const editModal = document.getElementById('editDocsModal');
     const registerModal = document.getElementById('registerModal');
-    if (event.target == editModal) {
+    if (event.target === editModal) {
         closeEditModal();
     }
-    if (event.target == registerModal) {
+    if (event.target === registerModal) {
         closeRegisterModal();
     }
-}
+});
 
 // دالة عرض الجدول
 function renderTable() {
@@ -251,6 +251,33 @@ function renderTable() {
             // حساب عدد الحصص المتجاوزة أو المتبقية وترتيبها بحيث يظهر الأكثر تجاوزاً أولاً
             sortedAthletes.sort((a, b) => (b.attendance - (b.sessionsLimit || 0)) - (a.attendance - (a.sessionsLimit || 0)));
             break;
+        case 'infoIncomplete':
+            // ترتيب حسب المعلومات الأساسية (الناقصة أولاً - يعتمد على اسم ورقم الولي)
+            sortedAthletes.sort((a, b) => {
+                const missingA = (!a.guardianName || a.guardianName.trim() === '' ? 1 : 0) + (!a.guardianPhone || a.guardianPhone.trim() === '' ? 1 : 0);
+                const missingB = (!b.guardianName || b.guardianName.trim() === '' ? 1 : 0) + (!b.guardianPhone || b.guardianPhone.trim() === '' ? 1 : 0);
+                if (missingA !== missingB) return missingB - missingA;
+                return (a.firstName + ' ' + a.lastName).localeCompare(b.firstName + ' ' + b.lastName, 'ar');
+            });
+            break;
+        case 'docsIncomplete':
+            // ترتيب حسب الملف الإداري (الأكثر نقصاً أولاً)
+            sortedAthletes.sort((a, b) => {
+                const getMissingDocsCount = (athlete) => {
+                    const docs = athlete.docs || { birth: false, photos: false, medical: false, guardian: false };
+                    let count = 0;
+                    if (!docs.birth) count++;
+                    if (!docs.photos) count++;
+                    if (!docs.medical) count++;
+                    if (!docs.guardian) count++;
+                    return count;
+                };
+                const missingA = getMissingDocsCount(a);
+                const missingB = getMissingDocsCount(b);
+                if (missingA !== missingB) return missingB - missingA;
+                return (a.firstName + ' ' + a.lastName).localeCompare(b.firstName + ' ' + b.lastName, 'ar');
+            });
+            break;
         case 'default':
         default:
             sortedAthletes.sort((a, b) => b.id - a.id); // الأحدث إضافة أولاً
@@ -299,6 +326,7 @@ function renderTable() {
                     </div>
                 </td>
                 <td class="p-4 align-middle actions-cell text-center admin-only" data-label="إجراءات">
+                ${(isExpired && athlete.guardianPhone) ? `<a href="sms:${athlete.guardianPhone.replace(/\s+/g, '')}?body=${encodeURIComponent('سلام عليكم \n\nنود اعلامكم بانتهاء اشتراك ابنائكم')}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-1.5 px-3 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2 inline-flex items-center gap-1" title="إرسال رسالة هاتفية"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg> رسالة</a>` : ''}
                     <button class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="editDocs(${athlete.id})">تعديل</button>
                     ${viewMode === 'active' 
                         ? `<button class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="toggleArchive(${athlete.id}, true)">أرشفة</button>`

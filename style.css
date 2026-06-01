@@ -166,6 +166,7 @@ body.dark-mode .expired-row:hover { background-color: #991b1b !important; }
 body.dark-mode .close-btn { background: #334155; color: #cbd5e1; }
 body.dark-mode .close-btn:hover { background: #7f1d1d; color: #f8fafc; }
 body.dark-mode .bg-indigo-50 { background-color: #312e81 !important; color: #e0e7ff !important; border-color: #4338ca !important; }
+body.dark-mode .athlete-details { color: #e2e8f0 !important; }
 
 /* حاويات مسح البيانات والاستعادة والتنبيهات في الوضع الليلي */
 body.dark-mode .bg-red-50 { background-color: #450a0a !important; border-color: #7f1d1d !important; }

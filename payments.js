@@ -207,7 +207,7 @@ async function removePayment(athleteId, paymentId) {
         
             targetAthletes.forEach(athlete => {
                 if (athlete.payments) {
-                    const matchingPayment = athlete.payments.find(p => p.date === payment.date && p.type === pType && parseFloat(p.amount) === splitAmount);
+                    const matchingPayment = athlete.payments.find(p => p.date === payment.date && p.type === pType && Math.abs(parseFloat(p.amount) - splitAmount) < 0.01);
                     if (matchingPayment) {
                         paymentIdsToDelete.push(matchingPayment.id);
                         if (pType === 'subscription') {
@@ -355,7 +355,7 @@ paymentForm.addEventListener('submit', async function(e) {
 // إغلاق النافذة عند النقر خارجها
 window.addEventListener('click', function(event) {
     const modal = document.getElementById('paymentsModal');
-    if (event.target == modal) {
+    if (event.target === modal) {
         closePaymentsModal();
     }
 });

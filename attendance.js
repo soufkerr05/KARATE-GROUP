@@ -297,12 +297,12 @@ function toggleAllCheckboxes() {
 }
 
 // إغلاق النافذة عند النقر خارجها
-window.onclick = function(event) {
+window.addEventListener('click', function(event) {
     const modal = document.getElementById('historyModal');
-    if (event.target == modal) {
+    if (event.target === modal) {
         modal.style.display = "none";
     }
-}
+});
 
 // عرض الجدول عند التحميل
 fetchAthletes();
@@ -312,6 +312,7 @@ function toggleMobileMenu() {
     const menu = document.getElementById("mobileMenu");
     menu.classList.toggle("hidden");
     menu.classList.toggle("flex");
+    document.body.classList.toggle("overflow-hidden");
 }
 
 // تطبيق الوضع الليلي عند التحميل

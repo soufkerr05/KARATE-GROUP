@@ -797,6 +797,7 @@ function toggleMobileMenu() {
     const menu = document.getElementById('mobileMenu');
     menu.classList.toggle('hidden');
     menu.classList.toggle('flex');
+    document.body.classList.toggle('overflow-hidden');
 }
 
 /* تطبيق الوضع الليلي */
