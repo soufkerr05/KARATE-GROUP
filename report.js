@@ -1,5 +1,6 @@
 // استرجاع البيانات
-const monthPicker = document.getElementById('monthPicker');
+const startDateInput = document.getElementById('startDate');
+const endDateInput = document.getElementById('endDate');
 const reportContainer = document.getElementById('reportContainer');
 const reportTitle = document.getElementById('reportTitle');
 const reportTableContainer = document.getElementById('reportTableContainer');
@@ -7,18 +8,63 @@ const reportTotal = document.getElementById('reportTotal');
 const reportExpenses = document.getElementById('reportExpenses');
 const reportNetIncome = document.getElementById('reportNetIncome');
 
-// تعيين الشهر الحالي كافتراضي
+// تعيين بداية ونهاية الشهر الحالي كافتراضي
 const today = new Date();
-let mm = today.getMonth() + 1;
-const yyyy = today.getFullYear();
-if (mm < 10) mm = '0' + mm;
-monthPicker.value = `${yyyy}-${mm}`;
+const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+const formatDate = (date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+};
+
+startDateInput.value = formatDate(firstDay);
+endDateInput.value = formatDate(lastDay);
+
+// جلب وعرض ملخص اليوم الحالي تلقائياً
+async function fetchTodaySummary() {
+    const todayStr = formatDate(new Date());
+    document.getElementById('todayDateDisplay').innerText = todayStr;
+    
+    // جلب بيانات اليوم فقط باستخدام eq بدلاً من جلب كل البيانات
+    const [paymentsRes, expensesRes, kimonoRes] = await Promise.all([
+        _supabase.from('payments').select('amount').eq('date', todayStr),
+        _supabase.from('expenses').select('amount').eq('date', todayStr),
+        _supabase.from('kimono_paid').select('value').eq('date', todayStr)
+    ]);
+    
+    let todayIncome = 0;
+    if (paymentsRes.data) {
+        paymentsRes.data.forEach(p => todayIncome += parseFloat(p.amount || 0));
+    }
+    
+    let todayExp = 0;
+    if (expensesRes.data) {
+        expensesRes.data.forEach(e => todayExp += parseFloat(e.amount || 0));
+    }
+    if (kimonoRes.data) {
+        kimonoRes.data.forEach(k => todayExp += parseFloat(k.value || 0));
+    }
+    
+    document.getElementById('todayIncome').innerText = `${todayIncome.toLocaleString()} د.ج`;
+    document.getElementById('todayExpenses').innerText = `${todayExp.toLocaleString()} د.ج`;
+    document.getElementById('todaySummaryContainer').classList.remove('hidden');
+}
 
 // دالة توليد التقرير
 async function generateReport() {
-    const selectedMonth = monthPicker.value; // الصيغة ستكون "YYYY-MM"
-    if (!selectedMonth) {
-        alert("الرجاء اختيار الشهر.");
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+    
+    if (!startDate || !endDate) {
+        alert("الرجاء اختيار فترة التقرير (من - إلى).");
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert("تاريخ البداية يجب أن يكون قبل أو يساوي تاريخ النهاية.");
         return;
     }
 
@@ -39,7 +85,7 @@ async function generateReport() {
     let incomeData = [];
     
     allPayments.forEach(payment => {
-        if (payment.date && payment.date.startsWith(selectedMonth)) {
+        if (payment.date && payment.date >= startDate && payment.date <= endDate) {
             const athlete = athletes.find(a => a.id === payment.athlete_id) || {};
             const gName = athlete.guardianName || athlete.firstName || 'غير معروف';
             const fName = athlete.firstName || '';
@@ -59,7 +105,7 @@ async function generateReport() {
     let expenseData = [];
     let totalExpensesValue = 0;
     kimonoPaidData.forEach(payment => {
-        if (payment.date && payment.date.startsWith(selectedMonth)) {
+        if (payment.date && payment.date >= startDate && payment.date <= endDate) {
             totalExpensesValue += parseFloat(payment.value || 0);
             expenseData.push({
                 name: 'دفع مستحقات لتاجر البدلات',
@@ -72,7 +118,7 @@ async function generateReport() {
     
     // حساب إجمالي المصاريف العامة (العتاد، الشهادات، إلخ)
     generalExpenses.forEach(exp => {
-        if (exp.date && exp.date.startsWith(selectedMonth)) {
+        if (exp.date && exp.date >= startDate && exp.date <= endDate) {
             totalExpensesValue += parseFloat(exp.amount || 0);
             expenseData.push({
                 name: exp.note ? `${exp.category} - ${exp.note}` : exp.category,
@@ -87,7 +133,11 @@ async function generateReport() {
     const netIncome = totalIncome - totalExpensesValue;
 
     // عرض النتائج
-    reportTitle.innerText = `التقرير المالي لشهر: ${selectedMonth}`;
+    if (startDate === endDate) {
+        reportTitle.innerText = `التقرير المالي ليوم: ${startDate}`;
+    } else {
+        reportTitle.innerText = `التقرير المالي للفترة من ${startDate} إلى ${endDate}`;
+    }
     
     let html = '';
 
@@ -127,7 +177,7 @@ async function generateReport() {
         });
         html += `</tbody></table>`;
     } else {
-        html += '<p class="text-slate-500 mb-8 border-r-4 border-slate-300 pr-2">لا توجد مداخيل مسجلة في هذا الشهر.</p>';
+        html += '<p class="text-slate-500 mb-8 border-r-4 border-slate-300 pr-2">لا توجد مداخيل مسجلة في هذه الفترة.</p>';
     }
 
     // جدول المصاريف
@@ -159,7 +209,7 @@ async function generateReport() {
         });
         html += `</tbody></table>`;
     } else {
-        html += '<p class="text-slate-500 border-r-4 border-slate-300 pr-2">لا توجد مصاريف مسجلة في هذا الشهر.</p>';
+        html += '<p class="text-slate-500 border-r-4 border-slate-300 pr-2">لا توجد مصاريف مسجلة في هذه الفترة.</p>';
     }
 
     reportTableContainer.innerHTML = html;
@@ -186,6 +236,9 @@ async function generateReport() {
 
     reportContainer.style.display = 'block';
 }
+
+// عرض ملخص اليوم عند فتح الصفحة مباشرة
+fetchTodaySummary();
 
 // دالة إظهار القائمة المنسدلة للهواتف
 function toggleMobileMenu() {
