@@ -181,6 +181,24 @@ body.dark-mode .border-emerald-100, body.dark-mode .border-emerald-200 { border-
 body.dark-mode .text-emerald-800 { color: #a7f3d0 !important; }
 body.dark-mode .text-emerald-700, body.dark-mode .text-emerald-600 { color: #6ee7b7 !important; }
 
+body.dark-mode .bg-amber-50 { background-color: #0f172a !important; border-color: #475569 !important; }
+body.dark-mode .bg-amber-100 { background-color: #78350f !important; color: #fde68a !important; border-color: #92400e !important; }
+body.dark-mode .border-amber-100, body.dark-mode .border-amber-200 { border-color: #475569 !important; }
+body.dark-mode .text-amber-800 { color: #fde68a !important; }
+body.dark-mode .text-amber-700, body.dark-mode .text-amber-600 { color: #fcd34d !important; }
+
+body.dark-mode .bg-rose-50 { background-color: #4c0519 !important; border-color: #881337 !important; }
+body.dark-mode .bg-rose-100 { background-color: #881337 !important; color: #fecdd3 !important; border-color: #9f1239 !important; }
+body.dark-mode .border-rose-100, body.dark-mode .border-rose-200 { border-color: #881337 !important; }
+body.dark-mode .text-rose-800 { color: #fecdd3 !important; }
+body.dark-mode .text-rose-700, body.dark-mode .text-rose-600 { color: #fda4af !important; }
+
+body.dark-mode .bg-pink-50 { background-color: #500724 !important; border-color: #831843 !important; }
+body.dark-mode .bg-pink-100 { background-color: #831843 !important; color: #fbcfe8 !important; border-color: #9d174d !important; }
+body.dark-mode .border-pink-100, body.dark-mode .border-pink-200 { border-color: #831843 !important; }
+body.dark-mode .text-pink-800 { color: #fbcfe8 !important; }
+body.dark-mode .text-pink-700, body.dark-mode .text-pink-600 { color: #f9a8d4 !important; }
+
 /* تحسينات لصفحة التقرير المالي في الوضع الليلي */
 body.dark-mode .bg-green-100 { background-color: #14532d !important; color: #bbf7d0 !important; border-color: #166534 !important; }
 body.dark-mode .text-green-600 { color: #86efac !important; }

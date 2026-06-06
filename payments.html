@@ -20,7 +20,7 @@
             }, 21600000 - timeElapsed);
         }
     </script>
-    <title>سجل المدفوعات - قاعة KARATE</title>
+    <title>سجل الاشتراكات - قاعة KARATE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script>
@@ -67,11 +67,19 @@
                 <nav class="hidden md:flex items-center gap-1 flex-grow justify-center">
                     <a href="index.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
                     <a href="attendance.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
-                    <a href="payments.html" class="px-3 py-2 rounded-xl font-bold text-sm bg-blue-600 text-white shadow">المدفوعات</a>
+                    <a href="payments.html" class="px-3 py-2 rounded-xl font-bold text-sm bg-blue-600 text-white shadow">الاشتراكات</a>
                     <a href="expenses.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
-                    <a href="report.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+                    <div class="relative group">
+                        <button class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors flex items-center gap-1">
+                            التقارير والإحصائيات
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <a href="report.html" class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 border-b border-slate-100 first:rounded-t-xl">التقرير المالي</a>
+                            <a href="dashboard.html" class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 last:rounded-b-xl">الإحصائيات</a>
+                        </div>
+                    </div>
                     <a href="kimono.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المخزون</a>
-                    <a href="dashboard.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الإحصائيات</a>
                     <a href="training_sessions.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحصص التدريبية</a>
                 </nav>
 
@@ -92,11 +100,19 @@
         </button>
         <a href="index.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
         <a href="attendance.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
-        <a href="payments.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl bg-blue-600 text-white shadow-lg">المدفوعات</a>
+        <a href="payments.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl bg-blue-600 text-white shadow-lg">الاشتراكات</a>
         <a href="expenses.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
-        <a href="report.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">التقرير</a>
+        <details class="w-full text-center group">
+            <summary class="px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors list-none [&::-webkit-details-marker]:hidden flex items-center justify-center gap-2 cursor-pointer outline-none">
+                التقارير والإحصائيات
+                <svg class="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </summary>
+            <div class="flex flex-col gap-2 mt-2 px-4">
+                <a href="report.html" class="w-full text-center px-4 py-3 rounded-xl font-bold text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors bg-slate-50 border border-slate-100">التقرير المالي</a>
+                <a href="dashboard.html" class="w-full text-center px-4 py-3 rounded-xl font-bold text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors bg-slate-50 border border-slate-100">الإحصائيات</a>
+            </div>
+        </details>
         <a href="kimono.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المخزون</a>
-        <a href="dashboard.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الإحصائيات</a>
         <a href="training_sessions.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحصص التدريبية</a>
         <a href="settings.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الإعدادات</a>
     </nav>
@@ -127,9 +143,19 @@
                                 <input type="checkbox" id="checkUniform" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
                                 <span class="text-sm font-semibold text-slate-700">دفع ثمن بدلة رياضية</span>
                             </label>
-                            <div id="uniformAmountContainer" class="hidden">
-                                <label for="uniformAmount" class="block text-sm font-semibold text-slate-700 mb-1">مبلغ البدلة الرياضية (د.ج):</label>
-                                <input type="number" id="uniformAmount" min="0" step="1" value="0" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-bold">
+                            <div id="uniformAmountContainer" class="hidden flex gap-2">
+                                <div class="flex-grow">
+                                    <label for="uniformType" class="block text-sm font-semibold text-slate-700 mb-1">نوع البدلة:</label>
+                                    <select id="uniformType" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-bold">
+                                        <option value="250">بذلة 250 (2500 د.ج)</option>
+                                        <option value="180">بذلة 180 (1800 د.ج)</option>
+                                        <option value="145">بذلة 145 (1450 د.ج)</option>
+                                    </select>
+                                </div>
+                                <div class="w-24">
+                                    <label for="uniformQty" class="block text-sm font-semibold text-slate-700 mb-1">الكمية:</label>
+                                    <input type="number" id="uniformQty" min="1" value="1" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-bold">
+                                </div>
                             </div>
                         </div>
                         <div class="border-t border-slate-200 pt-3">
@@ -150,21 +176,21 @@
         </div>
         <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div class="border-b border-slate-200 pb-4 mb-6">
-                <h2 class="text-2xl font-bold text-slate-800">سجل المدفوعات لكل رياضي</h2>
+                <h2 class="text-2xl font-bold text-slate-800">سجل الاشتراكات لكل رياضي</h2>
                 <p class="text-slate-500 mt-1">عرض آخر دفعة لكل رياضي. انقر على الاسم لعرض السجل الكامل.</p>
             </div>
             <div id="paymentsList" class="overflow-x-auto"></div>
         </div>
     </main>
 
-    <!-- نافذة عرض سجل المدفوعات -->
+    <!-- نافذة عرض سجل الاشتراكات -->
     <div id="paymentsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg relative flex flex-col overflow-hidden animate-[fade-in_0.2s_ease-out]">
             <button onclick="closePaymentsModal()" class="absolute top-4 left-4 text-slate-400 hover:text-red-500 transition-colors p-1" aria-label="إغلاق">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
-                <h2 id="modalAthleteNamePayments" class="text-xl font-bold text-slate-800">سجل المدفوعات</h2>
+                <h2 id="modalAthleteNamePayments" class="text-xl font-bold text-slate-800">سجل الاشتراكات</h2>
             </div>
             <div id="modalPaymentsList" class="p-6 overflow-y-auto max-h-[70vh]"></div>
         </div>

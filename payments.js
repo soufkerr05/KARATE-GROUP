@@ -45,7 +45,8 @@ if (checkUniform && uniformAmountContainer) {
             uniformAmountContainer.classList.remove('hidden');
         } else {
             uniformAmountContainer.classList.add('hidden');
-            document.getElementById('uniformAmount').value = 0;
+            if(document.getElementById('uniformType')) document.getElementById('uniformType').value = '250';
+            if(document.getElementById('uniformQty')) document.getElementById('uniformQty').value = 1;
         }
     });
 }
@@ -98,7 +99,7 @@ function renderSelect() {
     datalist.appendChild(fragment);
 }
 
-// عرض قائمة المدفوعات أسفل النموذج
+// عرض قائمة الاشتراكات أسفل النموذج
 function renderPaymentsTable() {
     if (athletes.length === 0) {
         paymentsList.innerHTML = `
@@ -143,7 +144,7 @@ function renderPaymentsTable() {
     paymentsList.innerHTML = html;
 }
 
-// دالة إظهار النافذة المنبثقة لسجل المدفوعات
+// دالة إظهار النافذة المنبثقة لسجل الاشتراكات
 function showAthletePayments(id) {
     const selectedAthlete = athletes.find(a => a.id === id);
     if (selectedAthlete) {
@@ -154,7 +155,7 @@ function showAthletePayments(id) {
         const athleteNames = targetAthletes.map(x => x.firstName).join(' و ');
         const displayName = selectedAthlete.guardianName ? `${selectedAthlete.guardianName} (عن: ${athleteNames})` : `${selectedAthlete.firstName} ${selectedAthlete.lastName}`;
 
-        document.getElementById('modalAthleteNamePayments').innerHTML = `💰 سجل مدفوعات: <span class="text-amber-600 ml-1">${displayName}</span>`;
+        document.getElementById('modalAthleteNamePayments').innerHTML = `💰 سجل اشتراكات: <span class="text-amber-600 ml-1">${displayName}</span>`;
         const list = document.getElementById('modalPaymentsList');
         if (selectedAthlete.payments && selectedAthlete.payments.length > 0) {
             const typeNames = {
@@ -171,13 +172,13 @@ function showAthletePayments(id) {
                 <div style="clear: both;"></div></li>`
             }).join('') + `</ul>`;
         } else {
-            list.innerHTML = '<p style="color:#aaa; text-align: center; padding: 10px;">لا يوجد مدفوعات مسجلة.</p>';
+            list.innerHTML = '<p style="color:#aaa; text-align: center; padding: 10px;">لا يوجد اشتراكات مسجلة.</p>';
         }
         document.getElementById('paymentsModal').style.display = 'block';
     }
 }
 
-// دالة إغلاق نافذة المدفوعات
+// دالة إغلاق نافذة الاشتراكات
 function closePaymentsModal() {
     document.getElementById('paymentsModal').style.display = 'none';
 }
@@ -219,6 +220,29 @@ async function removePayment(athleteId, paymentId) {
             });
             
             await _supabase.from('payments').delete().in('id', paymentIdsToDelete);
+            
+            if (pType === 'uniform') {
+                // محاولة حذف سجل التوزيع المطابق من المخزون
+                let uniformType = '';
+                const totalAmt = splitAmount * targetAthletes.length;
+                let uniformQty = 1;
+                if (totalAmt % 2500 === 0) { uniformType = '250'; uniformQty = totalAmt / 2500; }
+                else if (totalAmt % 1800 === 0) { uniformType = '180'; uniformQty = totalAmt / 1800; }
+                else if (totalAmt % 1450 === 0) { uniformType = '145'; uniformQty = totalAmt / 1450; }
+                
+                if (uniformType) {
+                    const { data: livreData } = await _supabase.from('kimono_livre')
+                        .select('id')
+                        .eq('date', payment.date)
+                        .eq('type', uniformType)
+                        .eq('value', totalAmt)
+                        .limit(1);
+                        
+                    if (livreData && livreData.length > 0) {
+                        await _supabase.from('kimono_livre').delete().eq('id', livreData[0].id);
+                    }
+                }
+            }
             if (updatePromises.length > 0) await Promise.all(updatePromises);
             
             await fetchAthletes(); // تحديث القائمة المنسدلة والجدول من السحابة
@@ -239,7 +263,15 @@ paymentForm.addEventListener('submit', async function(e) {
     }
     
     const subAmount = parseFloat(document.getElementById('subAmount').value) || 0;
-    const uniformAmount = document.getElementById('checkUniform').checked ? (parseFloat(document.getElementById('uniformAmount').value) || 0) : 0;
+    let uniformAmount = 0;
+    let uniformType = '';
+    let uniformQty = 0;
+    if (document.getElementById('checkUniform').checked) {
+        uniformType = document.getElementById('uniformType').value;
+        uniformQty = parseInt(document.getElementById('uniformQty').value) || 1;
+        const unitPrice = uniformType === '250' ? 2500 : (uniformType === '180' ? 1800 : 1450);
+        uniformAmount = unitPrice * uniformQty;
+    }
     const insuranceAmount = document.getElementById('checkInsurance').checked ? (parseFloat(document.getElementById('insuranceAmount').value) || 0) : 0;
     const payDate = payDateInput.value;
 
@@ -287,7 +319,7 @@ paymentForm.addEventListener('submit', async function(e) {
                 if (!athlete.payments) athlete.payments = [];
                 athlete.payments.push({ amount: splitUni, date: payDate, type: 'uniform' });
             });
-            messages.push(`بدلة رياضية (${uniformAmount} د.ج)`);
+            messages.push(`بدلة رياضية نوع ${uniformType} عدد ${uniformQty} (${uniformAmount} د.ج)`);
         }
 
         if (insuranceAmount > 0) {
@@ -318,6 +350,15 @@ paymentForm.addEventListener('submit', async function(e) {
                 athlete.sessionsLimit = (athlete.sessionsLimit || 0) + addedSessions;
                 updatePromises.push(_supabase.from('athletes').update({ sessionsLimit: athlete.sessionsLimit }).eq('id', athlete.id));
             });
+            
+            // إضافة البدلة لجدول التوزيع في المخزون
+            insertPromises.push(_supabase.from('kimono_livre').insert([{
+                date: payDate,
+                type: uniformType,
+                quantity: uniformQty,
+                value: uniformAmount,
+                status: 'التوزيع'
+            }]));
         }
 
         if (uniformAmount > 0) {
@@ -338,7 +379,8 @@ paymentForm.addEventListener('submit', async function(e) {
 
         // تصفير الحقول
         document.getElementById('subAmount').value = 0;
-        document.getElementById('uniformAmount').value = 0;
+        if (document.getElementById('uniformType')) document.getElementById('uniformType').value = '250';
+        if (document.getElementById('uniformQty')) document.getElementById('uniformQty').value = 1;
         document.getElementById('insuranceAmount').value = 0;
         document.getElementById('checkUniform').checked = false;
         document.getElementById('checkInsurance').checked = false;
