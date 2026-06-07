@@ -47,12 +47,50 @@ form.addEventListener('submit', async function(e) {
         }
     };
 
-    const { data, error } = await _supabase.from('athletes').insert([newAthlete]);
+    const subAmount = parseFloat(document.getElementById('initialSubAmount')?.value) || 0;
+    if (subAmount > 0 && (subAmount < 1000 || subAmount % 500 !== 0)) {
+        alert('عذراً، يجب أن يبدأ مبلغ الاشتراك الشهري من 1000 د.ج ويكون بمضاعفات 500.');
+        return;
+    }
+    const insuranceAmount = document.getElementById('initialCheckInsurance')?.checked ? (parseFloat(document.getElementById('initialInsuranceAmount').value) || 0) : 0;
+    if (insuranceAmount > 0 && (insuranceAmount < 500 || insuranceAmount % 500 !== 0)) {
+        alert('عذراً، يجب أن يبدأ مبلغ التأمين الرياضي من 500 د.ج ويكون بمضاعفات 500.');
+        return;
+    }
+    let uniformAmount = 0;
+    let uniformType = '';
+    let uniformQty = 0;
+    if (document.getElementById('initialCheckUniform')?.checked) {
+        uniformType = document.getElementById('initialUniformType').value;
+        uniformQty = parseInt(document.getElementById('initialUniformQty').value) || 1;
+        const unitPrice = uniformType === '250' ? 2500 : (uniformType === '180' ? 1800 : 1450);
+        uniformAmount = unitPrice * uniformQty;
+    }
+
+    const { data: athleteData, error } = await _supabase.from('athletes').insert([newAthlete]).select();
     if (error) {
         alert("خطأ في الحفظ: " + error.message);
     } else {
+        const addedAthlete = athleteData[0];
+        const payDate = document.getElementById('subDate').value;
+        const insertPromises = [];
+        let addedSessions = 0;
+        if (subAmount > 0) {
+            addedSessions = (subAmount / 1000) * 12;
+            insertPromises.push(_supabase.from('payments').insert([{ athlete_id: addedAthlete.id, amount: subAmount, date: payDate, type: 'subscription' }]));
+        }
+        if (uniformAmount > 0) {
+            insertPromises.push(_supabase.from('payments').insert([{ athlete_id: addedAthlete.id, amount: uniformAmount, date: payDate, type: 'uniform' }]));
+            insertPromises.push(_supabase.from('kimono_livre').insert([{ date: payDate, type: uniformType, quantity: uniformQty, value: uniformAmount, status: 'التوزيع' }]));
+        }
+        if (insuranceAmount > 0) insertPromises.push(_supabase.from('payments').insert([{ athlete_id: addedAthlete.id, amount: insuranceAmount, date: payDate, type: 'insurance' }]));
+        if (insertPromises.length > 0) await Promise.all(insertPromises);
+        if (addedSessions > 0) await _supabase.from('athletes').update({ sessionsLimit: addedSessions }).eq('id', addedAthlete.id);
+
         alert("تم تسجيل الرياضي بنجاح في السحابة!");
         form.reset(); 
+        if (document.getElementById('initialUniformContainer')) document.getElementById('initialUniformContainer').classList.add('hidden');
+        if (document.getElementById('initialInsuranceContainer')) document.getElementById('initialInsuranceContainer').classList.add('hidden');
         closeRegisterModal(); 
         fetchAthletes(); // تحديث القائمة
     }
@@ -351,6 +389,34 @@ window.addEventListener('DOMContentLoaded', () => {
     if (urlParams.get('add') === 'true') {
         openRegisterModal();
         window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    const initialCheckUniform = document.getElementById('initialCheckUniform');
+    const initialUniformContainer = document.getElementById('initialUniformContainer');
+    if (initialCheckUniform && initialUniformContainer) {
+        initialCheckUniform.addEventListener('change', function() {
+            if (this.checked) {
+                initialUniformContainer.classList.remove('hidden');
+            } else {
+                initialUniformContainer.classList.add('hidden');
+                if(document.getElementById('initialUniformType')) document.getElementById('initialUniformType').value = '250';
+                if(document.getElementById('initialUniformQty')) document.getElementById('initialUniformQty').value = 1;
+            }
+        });
+    }
+
+    const initialCheckInsurance = document.getElementById('initialCheckInsurance');
+    const initialInsuranceContainer = document.getElementById('initialInsuranceContainer');
+    if (initialCheckInsurance && initialInsuranceContainer) {
+        initialCheckInsurance.addEventListener('change', function() {
+            if (this.checked) {
+                initialInsuranceContainer.classList.remove('hidden');
+                if (document.getElementById('initialInsuranceAmount')) document.getElementById('initialInsuranceAmount').value = 500;
+            } else {
+                initialInsuranceContainer.classList.add('hidden');
+                if (document.getElementById('initialInsuranceAmount')) document.getElementById('initialInsuranceAmount').value = 0;
+            }
+        });
     }
 });
 
