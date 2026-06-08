@@ -85,7 +85,16 @@
                     <a href="index.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
                     <a href="attendance.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
                     <a href="payments.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الاشتراكات</a>
-                    <a href="expenses.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
+                    <div class="relative group">
+                        <button class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors flex items-center gap-1">
+                            المالية
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <a href="expenses.html" class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 border-b border-slate-100 first:rounded-t-xl">المصاريف</a>
+                            <a href="insurance_batches.html" class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 last:rounded-b-xl">دفعات تأمين المركز</a>
+                        </div>
+                    </div>
                     <div class="relative group">
                         <button class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors flex items-center gap-1">
                             التقارير والإحصائيات
@@ -118,7 +127,16 @@
         <a href="index.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
         <a href="attendance.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
         <a href="payments.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الاشتراكات</a>
-        <a href="expenses.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">المصاريف</a>
+        <details class="w-full text-center group">
+            <summary class="px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors list-none [&::-webkit-details-marker]:hidden flex items-center justify-center gap-2 cursor-pointer outline-none">
+                المالية
+                <svg class="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </summary>
+            <div class="flex flex-col gap-2 mt-2 px-4">
+                <a href="expenses.html" class="w-full text-center px-4 py-3 rounded-xl font-bold text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors bg-slate-50 border border-slate-100">المصاريف</a>
+                <a href="insurance_batches.html" class="w-full text-center px-4 py-3 rounded-xl font-bold text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors bg-slate-50 border border-slate-100">دفعات تأمين المركز</a>
+            </div>
+        </details>
         <details class="w-full text-center group">
             <summary class="px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors list-none [&::-webkit-details-marker]:hidden flex items-center justify-center gap-2 cursor-pointer outline-none">
                 التقارير والإحصائيات
