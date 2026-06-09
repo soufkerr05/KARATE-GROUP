@@ -4,6 +4,22 @@ let viewMode = 'active'; // تحديد وضع العرض (نشطين أو الأ
 const form = document.getElementById('registerForm');
 const listContainer = document.getElementById('athletesList');
 
+// مقاسات البدلات
+const UNIFORM_SIZES = {
+    '145': ['6', '8', '10', '12', '14'],
+    '180': ['1', '2', '3'],
+    '250': ['140', '150', '160', '170', '180']
+};
+
+window.updateUniformSizes = function(typeId, sizeId) {
+    const typeEl = document.getElementById(typeId);
+    const sizeEl = document.getElementById(sizeId);
+    if(typeEl && sizeEl) {
+        const sizes = UNIFORM_SIZES[typeEl.value] || [];
+        sizeEl.innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+};
+
 async function fetchAthletes() {
     const [athletesRes, paymentsRes] = await Promise.all([
         _supabase.from('athletes').select('*'),
@@ -61,9 +77,11 @@ form.addEventListener('submit', async function(e) {
     let uniformType = '';
     let uniformQty = 0;
     if (document.getElementById('initialCheckUniform')?.checked) {
-        uniformType = document.getElementById('initialUniformType').value;
+        const bType = document.getElementById('initialUniformType').value;
+        const bSize = document.getElementById('initialUniformSize').value;
+        uniformType = `${bType}-${bSize}`;
         uniformQty = parseInt(document.getElementById('initialUniformQty').value) || 1;
-        const unitPrice = uniformType === '250' ? 2500 : (uniformType === '180' ? 1800 : 1450);
+        const unitPrice = bType === '250' ? 2500 : (bType === '180' ? 1800 : 1450);
         uniformAmount = unitPrice * uniformQty;
     }
 
@@ -82,6 +100,7 @@ form.addEventListener('submit', async function(e) {
         if (uniformAmount > 0) {
             insertPromises.push(_supabase.from('payments').insert([{ athlete_id: addedAthlete.id, amount: uniformAmount, date: payDate, type: 'uniform' }]));
             insertPromises.push(_supabase.from('kimono_livre').insert([{ date: payDate, type: uniformType, quantity: uniformQty, value: uniformAmount, status: 'التوزيع' }]));
+            insertPromises.push(_supabase.from('kimono_collected').insert([{ date: payDate, type: uniformType, quantity: uniformQty, value: uniformAmount, status: 'تحصيل' }]));
         }
         if (insuranceAmount > 0) insertPromises.push(_supabase.from('payments').insert([{ athlete_id: addedAthlete.id, amount: insuranceAmount, date: payDate, type: 'insurance' }]));
         if (insertPromises.length > 0) await Promise.all(insertPromises);
@@ -400,9 +419,14 @@ window.addEventListener('DOMContentLoaded', () => {
             } else {
                 initialUniformContainer.classList.add('hidden');
                 if(document.getElementById('initialUniformType')) document.getElementById('initialUniformType').value = '250';
+                if(window.updateUniformSizes) window.updateUniformSizes('initialUniformType', 'initialUniformSize');
                 if(document.getElementById('initialUniformQty')) document.getElementById('initialUniformQty').value = 1;
             }
         });
+    }
+    
+    if(document.getElementById('initialUniformType')) {
+        if(window.updateUniformSizes) window.updateUniformSizes('initialUniformType', 'initialUniformSize');
     }
 
     const initialCheckInsurance = document.getElementById('initialCheckInsurance');

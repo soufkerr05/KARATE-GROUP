@@ -63,6 +63,13 @@
             background-color: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(4px);
         }
+        
+        /* إصلاح مشكلة اختفاء الرقم في حقول الكمية لتجاوز التنسيق العام */
+        .grid-qty-input, .tx-item-qty {
+            padding: 6px 8px !important;
+            font-size: 18px !important;
+            min-width: 0;
+        }
     </style>
 </head>
 <body class="bg-slate-50">
@@ -206,68 +213,86 @@
                     </div>
                 </div>
 
-                <!-- Dashboard Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 flex flex-col justify-between hover:shadow-md transition">
-                        <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-blue-50 text-blue-600 rounded-xl" id="icon-stat-commend"></div><p class="text-slate-600 font-bold">إجمالي المأخوذ</p></div>
-                        <div>
-                            <p class="text-3xl font-black text-slate-800"><span id="stat-commendQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
-                            <p class="text-sm font-bold text-blue-600 mt-2 bg-blue-50 inline-block px-3 py-1 rounded-lg">قيمة: <span id="stat-commendV">0</span> د.ج</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-emerald-100 flex flex-col justify-between hover:shadow-md transition">
-                        <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl" id="icon-stat-livre"></div><p class="text-slate-600 font-bold">إجمالي الموزع</p></div>
-                        <div>
-                            <p class="text-3xl font-black text-slate-800"><span id="stat-livreQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
-                            <p class="text-sm font-bold text-emerald-600 mt-2 bg-emerald-50 inline-block px-3 py-1 rounded-lg">قيمة: <span id="stat-livreV">0</span> د.ج</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-amber-100 flex flex-col justify-between hover:shadow-md transition">
-                        <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-amber-50 text-amber-600 rounded-xl" id="icon-stat-paid"></div><p class="text-slate-600 font-bold">إجمالي المدفوع للتاجر</p></div>
-                        <div>
-                            <p class="text-3xl font-black text-amber-600"><span id="stat-paidV">0</span> <span class="text-lg text-amber-600/60 font-normal">د.ج</span></p>
-                            <p class="text-sm font-bold text-amber-700 mt-2 bg-amber-50 inline-block px-3 py-1 rounded-lg">الكمية المقابلة: <span id="stat-paidQ">0</span> قطعة</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition">
-                        <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-slate-100 text-slate-600 rounded-xl" id="icon-stat-retour"></div><p class="text-slate-600 font-bold">إجمالي المرتجع</p></div>
-                        <div>
-                            <p class="text-3xl font-black text-slate-800"><span id="stat-retourQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
-                            <p class="text-sm font-bold text-slate-600 mt-2 bg-slate-100 inline-block px-3 py-1 rounded-lg">قيمة: <span id="stat-retourV">0</span> د.ج</p>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Summary Bottom Row -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div class="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-700 flex items-center justify-between overflow-hidden relative">
-                        <div class="absolute -left-6 -top-6 w-32 h-32 bg-slate-700/50 rounded-full blur-2xl"></div>
-                        <div class="relative z-10">
-                            <p class="text-slate-400 font-bold mb-2 uppercase tracking-wider text-sm">المخزون بالقاعة (المتبقي)</p>
-                            <p class="text-3xl font-black text-white"><span id="stat-stockQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-10">
+                    <!-- Stock -->
+                    <div class="group bg-slate-900 rounded-2xl p-5 shadow-lg border border-slate-700 flex flex-col justify-center overflow-hidden relative cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-slate-500">
+                        <div class="absolute -left-6 -top-6 w-32 h-32 bg-slate-700/50 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:bg-blue-600/30"></div>
+                        <div class="flex items-center justify-between relative z-10 w-full">
+                            <div>
+                                <p class="text-slate-400 font-bold mb-1 uppercase tracking-wider text-xs">المخزون بالقاعة (المتبقي)</p>
+                                <p class="text-3xl font-black text-white"><span id="stat-stockQ">0</span> <span class="text-sm text-slate-400 font-normal">قطعة</span></p>
+                            </div>
+                            <div class="p-3 bg-slate-800 text-slate-300 rounded-2xl border border-slate-700 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" id="icon-stock"></div>
                         </div>
-                        <div class="p-4 bg-slate-800 text-slate-300 rounded-2xl border border-slate-700 relative z-10" id="icon-stock"></div>
+                        <div class="relative z-10 w-full max-h-0 opacity-0 overflow-hidden transition-all duration-500 ease-in-out group-hover:max-h-[500px] group-hover:opacity-100 group-hover:mt-4">
+                            <div class="pt-3 border-t border-slate-700/50 flex flex-col gap-2" id="details-stock"></div>
+                        </div>
                     </div>
-                    <div id="card-debt-merchant" class="rounded-2xl p-6 shadow-lg border flex items-center justify-between overflow-hidden relative">
-                        <div id="card-debt-merchant-bg" class="absolute -left-6 -top-6 w-32 h-32 rounded-full blur-2xl"></div>
-                        <div class="relative z-10">
-                            <p id="card-debt-merchant-label" class="font-bold mb-2 uppercase tracking-wider text-sm">ديون التاجر (لم تدفع)</p>
-                            <p class="text-3xl font-black text-white"><span id="stat-debtMerchant">0</span> <span id="card-debt-merchant-currency" class="text-lg font-normal">د.ج</span></p>
+                    
+                    <!-- Collected Not Dist -->
+                    <div class="group bg-slate-900 rounded-2xl p-5 shadow-lg border border-slate-700 flex flex-col justify-center overflow-hidden relative cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-cyan-500/50">
+                        <div class="absolute -left-6 -top-6 w-32 h-32 bg-cyan-500/20 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:bg-cyan-500/30"></div>
+                        <div class="flex items-center justify-between relative z-10 w-full">
+                            <div>
+                                <p class="text-slate-400 font-bold mb-1 uppercase tracking-wider text-xs">محصل (لم يوزع)</p>
+                                <p class="text-3xl font-black text-cyan-400"><span id="stat-collectedNotDistQ">0</span> <span class="text-sm text-cyan-400/60 font-normal">قطعة</span></p>
+                            </div>
+                            <div class="p-3 bg-slate-800/80 text-cyan-400 rounded-2xl border border-slate-700 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" id="icon-collected-not-dist"></div>
                         </div>
-                        <div id="icon-debt-merchant" class="p-4 rounded-2xl border relative z-10"></div>
+                        <div class="relative z-10 w-full max-h-0 opacity-0 overflow-hidden transition-all duration-500 ease-in-out group-hover:max-h-[500px] group-hover:opacity-100 group-hover:mt-4">
+                            <div class="pt-3 border-t border-slate-700/50 flex flex-col gap-2" id="details-collectedNotDist"></div>
+                        </div>
                     </div>
-                    <div class="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-700 flex items-center justify-between overflow-hidden relative">
-                        <div class="absolute -left-6 -top-6 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl"></div>
-                        <div class="relative z-10">
-                            <p class="text-slate-400 font-bold mb-2 uppercase tracking-wider text-sm">ديون الرياضيين (موزع ولم يحصل)</p>
-                            <p class="text-3xl font-black text-amber-400"><span id="stat-debtAthletes">0</span> <span class="text-lg text-amber-400/60 font-normal">د.ج</span></p>
+
+                    <!-- Debt Merchant -->
+                    <div id="card-debt-merchant" class="group bg-slate-900 rounded-2xl p-5 shadow-lg border border-slate-700 flex flex-col justify-center overflow-hidden relative cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-red-500/50">
+                        <div id="card-debt-merchant-bg" class="absolute -left-6 -top-6 w-32 h-32 bg-slate-700/50 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150"></div>
+                        <div class="flex items-center justify-between relative z-10 w-full">
+                            <div>
+                                <p id="card-debt-merchant-label" class="text-slate-400 font-bold mb-1 uppercase tracking-wider text-xs">ديون التاجر (لم تدفع)</p>
+                                <p class="text-3xl font-black text-white"><span id="stat-debtMerchantQ">0</span> <span class="text-sm font-normal opacity-70">قطعة</span></p>
+                            </div>
+                            <div id="icon-debt-merchant" class="p-3 bg-slate-800 text-slate-300 rounded-2xl border border-slate-700 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3"></div>
                         </div>
-                        <div class="p-4 bg-slate-800/80 text-amber-400 rounded-2xl border border-slate-700 relative z-10" id="icon-debt-athletes"></div>
+                        <div class="relative z-10 w-full max-h-0 opacity-0 overflow-hidden transition-all duration-500 ease-in-out group-hover:max-h-[500px] group-hover:opacity-100 group-hover:mt-4">
+                            <div class="pt-3 border-t border-slate-700/50 flex flex-col gap-2" id="details-debtMerchant"></div>
+                        </div>
+                    </div>
+
+                    <!-- Debt Athletes -->
+                    <div class="group bg-slate-900 rounded-2xl p-5 shadow-lg border border-slate-700 flex flex-col justify-center overflow-hidden relative cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-amber-500/50">
+                        <div class="absolute -left-6 -top-6 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:bg-amber-500/30"></div>
+                        <div class="flex items-center justify-between relative z-10 w-full">
+                            <div>
+                                <p class="text-slate-400 font-bold mb-1 uppercase tracking-wider text-xs">ديون الرياضيين (موزع ولم يحصل)</p>
+                                <p class="text-3xl font-black text-amber-400"><span id="stat-debtAthletesQ">0</span> <span class="text-sm text-amber-400/60 font-normal">قطعة</span></p>
+                            </div>
+                            <div class="p-3 bg-slate-800/80 text-amber-400 rounded-2xl border border-slate-700 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" id="icon-debt-athletes"></div>
+                        </div>
+                        <div class="relative z-10 w-full max-h-0 opacity-0 overflow-hidden transition-all duration-500 ease-in-out group-hover:max-h-[500px] group-hover:opacity-100 group-hover:mt-4">
+                            <div class="pt-3 border-t border-slate-700/50 flex flex-col gap-2" id="details-debtAthletes"></div>
+                        </div>
+                    </div>
+
+                    <!-- Paid Not Dist -->
+                    <div class="group bg-slate-900 rounded-2xl p-5 shadow-lg border border-slate-700 flex flex-col justify-center overflow-hidden relative cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-emerald-500/50">
+                        <div class="absolute -left-6 -top-6 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:bg-emerald-500/30"></div>
+                        <div class="flex items-center justify-between relative z-10 w-full">
+                            <div>
+                                <p class="text-slate-400 font-bold mb-1 uppercase tracking-wider text-xs">مخزون مدفوع (لم يوزع)</p>
+                                <p class="text-3xl font-black text-emerald-400"><span id="stat-paidNotDistQ">0</span> <span class="text-sm text-emerald-400/60 font-normal">قطعة</span></p>
+                            </div>
+                            <div class="p-3 bg-slate-800/80 text-emerald-400 rounded-2xl border border-slate-700 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" id="icon-paid-not-dist"></div>
+                        </div>
+                        <div class="relative z-10 w-full max-h-0 opacity-0 overflow-hidden transition-all duration-500 ease-in-out group-hover:max-h-[500px] group-hover:opacity-100 group-hover:mt-4">
+                            <div class="pt-3 border-t border-slate-700/50 flex flex-col gap-2" id="details-paidNotDist"></div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Table Section -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col relative">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col relative mb-10">
                     <div id="tabs-header" class="flex overflow-x-auto bg-slate-50 border-b border-slate-200 hide-scrollbar"></div>
                     <div class="p-6">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -312,6 +337,48 @@
                         <div id="table-summary" class="hidden mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm font-bold text-slate-600 text-center"></div>
                     </div>
                 </div>
+
+                <!-- Dashboard Stats (Moved to the bottom) -->
+                <div class="pt-6 border-t-2 border-dashed border-slate-200">
+                    <h3 class="text-xl font-bold text-slate-800 mb-6">الإحصائيات التفصيلية للحركات</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-6">
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 flex flex-col justify-between hover:shadow-md transition">
+                            <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-blue-50 text-blue-600 rounded-xl" id="icon-stat-commend"></div><p class="text-slate-600 font-bold">إجمالي المأخوذ</p></div>
+                            <div>
+                                <p class="text-3xl font-black text-slate-800"><span id="stat-commendQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
+                                <p class="text-sm font-bold text-blue-600 mt-2 bg-blue-50 inline-block px-3 py-1 rounded-lg">قيمة: <span id="stat-commendV">0</span> د.ج</p>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-emerald-100 flex flex-col justify-between hover:shadow-md transition">
+                            <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl" id="icon-stat-livre"></div><p class="text-slate-600 font-bold">إجمالي الموزع</p></div>
+                            <div>
+                                <p class="text-3xl font-black text-slate-800"><span id="stat-livreQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
+                                <p class="text-sm font-bold text-emerald-600 mt-2 bg-emerald-50 inline-block px-3 py-1 rounded-lg">قيمة: <span id="stat-livreV">0</span> د.ج</p>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-teal-100 flex flex-col justify-between hover:shadow-md transition">
+                            <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-teal-50 text-teal-600 rounded-xl" id="icon-stat-collected"></div><p class="text-slate-600 font-bold">المحصل (من الرياضيين)</p></div>
+                            <div>
+                                <p class="text-3xl font-black text-teal-600"><span id="stat-collectedV">0</span> <span class="text-lg text-teal-600/60 font-normal">د.ج</span></p>
+                                <p class="text-sm font-bold text-teal-700 mt-2 bg-teal-50 inline-block px-3 py-1 rounded-lg">الكمية: <span id="stat-collectedQ">0</span> قطعة</p>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-amber-100 flex flex-col justify-between hover:shadow-md transition">
+                            <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-amber-50 text-amber-600 rounded-xl" id="icon-stat-paid"></div><p class="text-slate-600 font-bold">إجمالي المدفوع للتاجر</p></div>
+                            <div>
+                                <p class="text-3xl font-black text-amber-600"><span id="stat-paidV">0</span> <span class="text-lg text-amber-600/60 font-normal">د.ج</span></p>
+                                <p class="text-sm font-bold text-amber-700 mt-2 bg-amber-50 inline-block px-3 py-1 rounded-lg">الكمية المقابلة: <span id="stat-paidQ">0</span> قطعة</p>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition">
+                            <div class="flex items-center gap-3 mb-4"><div class="p-3 bg-slate-100 text-slate-600 rounded-xl" id="icon-stat-retour"></div><p class="text-slate-600 font-bold">إجمالي المرتجع</p></div>
+                            <div>
+                                <p class="text-3xl font-black text-slate-800"><span id="stat-retourQ">0</span> <span class="text-lg text-slate-400 font-normal">قطعة</span></p>
+                                <p class="text-sm font-bold text-slate-600 mt-2 bg-slate-100 inline-block px-3 py-1 rounded-lg">قيمة: <span id="stat-retourV">0</span> د.ج</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -331,21 +398,10 @@
                             <label class="block text-sm font-bold text-slate-700 mb-1">التاريخ</label>
                             <input type="date" id="tx-date" required class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" />
                         </div>
-                        <div id="tx-types-container" class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                            <div class="flex items-center gap-4">
-                                <input type="checkbox" id="check-type-250" data-type="250" class="tx-type-check w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
-                                <label for="check-type-250" class="font-bold text-slate-700 w-24 cursor-pointer">بذلة 250</label>
-                                <input type="number" id="qty-type-250" data-type="250" min="0" placeholder="الكمية" class="tx-type-qty w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition font-bold text-slate-800" disabled>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <input type="checkbox" id="check-type-180" data-type="180" class="tx-type-check w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
-                                <label for="check-type-180" class="font-bold text-slate-700 w-24 cursor-pointer">بذلة 180</label>
-                                <input type="number" id="qty-type-180" data-type="180" min="0" placeholder="الكمية" class="tx-type-qty w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition font-bold text-slate-800" disabled>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <input type="checkbox" id="check-type-145" data-type="145" class="tx-type-check w-5 h-5 text-pink-600 rounded focus:ring-pink-500">
-                                <label for="check-type-145" class="font-bold text-slate-700 w-24 cursor-pointer">بذلة 145</label>
-                                <input type="number" id="qty-type-145" data-type="145" min="0" placeholder="الكمية" class="tx-type-qty w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition font-bold text-slate-800" disabled>
+                        <div class="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-200">
+                            <label class="block text-sm font-bold text-slate-700 mb-3">اختر البدلات والمقاسات لإضافتها:</label>
+                            <div id="tx-items-container" class="space-y-3">
+                                <!-- Dynamic items here -->
                             </div>
                         </div>
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2">
@@ -384,12 +440,21 @@
             '180': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' },
             '145': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-200' }
         };
+        
+        /* Tailwind classes for dynamic colors compilation: text-teal-700 bg-teal-50 border-teal-600 text-teal-800 border-teal-200 border-b-2 text-teal-500 bg-teal-100 bg-teal-600 hover:bg-teal-700 bg-teal-50 text-teal-600 text-indigo-600 focus:ring-indigo-500 bg-indigo-100 text-indigo-800 border-indigo-500 bg-indigo-50 text-indigo-700 text-purple-600 focus:ring-purple-500 bg-purple-100 text-purple-800 border-purple-500 bg-purple-50 text-purple-700 text-pink-600 focus:ring-pink-500 bg-pink-100 text-pink-800 border-pink-500 bg-pink-50 text-pink-700 */
+
+        const UNIFORM_SIZES = {
+            '145': ['6', '8', '10', '12', '14'],
+            '180': ['1', '2', '3'],
+            '250': ['140', '150', '160', '170', '180']
+        };
 
         const state = {
             isLoading: true,
             dataLoaded: false,
             commendData: [],
             livreData: [],
+            collectedData: [],
             paidData: [],
             retourData: [],
             activeTab: 'commend',
@@ -400,6 +465,7 @@
         const TABS = [
             { id: 'commend', label: 'جدول التوريد', icon: Icons.Package, color: 'blue', desc: 'البدلات المأخوذة من التاجر', statusText: 'التوريد' },
             { id: 'livre', label: 'جدول التوزيع', icon: Icons.Users, color: 'emerald', desc: 'البدلات التي خرجت للرياضيين', statusText: 'التوزيع' },
+            { id: 'collected', label: 'جدول التحصيلات', icon: Icons.TrendingUp, color: 'teal', desc: 'مستحقات البدلات المحصلة من الرياضيين', statusText: 'تحصيل' },
             { id: 'paid', label: 'جدول المدفوعات', icon: Icons.DollarSign, color: 'amber', desc: 'المبالغ المدفوعة فعلياً للتاجر', statusText: 'الدفع' },
             { id: 'retour', label: 'جدول المرتجعات', icon: Icons.RefreshCcw, color: 'slate', desc: 'البدلات المعادة للتاجر', statusText: 'المرتجع' },
         ];
@@ -411,11 +477,14 @@
         document.getElementById('icon-alert').innerHTML = Icons.AlertCircle;
         document.getElementById('icon-stat-commend').innerHTML = Icons.Package;
         document.getElementById('icon-stat-livre').innerHTML = Icons.Users;
+        document.getElementById('icon-stat-collected').innerHTML = Icons.TrendingUp;
         document.getElementById('icon-stat-paid').innerHTML = Icons.DollarSign;
         document.getElementById('icon-stat-retour').innerHTML = Icons.RefreshCcw;
         document.getElementById('icon-stock').innerHTML = Icons.Package;
         document.getElementById('icon-debt-merchant').innerHTML = Icons.TrendingUp;
         document.getElementById('icon-debt-athletes').innerHTML = Icons.Users;
+        document.getElementById('icon-paid-not-dist').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+        document.getElementById('icon-collected-not-dist').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>`;
         document.getElementById('icon-plus').innerHTML = Icons.Plus;
         document.getElementById('icon-filter').innerHTML = Icons.Filter;
 
@@ -433,19 +502,21 @@
             updateViews();
             
             try {
-                const [resCommend, resLivre, resPaid, resRetour] = await Promise.all([
+                const [resCommend, resLivre, resCollected, resPaid, resRetour] = await Promise.all([
                     _supabase.from('kimono_commend').select('*'),
                     _supabase.from('kimono_livre').select('*'),
+                    _supabase.from('kimono_collected').select('*'),
                     _supabase.from('kimono_paid').select('*'),
                     _supabase.from('kimono_retour').select('*')
                 ]);
                 
                 state.commendData = resCommend.data || [];
                 state.livreData = resLivre.data || [];
+                state.collectedData = resCollected.data || [];
                 state.paidData = resPaid.data || [];
                 state.retourData = resRetour.data || [];
                 
-                if(state.commendData.length > 0 || state.livreData.length > 0 || state.paidData.length > 0 || state.retourData.length > 0) {
+                if(state.commendData.length > 0 || state.livreData.length > 0 || state.collectedData.length > 0 || state.paidData.length > 0 || state.retourData.length > 0) {
                     state.dataLoaded = true;
                 }
             } catch (err) {
@@ -534,51 +605,141 @@
         function calculateAndRenderStats() {
             const sQ = arr => arr.reduce((acc, curr) => acc + curr.quantity, 0);
             const sV = arr => arr.reduce((acc, curr) => acc + curr.value, 0);
+            const sQExactType = (arr, exactType) => arr.filter(c => c.type === exactType).reduce((acc, curr) => acc + curr.quantity, 0);
 
             const commendQ = sQ(state.commendData), commendV = sV(state.commendData);
             const livreQ = sQ(state.livreData), livreV = sV(state.livreData);
+            const collectedQ = sQ(state.collectedData), collectedV = sV(state.collectedData);
             const paidQ = sQ(state.paidData), paidV = sV(state.paidData);
             const retourQ = sQ(state.retourData), retourV = sV(state.retourData);
 
             const stockQ = commendQ - livreQ - retourQ;
-            const debtMerchant = commendV - retourV - paidV;
-            const debtAthletes = livreV - paidV;
+            const debtMerchantV = commendV - retourV - paidV;
+            const debtMerchantQ = commendQ - retourQ - paidQ;
+            const debtAthletesQ = livreQ - collectedQ;
+            const paidNotDistQ = Math.max(0, paidQ - livreQ);
+            const collectedNotDistQ = Math.max(0, collectedQ - livreQ);
 
             document.getElementById('stat-commendQ').innerText = commendQ.toLocaleString();
             document.getElementById('stat-commendV').innerText = commendV.toLocaleString();
             document.getElementById('stat-livreQ').innerText = livreQ.toLocaleString();
             document.getElementById('stat-livreV').innerText = livreV.toLocaleString();
+            document.getElementById('stat-collectedQ').innerText = collectedQ.toLocaleString();
+            document.getElementById('stat-collectedV').innerText = collectedV.toLocaleString();
             document.getElementById('stat-paidV').innerText = paidV.toLocaleString();
             document.getElementById('stat-paidQ').innerText = paidQ.toLocaleString();
             document.getElementById('stat-retourQ').innerText = retourQ.toLocaleString();
             document.getElementById('stat-retourV').innerText = retourV.toLocaleString();
             
             document.getElementById('stat-stockQ').innerText = stockQ.toLocaleString();
-            document.getElementById('stat-debtAthletes').innerText = debtAthletes.toLocaleString();
-            document.getElementById('stat-debtMerchant').innerText = debtMerchant.toLocaleString();
+            document.getElementById('stat-debtAthletesQ').innerText = debtAthletesQ.toLocaleString();
+            document.getElementById('stat-debtMerchantQ').innerText = debtMerchantQ.toLocaleString();
+            document.getElementById('stat-paidNotDistQ').innerText = paidNotDistQ.toLocaleString();
+            document.getElementById('stat-collectedNotDistQ').innerText = collectedNotDistQ.toLocaleString();
+
+            const statsMap = {
+                'stock': {},
+                'collectedNotDist': {},
+                'debtMerchant': {},
+                'debtAthletes': {},
+                'paidNotDist': {}
+            };
+
+            ['145', '180', '250'].forEach(type => {
+                statsMap.stock[type] = { total: 0, sizes: {} };
+                statsMap.collectedNotDist[type] = { total: 0, sizes: {} };
+                statsMap.debtMerchant[type] = { total: 0, sizes: {} };
+                statsMap.debtAthletes[type] = { total: 0, sizes: {} };
+                statsMap.paidNotDist[type] = { total: 0, sizes: {} };
+
+                const sizes = UNIFORM_SIZES[type] || [];
+                
+                sizes.forEach(s => {
+                    const fullT = `${type}-${s}`;
+                    const stQ = sQExactType(state.commendData, fullT) - sQExactType(state.livreData, fullT) - sQExactType(state.retourData, fullT);
+                    const dmQ = sQExactType(state.commendData, fullT) - sQExactType(state.retourData, fullT) - sQExactType(state.paidData, fullT);
+                    const daQ = sQExactType(state.livreData, fullT) - sQExactType(state.collectedData, fullT);
+                    const pndQ = Math.max(0, sQExactType(state.paidData, fullT) - sQExactType(state.livreData, fullT));
+                    const cndQ = Math.max(0, sQExactType(state.collectedData, fullT) - sQExactType(state.livreData, fullT));
+
+                    statsMap.stock[type].sizes[s] = stQ;
+                    statsMap.debtMerchant[type].sizes[s] = dmQ;
+                    statsMap.debtAthletes[type].sizes[s] = daQ;
+                    statsMap.paidNotDist[type].sizes[s] = pndQ;
+                    statsMap.collectedNotDist[type].sizes[s] = cndQ;
+
+                    statsMap.stock[type].total += stQ;
+                    statsMap.debtMerchant[type].total += dmQ;
+                    statsMap.debtAthletes[type].total += daQ;
+                    statsMap.paidNotDist[type].total += pndQ;
+                    statsMap.collectedNotDist[type].total += cndQ;
+                });
+
+                const stQ_u = sQExactType(state.commendData, type) - sQExactType(state.livreData, type) - sQExactType(state.retourData, type);
+                const dmQ_u = sQExactType(state.commendData, type) - sQExactType(state.retourData, type) - sQExactType(state.paidData, type);
+                const daQ_u = sQExactType(state.livreData, type) - sQExactType(state.collectedData, type);
+                const pndQ_u = Math.max(0, sQExactType(state.paidData, type) - sQExactType(state.livreData, type));
+                const cndQ_u = Math.max(0, sQExactType(state.collectedData, type) - sQExactType(state.livreData, type));
+
+                if (stQ_u !== 0 || dmQ_u !== 0 || daQ_u !== 0 || pndQ_u !== 0 || cndQ_u !== 0) {
+                    statsMap.stock[type].sizes['غير محدد'] = stQ_u;
+                    statsMap.debtMerchant[type].sizes['غير محدد'] = dmQ_u;
+                    statsMap.debtAthletes[type].sizes['غير محدد'] = daQ_u;
+                    statsMap.paidNotDist[type].sizes['غير محدد'] = pndQ_u;
+                    statsMap.collectedNotDist[type].sizes['غير محدد'] = cndQ_u;
+
+                    statsMap.stock[type].total += stQ_u;
+                    statsMap.debtMerchant[type].total += dmQ_u;
+                    statsMap.debtAthletes[type].total += daQ_u;
+                    statsMap.paidNotDist[type].total += pndQ_u;
+                    statsMap.collectedNotDist[type].total += cndQ_u;
+                }
+            });
+
+            const renderDetailsHTML = (dataObj, colorClass) => {
+                let html = '';
+                ['250', '180', '145'].forEach(bType => {
+                    const typeData = dataObj[bType];
+                    if (typeData && (typeData.total !== 0 || Object.values(typeData.sizes).some(q => q !== 0))) {
+                        html += `<div class="bg-white/5 p-2.5 rounded-lg border border-white/10">`;
+                        html += `<div class="flex justify-between text-sm font-bold text-white mb-2 border-b border-white/10 pb-1"><span>بذلة ${bType}</span><span class="${colorClass}">${typeData.total} قطع</span></div>`;
+                        html += `<div class="flex flex-wrap gap-1.5">`;
+                        for (const [s, qty] of Object.entries(typeData.sizes)) {
+                            if (qty !== 0) {
+                                html += `<span class="text-[11px] bg-black/30 px-2 py-1 rounded text-white/80 border border-white/5 shadow-inner">م ${s}: <span class="font-black text-white">${qty}</span></span>`;
+                            }
+                        }
+                        html += `</div></div>`;
+                    }
+                });
+                return html || `<div class="text-sm text-white/50 text-center py-2 font-bold">لا توجد تفاصيل (0 قطع)</div>`;
+            };
+
+            if (document.getElementById('details-stock')) document.getElementById('details-stock').innerHTML = renderDetailsHTML(statsMap.stock, 'text-blue-400');
+            if (document.getElementById('details-collectedNotDist')) document.getElementById('details-collectedNotDist').innerHTML = renderDetailsHTML(statsMap.collectedNotDist, 'text-cyan-400');
+            if (document.getElementById('details-debtMerchant')) document.getElementById('details-debtMerchant').innerHTML = renderDetailsHTML(statsMap.debtMerchant, 'text-red-400');
+            if (document.getElementById('details-debtAthletes')) document.getElementById('details-debtAthletes').innerHTML = renderDetailsHTML(statsMap.debtAthletes, 'text-amber-400');
+            if (document.getElementById('details-paidNotDist')) document.getElementById('details-paidNotDist').innerHTML = renderDetailsHTML(statsMap.paidNotDist, 'text-emerald-400');
 
             const alertBox = document.getElementById('debt-alert');
             const debtCard = document.getElementById('card-debt-merchant');
             const debtCardBg = document.getElementById('card-debt-merchant-bg');
             const debtCardLabel = document.getElementById('card-debt-merchant-label');
-            const debtCardCurrency = document.getElementById('card-debt-merchant-currency');
             const debtCardIcon = document.getElementById('icon-debt-merchant');
             
-            if (debtMerchant > 0) {
+            if (debtMerchantV > 0) {
                 alertBox.classList.remove('hidden');
-                document.getElementById('debt-merchant-val').innerText = debtMerchant.toLocaleString() + ' د.ج';
-                debtCard.className = "rounded-2xl p-6 shadow-lg border flex items-center justify-between overflow-hidden relative bg-red-600 border-red-500";
-                debtCardBg.className = "absolute -left-6 -top-6 w-32 h-32 bg-red-500/50 rounded-full blur-2xl";
-                debtCardLabel.className = "font-bold mb-2 uppercase tracking-wider text-sm text-red-200";
-                debtCardCurrency.className = "text-lg font-normal text-red-200";
-                debtCardIcon.className = "p-4 rounded-2xl border relative z-10 bg-red-700 text-red-200 border-red-500";
+                document.getElementById('debt-merchant-val').innerText = debtMerchantV.toLocaleString() + ' د.ج';
+                debtCard.className = "group bg-red-900 rounded-2xl p-5 shadow-lg border border-red-500 flex flex-col justify-center overflow-hidden relative cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-red-400";
+                debtCardBg.className = "absolute -left-6 -top-6 w-32 h-32 bg-red-500/50 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:bg-red-500/60";
+                debtCardLabel.className = "text-red-300 font-bold mb-1 uppercase tracking-wider text-xs";
+                debtCardIcon.className = "p-3 bg-red-800 text-red-200 rounded-2xl border border-red-500 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3";
             } else {
                 alertBox.classList.add('hidden');
-                debtCard.className = "rounded-2xl p-6 shadow-lg border flex items-center justify-between overflow-hidden relative bg-slate-900 border-slate-700";
-                debtCardBg.className = "absolute -left-6 -top-6 w-32 h-32 rounded-full blur-2xl";
-                debtCardLabel.className = "font-bold mb-2 uppercase tracking-wider text-sm text-slate-400";
-                debtCardCurrency.className = "text-lg font-normal text-slate-400";
-                debtCardIcon.className = "p-4 rounded-2xl border relative z-10 bg-slate-800 text-slate-300 border-slate-700";
+                debtCard.className = "group bg-slate-900 rounded-2xl p-5 shadow-lg border border-slate-700 flex flex-col justify-center overflow-hidden relative cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-slate-500";
+                debtCardBg.className = "absolute -left-6 -top-6 w-32 h-32 bg-slate-700/50 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:bg-slate-600/30";
+                debtCardLabel.className = "text-slate-400 font-bold mb-1 uppercase tracking-wider text-xs";
+                debtCardIcon.className = "p-3 bg-slate-800 text-slate-300 rounded-2xl border border-slate-700 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3";
             }
         }
 
@@ -616,7 +777,7 @@
             const activeTabInfo = TABS.find(t => t.id === state.activeTab);
             let data = state[state.activeTab + 'Data'];
 
-            if (state.filterType !== 'All') data = data.filter(d => d.type === state.filterType);
+            if (state.filterType !== 'All') data = data.filter(d => d.type.startsWith(state.filterType));
             if (state.filterDate !== '') data = data.filter(d => d.date === state.filterDate);
 
             data.sort((a, b) => {
@@ -628,12 +789,15 @@
             const tbody = document.getElementById('table-body');
             if (data.length > 0) {
                 tbody.innerHTML = data.map(row => {
-                    const colorObj = TYPE_COLORS[row.type];
+                    const baseType = row.type.split('-')[0];
+                    const size = row.type.split('-')[1] || 'غير محدد';
+                    const colorObj = TYPE_COLORS[baseType] || { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-200' };
                     return `
                     <tr class="hover:bg-slate-50/80 transition group">
                         <td class="px-6 py-4 text-slate-600 font-bold text-sm" dir="ltr" data-label="التاريخ">${row.date}</td>
                         <td class="px-6 py-4" data-label="نوع البذلة">
-                            <span class="inline-block px-3 py-1 rounded-lg text-sm font-bold border ${colorObj.bg} ${colorObj.text} ${colorObj.border}">نوع ${row.type}</span>
+                            <span class="inline-block px-3 py-1 rounded-lg text-sm font-bold border ${colorObj.bg} ${colorObj.text} ${colorObj.border}">نوع ${baseType}</span>
+                            <span class="text-xs text-slate-500 block mt-1 font-bold">المقاس: ${size}</span>
                         </td>
                         <td class="px-6 py-4 text-slate-800 font-black text-lg" data-label="الكمية">${row.quantity}</td>
                         <td class="px-6 py-4 text-slate-800 font-black text-lg" data-label="القيمة المالية (د.ج)">${row.value.toLocaleString()}</td>
@@ -687,14 +851,194 @@
                     calculateTxValue();
                 }
             });
+            
+            // تحديث جرد المقاسات للتبويبة النشطة
+            renderSizesStats();
+        }
+        
+        function renderSizesStats() {
+            const summaryContainer = document.getElementById('table-summary');
+            let sizesHtml = `<div class="w-full mt-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><h4 class="font-bold text-slate-700 mb-4 flex items-center gap-2">${Icons.Package} تفاصيل المقاسات للتبويبة الحالية:</h4><div class="grid grid-cols-1 sm:grid-cols-3 gap-4">`;
+            
+            const activeData = state[state.activeTab + 'Data'];
+            
+            ['250', '180', '145'].forEach(bType => {
+                let sizes = UNIFORM_SIZES[bType];
+                let sizeDetails = sizes.map(s => {
+                    const fullT = `${bType}-${s}`;
+                    const qty = activeData.filter(c => c.type === fullT).reduce((acc, curr) => acc + curr.quantity, 0);
+                    return `<div class="flex justify-between text-sm border-b border-slate-100 last:border-0 py-1.5"><span class="text-slate-600">مقاس ${s}</span> <span class="font-black ${qty > 0 ? 'text-blue-600' : 'text-slate-400'}">${qty}</span></div>`;
+                }).join('');
+                
+                const unkQty = activeData.filter(c => c.type === bType).reduce((acc, curr) => acc + curr.quantity, 0);
+                if (unkQty > 0) {
+                    sizeDetails += `<div class="flex justify-between text-sm border-b border-slate-100 last:border-0 py-1.5"><span class="text-slate-600">غير محدد</span> <span class="font-black text-amber-600">${unkQty}</span></div>`;
+                }
+                
+                sizesHtml += `
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <h5 class="font-black text-slate-800 text-center mb-2 pb-2 border-b border-slate-200">بذلة ${bType}</h5>
+                        ${sizeDetails}
+                    </div>
+                `;
+            });
+            sizesHtml += `</div></div>`;
+            
+            if(activeData.length > 0) {
+                const existingStats = document.getElementById('sizes-breakdown');
+                if(existingStats) existingStats.remove();
+                summaryContainer.insertAdjacentHTML('afterend', `<div id="sizes-breakdown">\${sizesHtml}</div>`);
+            } else {
+                const existingStats = document.getElementById('sizes-breakdown');
+                if(existingStats) existingStats.remove();
+            }
         }
 
+        window.renderAddGrid = function() {
+            const container = document.getElementById('tx-items-container');
+            let html = '<div class="space-y-4 max-h-[50vh] overflow-y-auto pr-2 pb-2">';
+            
+            const types = [
+                { id: '250', label: 'بذلة 250', color: 'indigo' },
+                { id: '180', label: 'بذلة 180', color: 'purple' },
+                { id: '145', label: 'بذلة 145', color: 'pink' }
+            ];
+
+            types.forEach(t => {
+                html += `
+                <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm transition-all duration-300 bg-white" id="type-container-${t.id}">
+                    <label class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition select-none">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="check-type-${t.id}" class="w-5 h-5 text-${t.color}-600 rounded border-gray-300 focus:ring-${t.color}-500" onchange="toggleTypeSection('${t.id}')">
+                            <span class="font-black text-slate-800 text-lg">${t.label}</span>
+                        </div>
+                        <span class="text-sm font-bold bg-${t.color}-100 text-${t.color}-800 px-3 py-1 rounded-lg">${PRICES[t.id].toLocaleString()} د.ج</span>
+                    </label>
+                    
+                    <div id="sizes-section-${t.id}" class="hidden border-t border-slate-100 bg-slate-50 p-4">
+                        <p class="text-sm font-bold text-slate-600 mb-3">انقر على المقاس لتحديد الكمية:</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                `;
+                
+                UNIFORM_SIZES[t.id].forEach(s => {
+                    html += `
+                            <label class="relative cursor-pointer select-none size-card" data-type="${t.id}" data-size="${s}">
+                                <input type="checkbox" class="peer hidden" onchange="toggleSizeInput(this, '${t.id}', '${s}')">
+                                <div class="size-label flex items-center justify-center p-3 border border-slate-200 bg-white rounded-xl hover:bg-slate-100 transition-colors shadow-sm font-bold text-slate-700 peer-checked:hidden">
+                                    مقاس ${s}
+                                </div>
+                                <div class="size-input-container hidden peer-checked:flex items-center gap-2 p-1.5 border-2 border-${t.color}-500 bg-${t.color}-50 rounded-xl shadow-sm transition-all">
+                                    <span class="font-black text-${t.color}-700 w-10 text-center shrink-0">م ${s}</span>
+                                    <input type="number" min="1" placeholder="الكمية" data-type="${t.id}" data-size="${s}" class="grid-qty-input w-full border-none p-1.5 text-center font-black text-${t.color}-700 outline-none bg-white rounded-lg shadow-inner" oninput="calculateTxValue()">
+                                </div>
+                            </label>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        window.toggleTypeSection = function(typeId) {
+            const checkbox = document.getElementById(`check-type-${typeId}`);
+            const section = document.getElementById(`sizes-section-${typeId}`);
+            const container = document.getElementById(`type-container-${typeId}`);
+            
+            if (checkbox.checked) {
+                section.classList.remove('hidden');
+                container.classList.add('ring-2', 'ring-blue-500', 'border-transparent');
+            } else {
+                section.classList.add('hidden');
+                container.classList.remove('ring-2', 'ring-blue-500', 'border-transparent');
+                const sizeChecks = section.querySelectorAll('input[type="checkbox"]');
+                sizeChecks.forEach(chk => {
+                    if(chk.checked) {
+                        chk.checked = false;
+                        toggleSizeInput(chk, typeId, chk.closest('label').dataset.size);
+                    }
+                });
+                calculateTxValue();
+            }
+        }
+
+        window.toggleSizeInput = function(checkbox, typeId, size) {
+            const container = checkbox.closest('.size-card');
+            const qtyInput = container.querySelector('.grid-qty-input');
+            
+            if (checkbox.checked) {
+                qtyInput.value = 1;
+                setTimeout(() => qtyInput.focus(), 50);
+            } else {
+                qtyInput.value = '';
+            }
+            calculateTxValue();
+        }
+
+        window.getSizesOptions = function(type) {
+            return UNIFORM_SIZES[type].map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+        
+        window.addTxItem = function(type = '250', size = '', qty = 1) {
+            const id = Date.now() + Math.random().toString().substr(2, 5);
+            const html = `
+                <div class="flex items-center gap-2 tx-item" id="tx-item-${id}">
+                    <select class="tx-item-type w-full p-2 border border-slate-300 rounded-lg font-bold outline-none focus:border-blue-500" onchange="updateTxItemSizes('${id}')">
+                        <option value="250" ${type==='250'?'selected':''}>بذلة 250</option>
+                        <option value="180" ${type==='180'?'selected':''}>بذلة 180</option>
+                        <option value="145" ${type==='145'?'selected':''}>بذلة 145</option>
+                    </select>
+                    <select class="tx-item-size w-full p-2 border border-slate-300 rounded-lg font-bold outline-none focus:border-blue-500">
+                        ${getSizesOptions(type)}
+                    </select>
+                    <input type="number" class="tx-item-qty w-24 p-2 border border-slate-300 rounded-lg font-bold text-center outline-none focus:border-blue-500" value="${qty}" min="1" oninput="calculateTxValue()">
+                    <button type="button" onclick="removeTxItem('${id}')" class="text-red-400 hover:text-red-600 p-2 bg-red-50 hover:bg-red-100 rounded-lg transition" id="btn-del-${id}">
+                        ${Icons.Trash}
+                    </button>
+                </div>
+            `;
+            document.getElementById('tx-items-container').insertAdjacentHTML('beforeend', html);
+            if(size) document.querySelector(`#tx-item-${id} .tx-item-size`).value = size;
+            
+            const items = document.querySelectorAll('.tx-item');
+            if (items.length === 1) { document.querySelector('.tx-item button').style.display = 'none'; } 
+            else { document.querySelectorAll('.tx-item button').forEach(btn => btn.style.display = 'block'); }
+            
+            calculateTxValue();
+        }
+
+        window.updateTxItemSizes = function(id) {
+            const item = document.getElementById(`tx-item-${id}`);
+            const type = item.querySelector('.tx-item-type').value;
+            item.querySelector('.tx-item-size').innerHTML = getSizesOptions(type);
+            calculateTxValue();
+        }
+        
+        window.removeTxItem = function(id) {
+            document.getElementById(`tx-item-${id}`).remove();
+            const items = document.querySelectorAll('.tx-item');
+            if (items.length === 1) {
+                document.querySelector('.tx-item button').style.display = 'none';
+            }
+            calculateTxValue();
+        }
+        
         function calculateTxValue() {
             let totalValue = 0;
-            document.querySelectorAll('.tx-type-check:checked').forEach(checkbox => {
-                const type = checkbox.dataset.type;
-                const qtyInput = document.getElementById(`qty-type-${type}`);
-                const qty = parseInt(qtyInput.value) || 0;
+            document.querySelectorAll('.tx-item').forEach(item => {
+                const type = item.querySelector('.tx-item-type').value;
+                const qty = parseInt(item.querySelector('.tx-item-qty').value) || 0;
+                totalValue += qty * PRICES[type];
+            });
+            document.querySelectorAll('.grid-qty-input').forEach(input => {
+                const type = input.dataset.type;
+                const qty = parseInt(input.value) || 0;
                 totalValue += qty * PRICES[type];
             });
             document.getElementById('tx-calc-val').innerText = totalValue.toLocaleString();
@@ -708,28 +1052,21 @@
             document.getElementById('btn-save-tx').className = `flex-1 text-white font-bold py-3 rounded-xl transition shadow-md bg-${activeTabInfo.color}-600 hover:bg-${activeTabInfo.color}-700`;
             document.getElementById('btn-save-tx').innerText = isEdit ? 'حفظ التعديلات' : 'إضافة';
 
-            // Reset all fields first
-            document.querySelectorAll('.tx-type-check').forEach(cb => { cb.checked = false; cb.disabled = false; });
-            document.querySelectorAll('.tx-type-qty').forEach(input => { input.value = ''; input.disabled = true; });
+            const container = document.getElementById('tx-items-container');
+            container.innerHTML = '';
 
             if (isEdit) {
-                const row = state[state.activeTab + 'Data'].find(d => d.id === id);
+                const row = state[state.activeTab + 'Data'].find(d => d.id == id);
                 document.getElementById('tx-id').value = row.id;
                 document.getElementById('tx-date').value = row.date;
-                const check = document.getElementById(`check-type-${row.type}`);
-                const qtyInput = document.getElementById(`qty-type-${row.type}`);
-                if (check && qtyInput) {
-                    check.checked = true;
-                    qtyInput.value = row.quantity;
-                    qtyInput.disabled = false;
-                }
-                // Disable other checkboxes for editing to avoid confusion
-                document.querySelectorAll('.tx-type-check').forEach(cb => {
-                    if (cb.dataset.type !== row.type) cb.disabled = true;
-                });
+                const baseType = row.type.split('-')[0];
+                const size = row.type.split('-')[1] || '';
+                
+                addTxItem(baseType, size, row.quantity);
             } else {
                 document.getElementById('tx-id').value = '';
                 document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+                renderAddGrid();
             }
             
             calculateTxValue();
@@ -739,9 +1076,7 @@
         function closeModal() {
             document.getElementById('tx-modal').classList.add('hidden');
             document.getElementById('tx-form').reset();
-            // Also manually reset my new form state
-            document.querySelectorAll('.tx-type-check').forEach(cb => { cb.checked = false; cb.disabled = false; });
-            document.querySelectorAll('.tx-type-qty').forEach(input => { input.value = ''; input.disabled = true; });
+            document.getElementById('tx-items-container').innerHTML = '';
         }
 
         document.getElementById('tx-form').addEventListener('submit', async (e) => {
@@ -752,15 +1087,15 @@
             const date = document.getElementById('tx-date').value;
             
             if (id) { // Editing existing record
-                const checkedBox = document.querySelector('.tx-type-check:checked');
-                if (!checkedBox) {
-                    alert('الرجاء تحديد نوع وكمية.');
+                const item = document.querySelector('.tx-item');
+                if (!item) {
                     return;
                 }
-                const type = checkedBox.dataset.type;
-                const qtyInput = document.getElementById(`qty-type-${type}`);
-                const quantity = parseInt(qtyInput.value);
-
+                const baseType = item.querySelector('.tx-item-type').value;
+                const size = item.querySelector('.tx-item-size').value;
+                const type = `${baseType}-${size}`;
+                const quantity = parseInt(item.querySelector('.tx-item-qty').value);
+                
                 if (!quantity || quantity <= 0) {
                     alert('الرجاء إدخال كمية صحيحة.');
                     return;
@@ -770,7 +1105,7 @@
                     date: date,
                     type: type,
                     quantity: quantity,
-                    value: quantity * PRICES[type],
+                    value: quantity * PRICES[baseType],
                     status: activeTabInfo.statusText,
                     id: id
                 };
@@ -779,29 +1114,29 @@
                 if (error) return alert('حدث خطأ أثناء التعديل.');
                 
                 const arr = state[state.activeTab + 'Data'];
-                const idx = arr.findIndex(d => d.id === id);
+                const idx = arr.findIndex(d => d.id == id);
                 if (idx !== -1) arr[idx] = tx;
 
             } else { // Adding new record(s)
                 const transactions = [];
-                document.querySelectorAll('.tx-type-check:checked').forEach(checkbox => {
-                    const type = checkbox.dataset.type;
-                    const qtyInput = document.getElementById(`qty-type-${type}`);
-                    const quantity = parseInt(qtyInput.value);
-
+                document.querySelectorAll('.grid-qty-input').forEach(input => {
+                    const quantity = parseInt(input.value);
                     if (quantity && quantity > 0) {
+                        const baseType = input.dataset.type;
+                        const size = input.dataset.size;
+                        const type = `${baseType}-${size}`;
                         transactions.push({
                             date: date,
                             type: type,
                             quantity: quantity,
-                            value: quantity * PRICES[type],
+                            value: quantity * PRICES[baseType],
                             status: activeTabInfo.statusText
                         });
                     }
                 });
 
                 if (transactions.length === 0) {
-                    alert('الرجاء تحديد نوع واحد على الأقل وإدخال الكمية.');
+                    alert('الرجاء إدخال كمية صحيحة في مقاس واحد على الأقل.');
                     return;
                 }
 
@@ -823,13 +1158,12 @@
                 const { error } = await _supabase.from(tableName).delete().eq('id', id);
                 if (error) return alert('حدث خطأ أثناء الحذف.');
                 
-                state[state.activeTab + 'Data'] = state[state.activeTab + 'Data'].filter(t => t.id !== id);
+                state[state.activeTab + 'Data'] = state[state.activeTab + 'Data'].filter(t => t.id != id);
                 updateViews();
             }
         }
 
         init();
-    </script>
     </script>
 </body>
 </html>

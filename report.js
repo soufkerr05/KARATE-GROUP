@@ -80,24 +80,30 @@ async function generateReport() {
     const generalExpenses = expensesRes.data || [];
     const allPayments = paymentsRes.data || [];
 
+    const filterType = document.getElementById('reportFilter') ? document.getElementById('reportFilter').value : 'all';
+
     // 1. حساب إجمالي الدخل من اشتراكات ومدفوعات الرياضيين
     let totalIncome = 0;
     let incomeData = [];
     
     allPayments.forEach(payment => {
         if (payment.date && payment.date >= startDate && payment.date <= endDate) {
-            const athlete = athletes.find(a => a.id === payment.athlete_id) || {};
-            const gName = athlete.guardianName || athlete.firstName || 'غير معروف';
-            const fName = athlete.firstName || '';
-            const lName = athlete.lastName || '';
+            const pType = payment.type || 'subscription';
             
-            incomeData.push({
-                name: `${gName} (عن: ${fName} ${lName})`,
-                amount: parseFloat(payment.amount),
-                date: payment.date,
-                type: payment.type || 'subscription'
-            });
-            totalIncome += parseFloat(payment.amount);
+            if (filterType === 'all' || filterType === 'incomes' || filterType === pType) {
+                const athlete = athletes.find(a => a.id === payment.athlete_id) || {};
+                const gName = athlete.guardianName || athlete.firstName || 'غير معروف';
+                const fName = athlete.firstName || '';
+                const lName = athlete.lastName || '';
+                
+                incomeData.push({
+                    name: `${gName} (عن: ${fName} ${lName})`,
+                    amount: parseFloat(payment.amount),
+                    date: payment.date,
+                    type: pType
+                });
+                totalIncome += parseFloat(payment.amount);
+            }
         }
     });
 
@@ -106,26 +112,30 @@ async function generateReport() {
     let totalExpensesValue = 0;
     kimonoPaidData.forEach(payment => {
         if (payment.date && payment.date >= startDate && payment.date <= endDate) {
-            totalExpensesValue += parseFloat(payment.value || 0);
-            expenseData.push({
-                name: 'دفع مستحقات لتاجر البدلات',
-                amount: parseFloat(payment.value || 0),
-                date: payment.date,
-                type: 'kimono_merchant'
-            });
+            if (filterType === 'all' || filterType === 'expenses') {
+                totalExpensesValue += parseFloat(payment.value || 0);
+                expenseData.push({
+                    name: 'دفع مستحقات لتاجر البدلات',
+                    amount: parseFloat(payment.value || 0),
+                    date: payment.date,
+                    type: 'kimono_merchant'
+                });
+            }
         }
     });
     
     // حساب إجمالي المصاريف العامة (العتاد، الشهادات، إلخ)
     generalExpenses.forEach(exp => {
         if (exp.date && exp.date >= startDate && exp.date <= endDate) {
-            totalExpensesValue += parseFloat(exp.amount || 0);
-            expenseData.push({
-                name: exp.note ? `${exp.category} - ${exp.note}` : exp.category,
-                amount: parseFloat(exp.amount),
-                date: exp.date,
-                type: 'general'
-            });
+            if (filterType === 'all' || filterType === 'expenses') {
+                totalExpensesValue += parseFloat(exp.amount || 0);
+                expenseData.push({
+                    name: exp.note ? `${exp.category} - ${exp.note}` : exp.category,
+                    amount: parseFloat(exp.amount),
+                    date: exp.date,
+                    type: 'general'
+                });
+            }
         }
     });
 
@@ -176,8 +186,8 @@ async function generateReport() {
                      </tr>`;
         });
         html += `</tbody></table>`;
-    } else {
-        html += '<p class="text-slate-500 mb-8 border-r-4 border-slate-300 pr-2">لا توجد مداخيل مسجلة في هذه الفترة.</p>';
+    } else if (filterType === 'all' || filterType === 'incomes' || filterType === 'subscription' || filterType === 'insurance' || filterType === 'uniform') {
+        html += '<p class="text-slate-500 mb-8 mt-6 border-r-4 border-slate-300 pr-2">لا توجد مداخيل مسجلة في هذه الفترة.</p>';
     }
 
     // جدول المصاريف
@@ -189,7 +199,7 @@ async function generateReport() {
         };
         
         html += `<h3 class="text-xl font-bold text-red-700 mb-3 border-r-4 border-red-500 pr-2">جدول المصاريف</h3>
-                 <table class="w-full text-right border-collapse bg-white">
+                 <table class="w-full text-right border-collapse bg-white mb-8">
                     <thead class="bg-red-50 text-red-800 border-b-2 border-red-200">
                         <tr>
                             <th class="p-4 font-semibold">تاريخ الصرف</th>
@@ -208,8 +218,8 @@ async function generateReport() {
                      </tr>`;
         });
         html += `</tbody></table>`;
-    } else {
-        html += '<p class="text-slate-500 border-r-4 border-slate-300 pr-2">لا توجد مصاريف مسجلة في هذه الفترة.</p>';
+    } else if (filterType === 'all' || filterType === 'expenses') {
+        html += '<p class="text-slate-500 mb-8 border-r-4 border-slate-300 pr-2">لا توجد مصاريف مسجلة في هذه الفترة.</p>';
     }
 
     reportTableContainer.innerHTML = html;

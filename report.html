@@ -148,7 +148,7 @@
             <div class="text-center border-b border-slate-200 pb-4 mb-6">
                 <h1 class="text-3xl font-black text-slate-800">التقرير المالي الشهري</h1>
             </div>
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 print:hidden">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 print:hidden flex-wrap">
                 <div class="flex flex-col sm:flex-row items-center gap-2">
                     <label for="startDate" class="text-sm font-semibold text-slate-700">من تاريخ:</label>
                     <input type="date" id="startDate" required class="p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold">
@@ -156,6 +156,17 @@
                 <div class="flex flex-col sm:flex-row items-center gap-2">
                     <label for="endDate" class="text-sm font-semibold text-slate-700">إلى تاريخ:</label>
                     <input type="date" id="endDate" required class="p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold">
+                </div>
+                <div class="flex flex-col sm:flex-row items-center gap-2">
+                    <label for="reportFilter" class="text-sm font-semibold text-slate-700">نوع التقرير:</label>
+                    <select id="reportFilter" class="p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold">
+                        <option value="all">الكل (مداخيل ومصاريف)</option>
+                        <option value="incomes">جميع المداخيل</option>
+                        <option value="subscription">مداخيل: الاشتراك الشهري</option>
+                        <option value="insurance">مداخيل: التأمين الرياضي</option>
+                        <option value="uniform">مداخيل: البدلات الرياضية</option>
+                        <option value="expenses">جميع المصاريف</option>
+                    </select>
                 </div>
                 <button onclick="generateReport()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-md">عرض التقرير</button>
             </div>

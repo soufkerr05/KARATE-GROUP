@@ -162,16 +162,46 @@
 
                 <!-- البيانات -->
                 <section class="admin-only">
-                    <h2 class="text-xl font-bold text-slate-800 mb-4 border-r-4 border-red-500 pr-3">إدارة البيانات</h2>
-                    <div class="p-4 bg-red-50 rounded-xl border border-red-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <h2 class="text-xl font-bold text-slate-800 mb-4 border-r-4 border-red-500 pr-3">إدارة البيانات (حذف جزئي أو كلي)</h2>
+                    <div class="p-5 bg-red-50 rounded-xl border border-red-100 flex flex-col gap-4">
                         <div>
-                            <h3 class="font-bold text-red-800 text-lg mb-1">مسح النظام بالكامل</h3>
-                            <p class="text-sm text-red-600">سيتم حذف جميع البيانات (رياضيين، حضور، مدفوعات). هذه الخطوة نهائية.</p>
+                            <h3 class="font-bold text-red-800 text-lg mb-2">تحديد البيانات المراد حذفها</h3>
+                            <p class="text-sm text-red-600 mb-4">اختر الأقسام التي ترغب في تصفير بياناتها. هذه الخطوة نهائية.</p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-lg border border-red-100 hover:border-red-300 transition">
+                                    <input type="checkbox" id="del_athletes" class="w-5 h-5 text-red-600 rounded border-red-300 focus:ring-red-500">
+                                    <span class="text-sm font-bold text-slate-700">بيانات اللاعبين (والحضور)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-lg border border-red-100 hover:border-red-300 transition">
+                                    <input type="checkbox" id="del_payments" class="w-5 h-5 text-red-600 rounded border-red-300 focus:ring-red-500">
+                                    <span class="text-sm font-bold text-slate-700">سجل الاشتراكات</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-lg border border-red-100 hover:border-red-300 transition">
+                                    <input type="checkbox" id="del_expenses" class="w-5 h-5 text-red-600 rounded border-red-300 focus:ring-red-500">
+                                    <span class="text-sm font-bold text-slate-700">المصاريف العامة</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-lg border border-red-100 hover:border-red-300 transition">
+                                    <input type="checkbox" id="del_inventory" class="w-5 h-5 text-red-600 rounded border-red-300 focus:ring-red-500">
+                                    <span class="text-sm font-bold text-slate-700">حركة المخزون (البدلات)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-lg border border-red-100 hover:border-red-300 transition">
+                                    <input type="checkbox" id="del_sessions" class="w-5 h-5 text-red-600 rounded border-red-300 focus:ring-red-500">
+                                    <span class="text-sm font-bold text-slate-700">سجل الحصص التدريبية</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-lg border border-red-100 hover:border-red-300 transition">
+                                    <input type="checkbox" id="del_insurance" class="w-5 h-5 text-red-600 rounded border-red-300 focus:ring-red-500">
+                                    <span class="text-sm font-bold text-slate-700">دفعات تأمين المركز</span>
+                                </label>
+                            </div>
                         </div>
-                        <button onclick="clearAllDataSettings()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all shadow-md flex-shrink-0 flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            مسح البيانات
-                        </button>
+                        <div class="flex justify-between items-center border-t border-red-200 pt-4">
+                            <button onclick="selectAllDelete()" class="text-sm font-bold text-red-700 hover:underline">تحديد الكل / إلغاء التحديد</button>
+                            <button onclick="clearSelectedData()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all shadow-md flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                مسح البيانات المحددة
+                            </button>
+                        </div>
                     </div>
                 </section>
 
@@ -247,12 +277,13 @@
                 const backup = JSON.parse(backupStr);
                 const now = Date.now();
                 const diff = now - backup.timestamp;
-                const hours24 = 24 * 60 * 60 * 1000;
+                const limit = 7 * 24 * 60 * 60 * 1000; // 7 أيام
                 
-                if (diff < hours24) {
+                if (diff < limit) {
                     document.getElementById('restoreSection').style.display = 'block';
-                    const remainingHours = Math.max(1, Math.floor((hours24 - diff) / (1000 * 60 * 60)));
-                    document.getElementById('restoreTimeText').innerText = `يمكنك استعادة البيانات. الوقت المتبقي: ${remainingHours} ساعة.`;
+                    const remainingDays = Math.floor((limit - diff) / (1000 * 60 * 60 * 24));
+                    const remainingHours = Math.floor(((limit - diff) % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    document.getElementById('restoreTimeText').innerText = `يمكنك استعادة البيانات. الوقت المتبقي: ${remainingDays} أيام و ${remainingHours} ساعة.`;
                 } else {
                     localStorage.removeItem('karate_backup'); // أزل النسخة إذا انتهت صلاحيتها
                 }
@@ -260,24 +291,61 @@
         }
         checkBackup();
 
-        // إدارة مسح البيانات بالكامل
-        function clearAllDataSettings() {
-            const isConfirmed = confirm('تحذير: هل أنت متأكد من رغبتك في مسح جميع البيانات؟\n(الرياضيين، الاشتراكات، الحضور، والمخزون)\n\nسيتوفر خيار لاستعادة البيانات خلال 24 ساعة من وقت الحذف.');
+        function selectAllDelete() {
+            const checkboxes = ['del_athletes', 'del_payments', 'del_expenses', 'del_inventory', 'del_sessions', 'del_insurance'];
+            const allChecked = checkboxes.every(id => document.getElementById(id).checked);
+            checkboxes.forEach(id => {
+                document.getElementById(id).checked = !allChecked;
+            });
+        }
+
+        // إدارة مسح البيانات المحددة
+        function clearSelectedData() {
+            const delAthletes = document.getElementById('del_athletes').checked;
+            const delPayments = document.getElementById('del_payments').checked;
+            const delExpenses = document.getElementById('del_expenses').checked;
+            const delInventory = document.getElementById('del_inventory').checked;
+            const delSessions = document.getElementById('del_sessions').checked;
+            const delInsurance = document.getElementById('del_insurance').checked;
+
+            if (!delAthletes && !delPayments && !delExpenses && !delInventory && !delSessions && !delInsurance) {
+                alert('الرجاء تحديد قسم واحد على الأقل لمسح بياناته.');
+                return;
+            }
+
+            const isConfirmed = confirm('تحذير: هل أنت متأكد من رغبتك في مسح البيانات المحددة؟\nسيتوفر خيار لاستعادة البيانات خلال 7 أيام من وقت الحذف.');
             if (isConfirmed) {
-                const doubleCheck = confirm('تأكيد نهائي: سيتم إخفاء جميع البيانات من النظام الآن. هل تريد المتابعة فعلاً؟');
+                const doubleCheck = confirm('تأكيد نهائي: سيتم إخفاء البيانات المحددة من النظام الآن. هل تريد المتابعة فعلاً؟');
                 if (doubleCheck) {
-                    // مسح البيانات من Supabase
-                    Promise.all([
-                        _supabase.from('athletes').delete().neq('id', 0),
-                        _supabase.from('kimono_commend').delete().neq('id', 0),
-                        _supabase.from('kimono_livre').delete().neq('id', 0),
-                        _supabase.from('kimono_paid').delete().neq('id', 0),
-                        _supabase.from('kimono_retour').delete().neq('id', 0),
-                        _supabase.from('expenses').delete().neq('id', 0),
-                        _supabase.from('payments').delete().neq('id', 0),
-                        _supabase.from('attendance').delete().neq('id', 0)
-                    ]).then(() => {
-                        alert('تم مسح البيانات بنجاح من قاعدة البيانات.');
+                    const tablesToDelete = [];
+                    
+                    if (delAthletes) { tablesToDelete.push('athletes', 'attendance'); }
+                    if (delPayments) tablesToDelete.push('payments');
+                    if (delExpenses) tablesToDelete.push('expenses');
+                    if (delInventory) tablesToDelete.push('kimono_commend', 'kimono_livre', 'kimono_paid', 'kimono_retour', 'kimono_collected');
+                    if (delSessions) tablesToDelete.push('training_sessions');
+                    if (delInsurance) tablesToDelete.push('insurance_batches');
+
+                    // جلب البيانات أولاً لحفظها كنسخة احتياطية
+                    const backupData = {};
+                    const fetchPromises = tablesToDelete.map(table => 
+                        _supabase.from(table).select('*').then(res => {
+                            if (!res.error) {
+                                backupData[table] = res.data || [];
+                            }
+                        })
+                    );
+
+                    Promise.all(fetchPromises).then(() => {
+                        // حفظ النسخة الاحتياطية
+                        const backupStr = JSON.stringify({ timestamp: Date.now(), data: backupData });
+                        localStorage.setItem('karate_backup', backupStr);
+
+                        // مسح البيانات من قاعدة البيانات
+                        const deletePromises = tablesToDelete.map(table => _supabase.from(table).delete().neq('id', 0));
+                        return Promise.all(deletePromises);
+                    }).then(() => {
+                        alert('تم مسح البيانات المحددة بنجاح والاحتفاظ بنسخة احتياطية لمدة 7 أيام.');
                         window.location.reload();
                     }).catch(err => {
                         console.error(err);
@@ -293,21 +361,32 @@
             if (backupStr) {
                 const backup = JSON.parse(backupStr);
                 const now = Date.now();
-                if (now - backup.timestamp < 24 * 60 * 60 * 1000) {
-                    if (confirm('هل أنت متأكد من رغبتك في استعادة البيانات السابقة؟ سيتم استبدال أي بيانات مسجلة حالياً وتعود البيانات للحظة الحذف.')) {
-                        if (backup.data.karate_athletes) localStorage.setItem('karate_athletes', backup.data.karate_athletes);
-                        if (backup.data.kimono_commend) localStorage.setItem('kimono_commend', backup.data.kimono_commend);
-                        if (backup.data.kimono_livre) localStorage.setItem('kimono_livre', backup.data.kimono_livre);
-                        if (backup.data.kimono_paid) localStorage.setItem('kimono_paid', backup.data.kimono_paid);
-                        if (backup.data.kimono_retour) localStorage.setItem('kimono_retour', backup.data.kimono_retour);
-                        if (backup.data.karate_expenses) localStorage.setItem('karate_expenses', backup.data.karate_expenses);
+                if (now - backup.timestamp < 7 * 24 * 60 * 60 * 1000) {
+                    if (confirm('هل أنت متأكد من رغبتك في استعادة البيانات المحذوفة؟ سيتم استرجاعها إلى قاعدة البيانات السحابية.')) {
+                        const insertPromises = [];
+                        for (const table in backup.data) {
+                            if (backup.data[table] && backup.data[table].length > 0) {
+                                insertPromises.push(_supabase.from(table).insert(backup.data[table]));
+                            }
+                        }
                         
-                        localStorage.removeItem('karate_backup'); // إزالة النسخة الاحتياطية بعد استعادتها
-                        alert('تمت استعادة البيانات بنجاح.');
-                        window.location.href = 'index.html';
+                        if (insertPromises.length > 0) {
+                            Promise.all(insertPromises).then(() => {
+                                localStorage.removeItem('karate_backup'); // إزالة النسخة الاحتياطية بعد استعادتها
+                                alert('تمت استعادة البيانات بنجاح.');
+                                window.location.href = 'index.html';
+                            }).catch(err => {
+                                console.error(err);
+                                alert('حدث خطأ أثناء استعادة البيانات من السحابة. يرجى التحقق من الاتصال.');
+                            });
+                        } else {
+                            localStorage.removeItem('karate_backup');
+                            alert('النسخة الاحتياطية كانت فارغة.');
+                            window.location.href = 'index.html';
+                        }
                     }
                 } else {
-                    alert('انتهت صلاحية النسخة الاحتياطية (مرت 24 ساعة).');
+                    alert('انتهت صلاحية النسخة الاحتياطية (مرت 7 أيام).');
                     localStorage.removeItem('karate_backup');
                     window.location.reload();
                 }
