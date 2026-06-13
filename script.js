@@ -364,6 +364,12 @@ function renderTable() {
         if (!docs.guardian) missingDocs.push('تصريح الولي');
         
         const docStatus = missingDocs.length === 0 ? '<span style="color: #5cb85c; font-weight: bold;">مكتمل</span>' : `<span style="color: #d9534f; font-size: 12px;">ناقص: ${missingDocs.join('، ')}</span>`;
+        
+        const hasOneSessionLeft = limit > 0 && athlete.attendance === limit - 1;
+        const showMessageBtn = (isExpired || hasOneSessionLeft) && athlete.guardianPhone;
+        const messageBody = isExpired 
+            ? 'سلام عليكم \n\nنود اعلامكم بانتهاء اشتراك ابنائكم' 
+            : 'سلام عليكم \n\nنود اعلامكم بتبقي حصة واحدة في اشتراك ابنائكم';
 
         return `
             <tr class="athlete-row border-b border-slate-100 hover:bg-slate-50 transition duration-200 ${isExpired ? 'expired-row' : ''}">
@@ -383,7 +389,7 @@ function renderTable() {
                     </div>
                 </td>
                 <td class="p-4 align-middle actions-cell text-center admin-only" data-label="إجراءات">
-                ${(isExpired && athlete.guardianPhone) ? `<button class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" title="إرسال رسالة هاتفية" onclick="window.location.href='sms:${athlete.guardianPhone.replace(/\s+/g, '')}?body=${encodeURIComponent('سلام عليكم \n\nنود اعلامكم بانتهاء اشتراك ابنائكم')}'">رسالة</button>` : ''}
+                ${showMessageBtn ? `<button class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" title="إرسال رسالة هاتفية" onclick="window.location.href='sms:${athlete.guardianPhone.replace(/\s+/g, '')}?body=${encodeURIComponent(messageBody)}'">رسالة</button>` : ''}
                     <button class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="editDocs(${athlete.id})">تعديل</button>
                     ${viewMode === 'active' 
                         ? `<button class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="toggleArchive(${athlete.id}, true)">أرشفة</button>`
