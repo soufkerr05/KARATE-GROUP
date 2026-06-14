@@ -3,24 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- جدار الحماية المباشر -->
     <script>
         const authTime = localStorage.getItem('karate_auth_time');
         const parsedTime = parseInt(authTime, 10);
-        if (!authTime || isNaN(parsedTime) || (Date.now() - parsedTime) > 21600000) {
+        const timeElapsed = Date.now() - parsedTime;
+        if (!authTime || isNaN(parsedTime) || timeElapsed > 21600000) {
+            localStorage.removeItem('karate_auth');
+            localStorage.removeItem('karate_auth_time');
             window.location.replace('login.html');
+        } else {
+            setTimeout(() => {
+                localStorage.removeItem('karate_auth');
+                localStorage.removeItem('karate_auth_time');
+                window.location.replace('login.html');
+            }, 21600000 - timeElapsed);
         }
     </script>
-    <title>دفعات تأمين المركز - قاعة KARATE</title>
-    
+    <title>الدعم والمساهمات - قاعة KARATE</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script>
-        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Tajawal', 'sans-serif'] } } } }
+        tailwind.config = {
+            theme: { extend: { fontFamily: { sans: ['Tajawal', 'Cairo', 'sans-serif'], } } }
+        }
     </script>
-    
+
+    <!-- إعدادات Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
+
     <link rel="stylesheet" href="style.css">
+    <style> body { font-family: 'Tajawal', sans-serif; } </style>
 </head>
 <body class="bg-slate-50 transition-colors duration-200">
     <header class="header-wrapper sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm mb-8 print:hidden">
@@ -47,8 +61,8 @@
                         </button>
                         <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <a href="expenses.html" class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 border-b border-slate-100 first:rounded-t-xl">المصاريف</a>
-                                <a href="insurance_batches.html" class="block px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 border-b border-slate-100">دفعات تأمين المركز</a>
-                                <a href="contributions.html" class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 last:rounded-b-xl">الدعم والمساهمات</a>
+                            <a href="insurance_batches.html" class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 border-b border-slate-100">دفعات تأمين المركز</a>
+                            <a href="contributions.html" class="block px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 last:rounded-b-xl">الدعم والمساهمات</a>
                         </div>
                     </div>
                     <div class="relative group">
@@ -88,8 +102,8 @@
             </summary>
             <div class="flex flex-col gap-2 mt-2 px-4">
                 <a href="expenses.html" class="w-full text-center px-4 py-3 rounded-xl font-bold text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors bg-slate-50 border border-slate-100">المصاريف</a>
-                <a href="insurance_batches.html" class="w-full text-center px-4 py-3 rounded-xl font-bold text-lg text-blue-600 bg-blue-50 border border-blue-100 transition-colors">دفعات تأمين المركز</a>
-                <a href="contributions.html" class="w-full text-center px-4 py-3 rounded-xl font-bold text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors bg-slate-50 border border-slate-100">الدعم والمساهمات</a>
+                <a href="insurance_batches.html" class="w-full text-center px-4 py-3 rounded-xl font-bold text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors bg-slate-50 border border-slate-100">دفعات تأمين المركز</a>
+                <a href="contributions.html" class="w-full text-center px-4 py-3 rounded-xl font-bold text-lg text-blue-600 bg-blue-50 border border-blue-100 transition-colors">الدعم والمساهمات</a>
             </div>
         </details>
         <details class="w-full text-center group">
@@ -107,107 +121,52 @@
         <a href="settings.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الإعدادات</a>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 md:px-8 mb-12">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-4 mb-6 gap-4">
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <span class="text-2xl">🏢</span> سجل دفعات تأمين المركز
-                    </h2>
-                    <p class="text-slate-500 mt-1 text-sm">إدارة المبالغ والرياضيين الذين تم دفع تأمينهم للمركز الترفيهي.</p>
+    <main class="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="border-b border-slate-200 pb-4 mb-6">
+                    <h1 class="text-2xl font-bold text-slate-800">تسجيل مساهمة جديدة</h1>
+                    <p class="text-slate-500 mt-1">إضافة دعم مالي أو عتاد تم تقديمه للنادي.</p>
                 </div>
-                <button onclick="openAddBatchModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl transition-all shadow-md text-sm flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                    تسجيل دفعة جديدة
-                </button>
-            </div>
-
-            <!-- شبكة عرض الدفعات -->
-            <div id="batchesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- سيتم ملء هذا الجزء بواسطة الجافاسكريبت -->
-            </div>
-        </div>
-    </main>
-
-    <!-- نافذة إضافة دفعة جديدة -->
-    <div id="addBatchModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl relative flex flex-col overflow-hidden max-h-[90vh]">
-            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                <h2 class="text-xl font-bold text-slate-800">إنشاء دفعة تأمين جديدة</h2>
-                <button onclick="closeAddBatchModal()" class="text-slate-400 hover:text-red-500"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            </div>
-            
-            <div class="p-6 overflow-y-auto">
-                <form id="batchForm" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">تاريخ الدفع للمركز:</label>
-                            <input type="date" id="batchDate" required class="w-full p-3 border border-slate-300 rounded-xl focus:ring-blue-500 outline-none font-bold bg-slate-50">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">المبلغ الإجمالي (د.ج):</label>
-                            <input type="number" id="batchTotal" required class="w-full p-3 border border-slate-300 rounded-xl focus:ring-blue-500 outline-none font-black text-lg text-blue-600 bg-slate-50">
-                        </div>
-                    </div>
-
+                <form id="contributionForm" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">ملاحظات (اختياري):</label>
-                        <input type="text" id="batchNotes" placeholder="مثال: دفعة شهر أكتوبر..." class="w-full p-3 border border-slate-300 rounded-xl focus:ring-blue-500 outline-none bg-slate-50">
+                        <label for="contribDate" class="block text-sm font-semibold text-slate-700 mb-1">تاريخ المساهمة:</label>
+                        <input type="date" id="contribDate" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold">
                     </div>
-
-                    <div class="border border-slate-200 rounded-xl overflow-hidden">
-                        <div class="bg-slate-100 p-3 border-b border-slate-200 flex justify-between items-center">
-                            <span class="font-bold text-slate-700">تحديد الرياضيين المشمولين بالدفعة:</span>
-                            <span class="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-bold" id="selectedCount">المحدد: 0</span>
-                        </div>
-                        <div class="p-3 bg-white">
-                            <input type="text" id="searchAthletes" placeholder="ابحث عن رياضي..." class="w-full p-2 mb-3 border border-slate-200 rounded-lg text-sm outline-none">
-                            <div id="athletesSelectionList" class="max-h-60 overflow-y-auto space-y-2 pr-2">
-                                <!-- قائمة الرياضيين للتعليم -->
-                            </div>
-                        </div>
+                    <div>
+                        <label for="contribName" class="block text-sm font-semibold text-slate-700 mb-1">اسم المساهم (المتبرع):</label>
+                        <input type="text" id="contribName" required placeholder="اسم الشخص أو الجهة..." class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold">
                     </div>
-
-                    <button type="submit" id="submitBatchBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-lg py-4 rounded-xl shadow-md transition-all">حفظ الدفعة</button>
+                    <div>
+                        <label for="contribType" class="block text-sm font-semibold text-slate-700 mb-1">نوع المساهمة:</label>
+                        <select id="contribType" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold">
+                            <option value="مبلغ مالي">مبلغ مالي</option>
+                            <option value="عتاد رياضي">عتاد رياضي</option>
+                            <option value="أخرى">أخرى</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="contribValue" class="block text-sm font-semibold text-slate-700 mb-1">القيمة المقدرة (د.ج):</label>
+                        <input type="number" id="contribValue" min="0" step="10" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-bold">
+                    </div>
+                    <div>
+                        <label for="contribNote" class="block text-sm font-semibold text-slate-700 mb-1">التفاصيل (اختياري):</label>
+                        <input type="text" id="contribNote" placeholder="مثال: شراء 5 بساطات، تبرع نقدي..." class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800">
+                    </div>
+                    <button type="submit" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-3 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">حفظ المساهمة</button>
                 </form>
             </div>
         </div>
-    </div>
-
-    <!-- نافذة عرض تفاصيل الدفعة -->
-    <div id="viewBatchModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative flex flex-col overflow-hidden max-h-[80vh]">
-            <div class="px-6 py-5 border-b border-slate-100 bg-blue-600 flex justify-between items-center text-white">
-                <h2 class="text-xl font-bold">تفاصيل الدفعة</h2>
-                <button onclick="closeViewBatchModal()" class="text-blue-200 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            </div>
-            
-            <div class="p-6 overflow-y-auto">
-                <div class="flex justify-between items-center mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div>
-                        <p class="text-sm text-slate-500 font-bold mb-1">تاريخ الدفع</p>
-                        <p class="text-lg font-black text-slate-800" id="viewDate"></p>
-                    </div>
-                    <div class="text-left">
-                        <p class="text-sm text-slate-500 font-bold mb-1">المبلغ الإجمالي</p>
-                        <p class="text-xl font-black text-emerald-600" id="viewTotal"></p>
-                    </div>
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div class="border-b border-slate-200 pb-4 mb-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-slate-800">سجل الدعم والمساهمات</h2>
+                <div class="text-sm font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100 shadow-sm">
+                    إجمالي القيمة: <span id="totalContributionsValue">0</span> د.ج
                 </div>
-                
-                <p id="viewNotes" class="text-sm text-slate-600 bg-amber-50 p-3 rounded-lg border border-amber-100 mb-4 hidden"></p>
-
-                <h3 class="font-bold text-slate-800 mb-3 border-b pb-2">الرياضيون المشمولون (<span id="viewCount"></span>):</h3>
-                <ul id="viewAthletesList" class="space-y-2"></ul>
             </div>
-            <div class="p-4 border-t border-slate-100 bg-slate-50 text-left">
-                <button id="btnDeleteBatch" class="text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg font-bold transition text-sm flex items-center gap-2 mr-auto">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    حذف هذه الدفعة
-                </button>
-            </div>
+            <div id="contributionsList" class="overflow-x-auto"></div>
         </div>
-    </div>
-
-    <script src="insurance_batches.js"></script>
+    </main>
+    <script src="contributions.js"></script>
 </body>
 </html>
