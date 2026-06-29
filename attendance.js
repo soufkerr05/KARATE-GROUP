@@ -126,6 +126,12 @@ function renderAttendanceTable() {
         todayAttendanceCountEl.innerText = attendedTodayCount;
     }
 
+    // فلترة الرياضيين الذين لم يكونوا مشتركين بعد في تاريخ الحصة المحدد
+    if (sessionDate) {
+        filteredAthletes = filteredAthletes.filter(a => 
+            !a.subDate || new Date(a.subDate) <= new Date(sessionDate));
+    }
+
     // الترتيب
     const sortSelect = document.getElementById('sortSelect');
     if (sortSelect) {
@@ -145,6 +151,12 @@ function renderAttendanceTable() {
                 const aAttended = a.attendanceDates && a.attendanceDates.includes(sessionDate) ? 1 : 0;
                 const bAttended = b.attendanceDates && b.attendanceDates.includes(sessionDate) ? 1 : 0;
                 return aAttended - bAttended;
+            });
+        } else if (sortValue === 'subDate') {
+            filteredAthletes.sort((a, b) => {
+                if (!a.subDate) return 1;
+                if (!b.subDate) return -1;
+                return new Date(b.subDate) - new Date(a.subDate);
             });
         }
     }
