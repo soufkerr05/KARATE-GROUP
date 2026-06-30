@@ -256,6 +256,7 @@ attendanceForm.addEventListener('submit', async function(e) {
     const sessionDate = sessionDateInput.value;
     let updatedCount = 0;
     const updatePromises = [];
+    const competitionPointsToAdd = []; // مصفوفة لتجميع نقاط المسابقة
 
     checkboxes.forEach(cb => {
         const id = parseInt(cb.value);
@@ -273,10 +274,24 @@ attendanceForm.addEventListener('submit', async function(e) {
                     attendanceDates: athlete.attendanceDates
                 }).eq('id', id)
             );
+
+            // إضافة نصف نقطة تلقائياً لمسابقة الساموراي الصغير
+            competitionPointsToAdd.push({
+                athlete_id: parseInt(id, 10), // تحويل المعرف إلى رقم
+                date: sessionDate,
+                points: 0.5,
+                reason: 'حضور الحصة',
+                notes: `تسجيل حضور تلقائي ليوم ${sessionDate}`
+            });
         }
     });
 
     if (updatedCount > 0) {
+        // إضافة نقاط المسابقة إلى قاعدة البيانات
+        if (competitionPointsToAdd.length > 0) {
+            updatePromises.push(_supabase.from('samurai_competition').insert(competitionPointsToAdd));
+        }
+
         await Promise.all(updatePromises); // تنفيذ جميع التحديثات دفعة واحدة
         alert(`تم تسجيل حضور ${updatedCount} رياضيين بنجاح في تاريخ ${sessionDateInput.value}.`);
         

@@ -206,12 +206,12 @@ function closeEditModal() {
 document.getElementById('editDocsForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const id = parseInt(document.getElementById('editAthleteId').value);
-    const athlete = athletes.find(a => a.id === id);
     
-    if (athlete) {
+    if (id) {
+        // Cache DOM elements
         const updatedData = {
-            firstName: document.getElementById('editFirstName').value,
-            lastName: document.getElementById('editLastName').value,
+            firstName: document.getElementById('editFirstName').value.trim(),
+            lastName: document.getElementById('editLastName').value.trim(),
             gender: document.getElementById('editGender').value,
             dob: document.getElementById('editDob').value,
             guardianName: document.getElementById('editGuardianName').value,
@@ -225,8 +225,13 @@ document.getElementById('editDocsForm').addEventListener('submit', async functio
             }
         };
         
+        if (!updatedData.firstName || !updatedData.lastName) {
+            alert('الرجاء إدخال الاسم واللقب.');
+            return;
+        }
+
         const { error } = await _supabase.from('athletes').update(updatedData).eq('id', id);
-        if (error) console.error(error);
+        if (error) { console.error(error); alert('حدث خطأ أثناء تحديث البيانات: ' + error.message); return; }
         
         closeEditModal();
         fetchAthletes();
@@ -419,11 +424,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const initialCheckUniform = document.getElementById('initialCheckUniform');
     const initialUniformContainer = document.getElementById('initialUniformContainer');
     if (initialCheckUniform && initialUniformContainer) {
+        const initialUniformType = document.getElementById('initialUniformType');
+        const initialUniformQty = document.getElementById('initialUniformQty');
         initialCheckUniform.addEventListener('change', function() {
-            if (this.checked) {
-                initialUniformContainer.classList.remove('hidden');
-            } else {
-                initialUniformContainer.classList.add('hidden');
+            initialUniformContainer.classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
                 if(document.getElementById('initialUniformType')) document.getElementById('initialUniformType').value = '250';
                 if(window.updateUniformSizes) window.updateUniformSizes('initialUniformType', 'initialUniformSize');
                 if(document.getElementById('initialUniformQty')) document.getElementById('initialUniformQty').value = 1;
@@ -437,14 +442,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const initialCheckInsurance = document.getElementById('initialCheckInsurance');
     const initialInsuranceContainer = document.getElementById('initialInsuranceContainer');
+    const initialInsuranceAmount = document.getElementById('initialInsuranceAmount');
     if (initialCheckInsurance && initialInsuranceContainer) {
         initialCheckInsurance.addEventListener('change', function() {
-            if (this.checked) {
-                initialInsuranceContainer.classList.remove('hidden');
-                if (document.getElementById('initialInsuranceAmount')) document.getElementById('initialInsuranceAmount').value = 500;
-            } else {
-                initialInsuranceContainer.classList.add('hidden');
-                if (document.getElementById('initialInsuranceAmount')) document.getElementById('initialInsuranceAmount').value = 0;
+            initialInsuranceContainer.classList.toggle('hidden', !this.checked);
+            if (initialInsuranceAmount) {
+                initialInsuranceAmount.value = this.checked ? 500 : 0;
             }
         });
     }

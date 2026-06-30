@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ترتيب مسابقة الساموراي الصغير</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- الإعدادات العامة --- */
+        body {
+            font-family: 'Tajawal', 'Cairo', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            color: #333;
+        }
+
+        .page-container {
+            background-color: #fff;
+            width: 210mm; /* عرض ورقة A4 */
+            min-height: 297mm; /* ارتفاع ورقة A4 */
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+
+        /* --- زر الطباعة --- */
+        .print-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.2s;
+            z-index: 100;
+        }
+        .print-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* --- العناوين --- */
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 800;
+            color: #1e3a8a;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        /* --- جدول المراكز الثلاثة الأولى --- */
+        .top-three-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 1.2em; /* خط أكبر */
+        }
+        .top-three-table th, .top-three-table td {
+            border: 1px solid #ccc;
+            padding: 12px;
+            text-align: center;
+        }
+        .top-three-table th {
+            background-color: #e9ecef;
+            font-weight: 700;
+        }
+        .top-three-table tbody tr {
+            background-color: #f8f9fa; /* تظليل رمادي خفيف */
+        }
+        .title-underline {
+            font-weight: bold;
+            text-decoration: underline;
+            text-decoration-color: #007bff;
+            text-decoration-thickness: 2px;
+            text-underline-offset: 4px;
+        }
+
+        /* --- حاوية الجدولين المتجاورين --- */
+        .main-tables-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .ranking-column {
+            width: 49%;
+        }
+
+        /* --- جداول الترتيب الرئيسية --- */
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt; /* حجم خط أساسي للطباعة */
+        }
+        .ranking-table th, .ranking-table td {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            text-align: right;
+        }
+        .ranking-table th {
+            background-color: #f2f2f2;
+            font-weight: 700;
+        }
+        .ranking-table td:first-child, .ranking-table th:first-child { /* عمود النقاط */
+            text-align: center;
+            font-weight: bold;
+            width: 15%;
+        }
+        .ranking-table td:last-child, .ranking-table th:last-child { /* عمود الترتيب */
+            text-align: center;
+            width: 15%;
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+
+        /* --- إعدادات الطباعة --- */
+        @media print {
+            @page {
+                size: A4;
+                margin: 1cm; /* هوامش صغيرة */
+            }
+            body {
+                background-color: #fff;
+                padding: 0;
+                margin: 0;
+                font-size: 9.5pt; /* تصغير الخط قليلاً لضمان ملاءمة الصفحة */
+            }
+            .page-container {
+                width: 100%;
+                min-height: auto;
+                box-shadow: none;
+                padding: 0;
+            }
+            .print-button {
+                display: none; /* إخفاء زر الطباعة */
+            }
+            h1 {
+                font-size: 20pt;
+            }
+            .top-three-table {
+                font-size: 11pt;
+            }
+            .ranking-table {
+                font-size: 9pt; /* تصغير خط الجداول السفلية أكثر */
+            }
+            .ranking-table td, .ranking-table th {
+                padding: 4px 6px; /* تقليل الحشو الداخلي للخلايا */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="print-button" onclick="window.print()">طباعة</button>
+
+    <div class="page-container">
+        <h1>ترتيب مسابقة الساموراي الصغير لشهر مارس وأفريل</h1>
+
+        <!-- جدول المراكز الثلاثة الأولى -->
+        <table class="top-three-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">المركز</th>
+                    <th>الاسم واللقب</th>
+                    <th style="width: 20%;">النقاط</th>
+                </tr>
+            </thead>
+            <tbody id="top-three-body">
+                <!-- سيتم ملء هذا الجزء بواسطة JavaScript -->
+            </tbody>
+        </table>
+
+        <!-- حاوية الجدولين المتجاورين -->
+        <div class="main-tables-container">
+            <!-- الجدول الأيمن -->
+            <div class="ranking-column">
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th>النقاط</th>
+                            <th>الاسم</th>
+                            <th>الترتيب</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-body-1">
+                        <!-- سيتم ملء هذا الجزء بواسطة JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- الجدول الأيسر -->
+            <div class="ranking-column">
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th>النقاط</th>
+                            <th>الاسم</th>
+                            <th>الترتيب</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-body-2">
+                        <!-- سيتم ملء هذا الجزء بواسطة JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // بيانات وهمية للرياضيين
+        const athletesData = [
+            { name: "محمد الأمين بوعزيز", points: 25.5 }, { name: "عبد الرحمن جلطي", points: 23.0 },
+            { name: "يوسف بوعزيز", points: 21.5 }, { name: "آدم جلطي", points: 19.0 },
+            { name: "إياد قداري", points: 18.5 }, { name: "أحمد خوجة", points: 17.0 },
+            { name: "سارة بن علي", points: 16.5 }, { name: "علي محمودي", points: 16.0 },
+            { name: "فاطمة الزهراء حداد", points: 15.5 }, { name: "عمر شريف", points: 15.0 },
+            { name: "ليلى مراد", points: 14.5 }, { name: "خالد بلقاسم", points: 14.0 },
+            { name: "مريم بناني", points: 13.5 }, { name: "أمين قاسمي", points: 13.0 },
+            { name: "نور الهدى زروال", points: 12.5 }, { name: "ياسين العربي", points: 12.0 },
+            { name: "سليمان منصوري", points: 11.5 }, { name: "ريان حمداش", points: 11.0 },
+            { name: "شيماء بوعلام", points: 10.5 }, { name: "عبد الله كريم", points: 10.0 },
+            { name: "إسراء لعجال", points: 9.5 }, { name: "زكريا بلعيد", points: 9.0 },
+            { name: "هبة رحماني", points: 8.5 }, { name: "معاذ طويل", points: 8.0 },
+            { name: "أنس براهيمي", points: 7.5 }, { name: "جنى عمران", points: 7.0 },
+            { name: "عبد النور سعدي", points: 6.5 }, { name: "إلياس دراجي", points: 6.0 }
+        ].sort((a, b) => b.points - a.points); // ترتيب تنازلي حسب النقاط
+
+        const topThreeBody = document.getElementById('top-three-body');
+        const rankingBody1 = document.getElementById('ranking-body-1');
+        const rankingBody2 = document.getElementById('ranking-body-2');
+
+        const titles = ["الساموراي الصغير", "قلب الأسد", "الفتى الذهبي"];
+
+        // ملء جدول المراكز الثلاثة الأولى
+        athletesData.slice(0, 3).forEach((athlete, index) => {
+            topThreeBody.innerHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${athlete.name}<br><span class="title-underline">${titles[index]}</span></td>
+                    <td>${athlete.points.toFixed(1)}</td>
+                </tr>
+            `;
+        });
+
+        // توزيع باقي المتسابقين على الجدولين
+        const remainingAthletes = athletesData.slice(3);
+        const midPoint = Math.ceil(remainingAthletes.length / 2);
+
+        remainingAthletes.slice(0, midPoint).forEach((athlete, index) => {
+            const rank = index + 4;
+            rankingBody1.innerHTML += `
+                <tr>
+                    <td>${athlete.points.toFixed(1)}</td>
+                    <td>${athlete.name}</td>
+                    <td>${rank}</td>
+                </tr>
+            `;
+        });
+
+        remainingAthletes.slice(midPoint).forEach((athlete, index) => {
+            const rank = index + 4 + midPoint;
+            rankingBody2.innerHTML += `
+                <tr>
+                    <td>${athlete.points.toFixed(1)}</td>
+                    <td>${athlete.name}</td>
+                    <td>${rank}</td>
+                </tr>
+            `;
+        });
+    </script>
+
+</body>
+</html>
