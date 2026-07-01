@@ -279,24 +279,59 @@
             </div>
         </div>
 
-        <!-- جدول المتأخرين في الدفع -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 flex flex-col">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-rose-700 border-r-4 border-rose-500 pr-2">الرياضيون المتأخرون في الدفع (اشتراك منتهي)</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- جدول المتأخرين في الدفع -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-rose-700 border-r-4 border-rose-500 pr-2">الرياضيون المتأخرون في الدفع (اشتراك منتهي)</h3>
+                </div>
+                <div class="hidden md:flex justify-between items-center px-4 py-2 bg-slate-50 text-slate-500 text-sm font-semibold rounded-lg mb-3">
+                    <div class="flex-grow">الرياضي</div>
+                    <div class="w-24 text-center">عدد الحصص</div>
+                    <div class="w-32 text-center">رقم ولي الأمر</div>
+                </div>
+                <div class="flex-grow max-h-80 overflow-y-auto pl-1 pr-1 pb-1" style="scrollbar-width: thin;">
+                    <div id="latePaymentsList" class="flex flex-col gap-2"></div>
+                </div>
             </div>
-            <div class="hidden md:flex justify-between items-center px-4 py-2 bg-slate-50 text-slate-500 text-sm font-semibold rounded-lg mb-3">
-                <div class="flex-grow">الرياضي</div>
-                <div class="w-24 text-center">عدد الحصص</div>
-                <div class="w-32 text-center">رقم ولي الأمر</div>
-            </div>
-            <div class="flex-grow max-h-80 overflow-y-auto pl-1 pr-1 pb-1" style="scrollbar-width: thin;">
-                <div id="latePaymentsList" class="flex flex-col gap-2"></div>
+
+            <!-- إحصائيات الحضور الفردي -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-cyan-700 border-r-4 border-cyan-500 pr-2">إحصائيات الحضور الفردي</h3>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="flex-1">
+                        <label for="attendanceStartDate" class="text-xs font-bold text-slate-500">من:</label>
+                        <input type="date" id="attendanceStartDate" class="w-full p-2 border border-slate-200 rounded-lg text-sm font-bold">
+                    </div>
+                    <div class="flex-1">
+                        <label for="attendanceEndDate" class="text-xs font-bold text-slate-500">إلى:</label>
+                        <input type="date" id="attendanceEndDate" class="w-full p-2 border border-slate-200 rounded-lg text-sm font-bold">
+                    </div>
+                    <button id="runIndividualAttendance" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-4 py-2 rounded-lg transition text-sm self-end">عرض</button>
+                </div>
+                <div class="hidden md:flex justify-between items-center px-4 py-2 bg-slate-50 text-slate-500 text-sm font-semibold rounded-lg mb-3">
+                    <div class="flex-grow">الرياضي</div>
+                    <div class="w-28 text-center">عدد الحصص المحضورة</div>
+                </div>
+                <div class="flex-grow max-h-80 overflow-y-auto pl-1 pr-1 pb-1" style="scrollbar-width: thin;">
+                    <div id="individualAttendanceList" class="flex flex-col gap-2"></div>
+                </div>
             </div>
         </div>
     </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            const formatDate = (date) => date.toISOString().split('T')[0];
+            const today = new Date();
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+            document.getElementById('attendanceStartDate').value = formatDate(firstDayOfMonth);
+            document.getElementById('attendanceEndDate').value = formatDate(lastDayOfMonth);
+
             try {
                 // جلب البيانات من جدول الرياضيين
                 const [athletesRes, paymentsRes] = await Promise.all([
@@ -562,31 +597,38 @@
                     `).join('');
                 }
 
+                // --- إحصائيات الحضور الفردي ---
+                const individualAttendanceBtn = document.getElementById('runIndividualAttendance');
+                const individualAttendanceList = document.getElementById('individualAttendanceList');
+                const attendanceStartDateInput = document.getElementById('attendanceStartDate');
+                const attendanceEndDateInput = document.getElementById('attendanceEndDate');
+
+                const renderIndividualAttendanceStats = () => {
+                    const startDate = attendanceStartDateInput.value;
+                    const endDate = attendanceEndDateInput.value;
+                    if (!startDate || !endDate) return;
+
+                    const attendanceCounts = activeAthletes.map(a => {
+                        const count = (a.attendanceDates || []).filter(d => d >= startDate && d <= endDate).length;
+                        return { name: `${a.firstName} ${a.lastName}`, count };
+                    }).sort((a, b) => b.count - a.count);
+
+                    if (attendanceCounts.length === 0) {
+                        individualAttendanceList.innerHTML = `<div class="p-4 text-center text-slate-500">لا توجد بيانات حضور في هذه الفترة.</div>`;
+                    } else {
+                        individualAttendanceList.innerHTML = attendanceCounts.map(item => `<div class="flex items-center justify-between p-3 sm:p-4 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"><div class="font-bold text-slate-700 flex-grow text-sm sm:text-base truncate pl-2">${item.name}</div><div class="text-center w-28"><span class="bg-cyan-100 text-cyan-800 font-black px-3 py-1.5 rounded-lg text-sm">${item.count}</span></div></div>`).join('');
+                    }
+                };
+
+                individualAttendanceBtn.addEventListener('click', renderIndividualAttendanceStats);
+                attendanceStartDateInput.addEventListener('change', renderIndividualAttendanceStats);
+                attendanceEndDateInput.addEventListener('change', renderIndividualAttendanceStats);
+                renderIndividualAttendanceStats(); // استدعاء أولي
             } catch (err) {
                 console.error('Error fetching athletes stats:', err);
             }
         });
 
-        function toggleMobileMenu() {
-            const menu = document.getElementById("mobileMenu");
-            menu.classList.toggle("hidden");
-            menu.classList.toggle("flex");
-            document.body.classList.toggle("overflow-hidden");
-        }
-
-        // تطبيق الوضع الليلي عند التحميل
-        function applyTheme() {
-            const theme = localStorage.getItem('theme') || 'system';
-            if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.body.classList.add('dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
-            }
-        }
-        applyTheme();
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            if ((localStorage.getItem('theme') || 'system') === 'system') applyTheme();
-        });
     </script>
 </body>
 </html>

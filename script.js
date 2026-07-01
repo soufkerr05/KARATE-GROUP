@@ -443,54 +443,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const initialCheckInsurance = document.getElementById('initialCheckInsurance');
     const initialInsuranceContainer = document.getElementById('initialInsuranceContainer');
     const initialInsuranceAmount = document.getElementById('initialInsuranceAmount');
-    if (initialCheckInsurance && initialInsuranceContainer) {
+    if (initialCheckInsurance && initialInsuranceContainer && initialInsuranceAmount) {
         initialCheckInsurance.addEventListener('change', function() {
-            initialInsuranceContainer.classList.toggle('hidden', !this.checked);
-            if (initialInsuranceAmount) {
-                initialInsuranceAmount.value = this.checked ? 500 : 0;
-            }
+            const isChecked = this.checked;
+            initialInsuranceContainer.classList.toggle('hidden', !isChecked);
+            initialInsuranceAmount.value = isChecked ? 500 : 0;
         });
-    }
-});
-
-// دالة إظهار القائمة المنسدلة للهواتف
-function toggleMobileMenu() {
-    const menu = document.getElementById("mobileMenu");
-    menu.classList.toggle("hidden");
-    menu.classList.toggle("flex");
-    document.body.classList.toggle("overflow-hidden");
-}
-
-// تطبيق الوضع الليلي عند التحميل
-function applyTheme() {
-    const theme = localStorage.getItem('theme') || 'system';
-    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
-}
-applyTheme();
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if ((localStorage.getItem('theme') || 'system') === 'system') applyTheme();
-});
-
-// إخفاء وإظهار القائمة العلوية عند التمرير (Scroll)
-let lastScrollTop = 0;
-let isScrolling = false;
-window.addEventListener('scroll', function() {
-    if (!isScrolling) {
-        window.requestAnimationFrame(function() {
-            const header = document.querySelector('.header-wrapper');
-            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            if (scrollTop > lastScrollTop && scrollTop > 80) {
-                header.classList.add('header-hidden');
-            } else {
-                header.classList.remove('header-hidden');
-            }
-            lastScrollTop = scrollTop;
-            isScrolling = false;
-        });
-        isScrolling = true;
     }
 });

@@ -1,7 +1,13 @@
+// ===================================================================
+// مسابقة الساموراي الصغير - samurai_competition.js
+// إدارة وعرض ترتيب الرياضيين بناءً على النقاط المكتسبة.
+// ===================================================================
+
+// --- المتغيرات العامة (Global State) ---
 let athletes = [];
 let competitionPoints = [];
 
-// عناصر DOM
+// --- عناصر DOM (Cached DOM Elements) ---
 const pointsForm = document.getElementById('pointsForm');
 const pointDateInput = document.getElementById('pointDate');
 const startDateInput = document.getElementById('startDate');
@@ -10,6 +16,14 @@ const rankingsList = document.getElementById('rankingsList');
 const athletesChecklist = document.getElementById('athletesChecklist');
 const athleteSearchInput = document.getElementById('athleteSearch');
 const selectedAthletesCount = document.getElementById('selectedAthletesCount');
+const rankingContainer = document.getElementById('rankingContainer'); // حاوية قائمة الترتيب
+const syncProgressContainer = document.getElementById('syncProgressContainer'); // حاوية شريط التقدم
+const syncProgressCountEl = document.getElementById('syncProgressCount'); // عداد التقدم
+const syncTotalCountEl = document.getElementById('syncTotalCount'); // إجمالي العناصر
+const syncProgressBarEl = document.getElementById('syncProgressBar'); // شريط التقدم
+const loadingState = document.getElementById('loadingState'); // New: Loading indicator
+
+// --- الدوال المساعدة (Helper Functions) ---
 
 // تعيين التواريخ الافتراضية
 const today = new Date();
@@ -17,36 +31,85 @@ const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
 const formatDate = (date) => date.toISOString().split('T')[0];
+/**
+ * يضبط التواريخ الافتراضية لحقول التاريخ (تاريخ اليوم، بداية ونهاية الشهر الحالي).
+ */
+function setDefaultDates() {
+    pointDateInput.value = formatDate(today);
+    startDateInput.value = formatDate(firstDayOfMonth);
+    endDateInput.value = formatDate(lastDayOfMonth);
+}
 
-pointDateInput.value = formatDate(today);
-startDateInput.value = formatDate(firstDayOfMonth);
-endDateInput.value = formatDate(lastDayOfMonth);
+/**
+ * يقوم بفلترة الرياضيين في قائمة الاختيار بناءً على نص البحث.
+ */
+function filterAthletes() {
+    const term = athleteSearchInput.value.toLowerCase();
+    document.querySelectorAll('.athlete-checkbox-item').forEach(item => {
+        const name = item.getAttribute('data-name');
+        item.style.display = name.includes(term) ? 'flex' : 'none';
+    });
+}
 
+/**
+ * يحدّث عدد الرياضيين المحددين في قائمة الاختيار.
+ */
+function updateSelectedCount() {
+    const count = document.querySelectorAll('.athlete-cb:checked').length;
+    selectedAthletesCount.innerText = `المحدد: ${count}`;
+}
 
-async function fetchData() {
+// --- دوال جلب البيانات (Data Fetching) ---
+
+/**
+ * يجلب جميع الرياضيين وجميع نقاط المسابقة من Supabase.
+ * يحدّث المتغيرات العامة `athletes` و `competitionPoints`.
+ */
+async function fetchInitialData() {
+    console.log("Fetching initial data...");
+    rankingContainer.classList.add('hidden'); // Hide rankings while loading
+    loadingState.classList.remove('hidden'); // Show loading indicator
+
     const [athletesRes, pointsRes] = await Promise.all([
-        _supabase.from('athletes').select('id, firstName, lastName, isArchived').order('firstName', { ascending: true }),
-        _supabase.from('samurai_competition').select('*')
+        // 1. جلب الرياضيين مع تواريخ الحضور لتجاوز حد الـ 1000 صف
+        _supabase.from('athletes').select('id, firstName, lastName, isArchived, attendanceDates').order('firstName', { ascending: true }),
+        // 2. جلب النقاط اليدوية فقط (استثناء نقاط الحضور)
+        _supabase.from('samurai_competition')
+            .select('*')
+            .neq('reason', 'حضور الحصة')
     ]);
 
     if (athletesRes.error) {
         console.error("خطأ في جلب الرياضيين:", athletesRes.error);
+        alert("خطأ في جلب بيانات الرياضيين: " + athletesRes.error.message);
     } else {
         athletes = athletesRes.data || [];
-        populateAthletesChecklist();
+        console.log(`Fetched ${athletes.length} athletes.`);
     }
 
     if (pointsRes.error) {
         console.error("خطأ في جلب نقاط المسابقة:", pointsRes.error);
+        alert("خطأ في جلب نقاط المسابقة: " + pointsRes.error.message);
     } else {
         competitionPoints = pointsRes.data || [];
+        console.log(`Fetched ${competitionPoints.length} competition points.`);
     }
 
-    calculateAndRenderRankings();
+    // بعد جلب البيانات، قم بتحديث عناصر الواجهة
+    renderAthletesChecklist();
+    renderRankings();
+
+    loadingState.classList.add('hidden'); // Hide loading indicator
+    rankingContainer.classList.remove('hidden'); // Show rankings container
 }
 
-function populateAthletesChecklist() {
-    // تصفية الرياضيين النشطين فقط لعرضهم في قائمة الاختيار
+// --- دوال العرض (UI Rendering) ---
+
+/**
+ * يملأ قائمة اختيار الرياضيين في نموذج إضافة/خصم النقاط.
+ * يتم عرض الرياضيين النشطين فقط.
+ */
+function renderAthletesChecklist() {
     const activeAthletes = athletes.filter(a => !a.isArchived);
 
     athletesChecklist.innerHTML = activeAthletes.map(a => `
@@ -56,49 +119,64 @@ function populateAthletesChecklist() {
         </label>
     `).join('');
 
-    // ربط حدث البحث والتحديد
+    // ربط معالجات الأحداث
     athleteSearchInput.addEventListener('input', filterAthletes);
     athletesChecklist.addEventListener('change', updateSelectedCount);
+    updateSelectedCount(); // تحديث العدد الأولي
 }
 
-pointsForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+/**
+ * يحسب نقاط جميع الرياضيين ضمن فترة زمنية معينة ويعيدها مرتبة.
+ * @param {string} startDate - تاريخ البداية (YYYY-MM-DD).
+ * @param {string} endDate - تاريخ النهاية (YYYY-MM-DD).
+ * @returns {Array<Object>} مصفوفة مرتبة من الرياضيين مع مجموع نقاطهم وتفاصيل النقاط.
+ */
+function calculateScoresAndRankings(startDate, endDate) {
+    const POINTS_PER_ATTENDANCE = 0.5; // قيمة النقطة لكل حصة حضور
 
-    const [pointsValue, reasonText] = document.getElementById('pointReason').value.split('|');
-    const selectedCheckboxes = document.querySelectorAll('.athlete-cb:checked');
+    const scores = {};
 
-    if (selectedCheckboxes.length === 0) {
-        alert('الرجاء تحديد رياضي واحد على الأقل.');
-        return;
-    }
-
-    const newPoints = Array.from(selectedCheckboxes).map(cb => {
-        return {
-            athlete_id: cb.value,
-            date: document.getElementById('pointDate').value,
-            points: parseFloat(pointsValue),
-            reason: reasonText,
-            notes: document.getElementById('pointNotes').value.trim()
+    // تهيئة النقاط لجميع الرياضيين (بما في ذلك المؤرشفين، حيث قد تكون نقاطهم ذات صلة بالسياق التاريخي أو إعادة التفعيل)
+    athletes.forEach(a => {
+        scores[a.id] = {
+            ...a,
+            totalPoints: 0,
+            pointsData: [] // قائمة مفصلة بالنقاط لهذا الرياضي في الفترة
         };
     });
 
-    const { data, error } = await _supabase.from('samurai_competition').insert(newPoints).select();
+    // 1. حساب نقاط الحضور من جدول الرياضيين مباشرة
+    athletes.forEach(athlete => {
+        if (scores[athlete.id] && Array.isArray(athlete.attendanceDates)) {
+            const attendanceInPeriod = athlete.attendanceDates.filter(d => d >= startDate && d <= endDate);
+            scores[athlete.id].totalPoints += attendanceInPeriod.length * POINTS_PER_ATTENDANCE;
+        }
+    });
 
-    if (error) {
-        alert('حدث خطأ أثناء حفظ التقييمات: ' + error.message);
-        console.error(error);
-    } else {
-        alert(`تم حفظ التقييم لـ ${data.length} رياضيين بنجاح!`);
-        competitionPoints.push(...data);
-        pointsForm.reset();
-        pointDateInput.value = formatDate(new Date());
-        selectedCheckboxes.forEach(cb => cb.checked = false);
-        updateSelectedCount();
-        calculateAndRenderRankings(); // تحديث الترتيب مباشرة
-    }
-});
+    // 2. تجميع النقاط اليدوية (الاستثنائية) ضمن الفترة المحددة
+    const manualPointsInPeriod = competitionPoints.filter(p => p.date >= startDate && p.date <= endDate);
 
-function calculateAndRenderRankings() {
+    manualPointsInPeriod.forEach(p => {
+        // التأكد من أن athlete_id يتم التعامل معه كرقم للبحث المتسق
+        const athleteId = parseInt(p.athlete_id, 10);
+        if (scores[athleteId]) {
+            scores[athleteId].totalPoints += parseFloat(p.points || 0);
+            scores[athleteId].pointsData.push(p);
+        }
+    });
+
+    // تحويل كائن النقاط إلى مصفوفة، تصفية الرياضيين المؤرشفين للعرض، ثم الفرز
+    const rankedAthletes = Object.values(scores)
+        .filter(a => !a.isArchived) // عرض الرياضيين النشطين فقط في قائمة الترتيب الرئيسية
+        .sort((a, b) => b.totalPoints - a.totalPoints); // الفرز تنازلياً حسب مجموع النقاط
+
+    return rankedAthletes;
+}
+
+/**
+ * يعرض قائمة الترتيب في الواجهة بناءً على الفترة الزمنية المحددة.
+ */
+function renderRankings() {
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
 
@@ -107,30 +185,7 @@ function calculateAndRenderRankings() {
         return;
     }
 
-    const pointsInPeriod = competitionPoints.filter(p => p.date >= startDate && p.date <= endDate);
-
-    const scores = {};
-    // استخدام جميع الرياضيين في الحساب
-    const allAthletesForRanking = athletes; 
-    allAthletesForRanking.forEach(a => {
-        scores[a.id] = {
-            ...a,
-            totalPoints: 0,
-            pointsData: []
-        };
-    });
-
-    pointsInPeriod.forEach(p => {
-        if (scores[p.athlete_id]) {
-            scores[p.athlete_id].totalPoints += parseFloat(p.points);
-            scores[p.athlete_id].pointsData.push(p);
-        }
-    });
-
-    // تصفية الرياضيين النشطين فقط للعرض
-    const rankedAthletes = Object.values(scores)
-        .filter(a => !a.isArchived)
-        .sort((a, b) => b.totalPoints - a.totalPoints);
+    const rankedAthletes = calculateScoresAndRankings(startDate, endDate);
 
     if (rankedAthletes.length === 0) {
         rankingsList.innerHTML = `<div class="text-center py-10 text-slate-500">لا توجد بيانات لعرضها في هذه الفترة.</div>`;
@@ -152,12 +207,12 @@ function calculateAndRenderRankings() {
         }
 
         return `
-            <div class="flex items-center justify-between p-4 bg-white border ${rank <= 3 ? 'border-blue-200 bg-blue-50/50' : 'border-slate-100'} rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="showAthleteDetails(${athlete.id})">
+            <div class="ranking-item flex items-center justify-between p-4 bg-white border ${rank <= 3 ? 'border-blue-200 bg-blue-50/50' : 'border-slate-100'} rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-athlete-id="${athlete.id}">
                 <div class="flex items-center gap-4">
                     <span class="text-xl font-black text-slate-400 w-8 text-center">${rank}</span>
                     <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(athlete.firstName)}+${encodeURIComponent(athlete.lastName)}&background=10b981&color=fff&rounded=true&font-size=0.4" class="w-12 h-12 rounded-full shadow-sm border-2 border-white" alt="Avatar">
-                    <div>
-                        <p class="font-bold text-slate-800 text-lg">${athlete.firstName} ${athlete.lastName}</p>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="font-bold text-slate-800 text-lg whitespace-nowrap">${athlete.firstName} ${athlete.lastName}</p>
                         ${titleHtml}
                     </div>
                 </div>
@@ -169,11 +224,16 @@ function calculateAndRenderRankings() {
     }).join('');
 }
 
+/**
+ * يعرض نافذة منبثقة تحتوي على سجل نقاط مفصل لرياضي معين.
+ * @param {number} athleteId - معرّف الرياضي.
+ */
 function showAthleteDetails(athleteId) {
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
     const athlete = athletes.find(a => a.id === athleteId);
-    const athletePoints = competitionPoints.filter(p => p.athlete_id === athleteId && p.date >= startDate && p.date <= endDate);
+    // تصفية النقاط للرياضي المحدد والفترة الزمنية، مع التأكد من تحويل athlete_id إلى رقم
+    const athletePoints = competitionPoints.filter(p => parseInt(p.athlete_id, 10) === athleteId && p.date >= startDate && p.date <= endDate);
 
     if (!athlete) return;
 
@@ -202,10 +262,19 @@ function showAthleteDetails(athleteId) {
     document.getElementById('detailsModal').style.display = 'flex';
 }
 
+/**
+ * يغلق نافذة تفاصيل الرياضي المنبثقة.
+ */
 function closeDetailsModal() {
     document.getElementById('detailsModal').style.display = 'none';
 }
 
+// --- معالجات الأحداث (Event Handlers) ---
+
+/**
+ * يتعامل مع إرسال نموذج إضافة/خصم النقاط.
+ * @param {Event} e - حدث الإرسال.
+ */
 function exportToExcel() {
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
@@ -215,17 +284,7 @@ function exportToExcel() {
         return;
     }
 
-    const pointsInPeriod = competitionPoints.filter(p => p.date >= startDate && p.date <= endDate);
-    const scores = {};
-    athletes.forEach(a => {
-        scores[a.id] = { ...a, totalPoints: 0 };
-    });
-    pointsInPeriod.forEach(p => {
-        if (scores[p.athlete_id]) {
-            scores[p.athlete_id].totalPoints += parseFloat(p.points);
-        }
-    });
-    const rankedAthletes = Object.values(scores).sort((a, b) => b.totalPoints - a.totalPoints);
+    const rankedAthletes = calculateScoresAndRankings(startDate, endDate);
 
     const titles = ['الساموراي الصغير', 'قلب الأسد', 'الفتى الذهبي'];
 
@@ -256,7 +315,7 @@ function exportToExcel() {
     XLSX.writeFile(workbook, `ترتيب_مسابقة_الساموراي_الصغير.xlsx`);
 }
 
-function printRankings() {
+async function printRankings() {
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
 
@@ -265,160 +324,254 @@ function printRankings() {
         return;
     }
 
-    const pointsInPeriod = competitionPoints.filter(p => p.date >= startDate && p.date <= endDate);
-    const scores = {};
-    athletes.forEach(a => {
-        scores[a.id] = { ...a, totalPoints: 0 };
-    });
-    pointsInPeriod.forEach(p => {
-        if (scores[p.athlete_id]) {
-            scores[p.athlete_id].totalPoints += parseFloat(p.points);
-        }
-    });
-    const rankedAthletes = Object.values(scores).sort((a, b) => b.totalPoints - a.totalPoints);
+    try {
+        const rankedAthletes = calculateScoresAndRankings(startDate, endDate);
 
-    const titles = [
-        { name: 'الساموراي الصغير', icon: '🏆' },
-        { name: 'قلب الأسد', icon: '🥈' },
-        { name: 'الفتى الذهبي', icon: '🥉' }
-    ];
+        const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+        const periodMonth = monthNames[new Date(startDate).getMonth()];
+        const periodYear = new Date(startDate).getFullYear();
+        const reportTitleText = `ترتيب مسابقة الساموراي الصغير - ${periodMonth} ${periodYear}`;
 
-    const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-    const periodMonth = monthNames[new Date(startDate).getMonth()];
-    const periodYear = new Date(startDate).getFullYear();
-    const reportTitle = `ترتيب مسابقة الساموراي الصغير - ${periodMonth} ${periodYear}`;
+        const titles = ["الساموراي الصغير", "قلب الأسد", "الفتى الذهبي"];
 
-    let tableRows = rankedAthletes.map((athlete, index) => {
-        const rank = index + 1;
-        let titleHtml = '';
-        if (rank <= 3 && athlete.totalPoints > 0) {
-            const title = titles[rank - 1];
-            titleHtml = `<div style="font-size: 1.5em; font-weight: 900; color: #1e3a8a;">${title.icon} ${title.name}</div>`;
-        }
-
-        return `
-            <tr style="${rank <= 3 ? 'background-color: #eff6ff; border-left: 5px solid #2563eb;' : ''}">
-                <td style="padding: 12px; text-align: center; font-size: 1.5em; font-weight: 900;">${rank}</td>
-                <td style="padding: 12px;">
-                    <div style="font-size: 1.2em; font-weight: 700; color: #1e293b;">${athlete.firstName} ${athlete.lastName}</div>
-                    ${titleHtml}
-                </td>
-                <td style="padding: 12px; text-align: center; font-size: 1.8em; font-weight: 900; color: ${athlete.totalPoints > 0 ? '#166534' : (athlete.totalPoints < 0 ? '#991b1b' : '#475569')};">
-                    ${athlete.totalPoints.toFixed(1)}
-                </td>
-            </tr>
-        `;
-    }).join('');
-
-    const printHtml = `
-        <!DOCTYPE html>
-        <html lang="ar" dir="rtl">
-        <head>
-            <meta charset="UTF-8">
-            <title>${reportTitle}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-            <style>
-                body { font-family: 'Tajawal', sans-serif; margin: 20px; color: #333; }
-                .header { text-align: center; border-bottom: 3px double #333; padding-bottom: 15px; margin-bottom: 25px; }
-                .header h1 { font-size: 24pt; margin: 0; color: #1e3a8a; }
-                .header p { font-size: 12pt; color: #666; margin-top: 5px; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { border: 1px solid #ddd; padding: 10px; }
-                thead { background-color: #f2f2f2; font-size: 14pt; }
-                tbody tr:nth-child(even) { background-color: #f9f9f9; }
-                @media print {
-                    @page { size: A4; margin: 1cm; }
-                    body { margin: 0; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>🥋 قاعة KARATE</h1>
-                <p>${reportTitle}</p>
-            </div>
-            <table>
-                <thead>
+        let topThreeBodyHtml = '';
+        rankedAthletes.slice(0, 3).forEach((athlete, index) => {
+            if (athlete.totalPoints > 0) { // فقط إذا كان لديه نقاط
+                topThreeBodyHtml += `
                     <tr>
-                        <th style="width: 10%;">المرتبة</th>
-                        <th>الرياضي واللقب</th>
-                        <th style="width: 20%;">مجموع النقاط</th>
-                    </tr>
-                </thead>
-                <tbody>${tableRows}</tbody>
-            </table>
-        </body>
-        </html>
-    `;
+                        <td>${index + 1}</td>
+                        <td>${athlete.firstName} ${athlete.lastName} - <span class="title-underline">${titles[index]}</span></td>
+                        <td>${athlete.totalPoints.toFixed(1)}</td>
+                    </tr>`;
+            }
+        });
 
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printHtml);
-    printWindow.document.close();
-    setTimeout(() => { printWindow.print(); }, 500);
+        const remainingAthletes = rankedAthletes.slice(3);
+        const midPoint = Math.ceil(remainingAthletes.length / 2);
+
+        let rankingBody1Html = '';
+        remainingAthletes.slice(0, midPoint).forEach((athlete, index) => {
+            const rank = index + 4;
+            rankingBody1Html += `<tr><td>${athlete.totalPoints.toFixed(1)}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${rank}</td></tr>`;
+        });
+
+        let rankingBody2Html = '';
+        remainingAthletes.slice(midPoint).forEach((athlete, index) => {
+            const rank = index + 4 + midPoint;
+            rankingBody2Html += `<tr><td>${athlete.totalPoints.toFixed(1)}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${rank}</td></tr>`;
+        });
+
+        // القالب الكامل مع الأنماط المضمنة
+        const finalHtml = `
+            <!DOCTYPE html>
+            <html lang="ar" dir="rtl">
+            <head>
+                <meta charset="UTF-8">
+                <title>ترتيب مسابقة الساموراي الصغير</title>
+                <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+                <style>
+                    /* --- الإعدادات العامة --- */
+                    body {
+                        font-family: 'Tajawal', 'Cairo', sans-serif;
+                        background-color: #fff; /* خلفية بيضاء للطباعة */
+                        margin: 0;
+                        padding: 0;
+                        color: #333;
+                    }
+
+                    .page-container {
+                        background-color: #fff;
+                        width: 100%;
+                        min-height: auto;
+                        padding: 0;
+                        box-shadow: none;
+                        box-sizing: border-box;
+                    }
+
+                    /* حاوية العرض على الشاشة قبل الطباعة */
+                    .preview-wrapper { background-color: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
+                    .preview-wrapper .page-container { width: 210mm; min-height: 297mm; padding: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+
+                    /* --- زر الطباعة (مخفي في الطباعة) --- */
+                    .print-button { display: none; }
+
+                    /* --- العناوين --- */
+                    h1 {
+                        text-align: center;
+                        font-size: 24px;
+                        font-weight: 800;
+                        color: #1e293b;
+                        margin-bottom: 25px;
+                        border-bottom: 3px double #ccc;
+                        padding-bottom: 15px;
+                    }
+
+                    /* --- جدول المراكز الثلاثة الأولى --- */
+                    .top-three-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 1.1em; }
+                    .top-three-table th, .top-three-table td { border: 1px solid #bbb; padding: 8px; text-align: center; }
+                    .top-three-table th { background-color: #e2e8f0; font-weight: 700; }
+                    .top-three-table tbody tr { background-color: #f1f5f9; }
+                    .title-underline { font-weight: bold; text-decoration: underline; text-decoration-color: #007bff; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+                    /* --- حاوية الجدولين المتجاورين --- */
+                    .main-tables-container {
+                        column-count: 2; /* الحل السحري: تقسيم القائمة لعمودين */
+                        column-gap: 20px;
+                        width: 100%;
+                    }
+
+                    /* --- جداول الترتيب الرئيسية --- */
+                    .ranking-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 15px; }
+                    .ranking-table th, .ranking-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: right; }
+                    .ranking-table th { background-color: #f1f5f9; font-weight: 700; }
+                    .ranking-table td:first-child, .ranking-table th:first-child { text-align: center; font-weight: bold; width: 20%; } /* عمود النقاط */
+                    .ranking-table td:last-child, .ranking-table th:last-child { text-align: center; width: 20%; font-weight: bold; background-color: #f8fafc; } /* عمود الترتيب */
+                    
+                    /* منع انقسام السطر بين الأعمدة */
+                    .ranking-table tr {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+
+                    /* --- إعدادات الطباعة --- */
+                    @media print {
+                        @page {
+                            size: A4 portrait;
+                            margin: 7mm !important; /* هوامش ضيقة */
+                        }
+                        body { font-size: 9.5pt; }
+                        .preview-wrapper { background: transparent; padding: 0; }
+                        .page-container { box-shadow: none; padding: 0; margin: 0; }
+                        h1 { font-size: 18pt; margin-bottom: 15px; padding-bottom: 10px; }
+                        .top-three-table { font-size: 10pt; margin-bottom: 20px; }
+                        .top-three-table td, .top-three-table th { padding: 5px; }
+                        .ranking-table { font-size: 8.5pt; }
+                        .ranking-table td, .ranking-table th { padding: 3px 5px; }
+                    }
+                </style>
+            </head>
+            <body class="preview-wrapper">
+                <div class="page-container">
+                    <h1>${reportTitleText}</h1>
+
+                    <!-- جدول المراكز الثلاثة الأولى -->
+                    <table class="top-three-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">المركز</th>
+                                <th>الاسم واللقب</th>
+                                <th style="width: 20%;">النقاط</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-three-body">
+                            ${topThreeBodyHtml}
+                        </tbody>
+                    </table>
+
+                    <!-- حاوية الجدولين المتجاورين -->
+                    <div class="main-tables-container">
+                        <table class="ranking-table">
+                            <thead><tr><th>النقاط</th><th>الاسم</th><th>الترتيب</th></tr></thead>
+                            <tbody id="ranking-body-1">
+                                ${rankingBody1Html}
+                            </tbody>
+                        </table>
+                        <table class="ranking-table">
+                            <thead><tr><th>النقاط</th><th>الاسم</th><th>الترتيب</th></tr></thead>
+                            <tbody id="ranking-body-2">
+                                ${rankingBody2Html}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(finalHtml);
+        printWindow.document.close();
+        setTimeout(() => { printWindow.print(); }, 500);
+
+    } catch (error) {
+        console.error("Error printing rankings:", error);
+        alert("حدث خطأ أثناء تحضير التقرير للطباعة.");
+    }
 }
+
+
+
+
 
 /**
  * يقوم بمزامنة سجلات الحضور من جدول `athletes` إلى جدول `samurai_competition`.
- * يعالج البيانات على دفعات لتجنب تجميد الواجهة ويظهر شريط تقدم.
+ * يعالج البيانات على دفعات لتجنب تجميد الواجهة ويظهر شريط تقدم للمستخدم.
  */
 async function runAttendanceSync() {
-    if (!confirm("سيقوم هذا الإجراء بالبحث عن جميع حصص الحضور القديمة التي لم يتم احتساب نقاطها في المسابقة وإضافتها. هل تريد المتابعة؟")) {
+    if (!confirm("سيقوم هذا الإجراء بمزامنة نقاط الحضور بناءً على الفترة الزمنية المحددة في الصفحة. هل تريد المتابعة؟")) {
         return;
     }
 
-    // إظهار واجهة التقدم وإخفاء قائمة الترتيب
+    // إظهار واجهة التقدم وإخفاء قائمة الترتيب الرئيسية
     const rankingContainer = document.getElementById('rankingContainer');
     const progressContainer = document.getElementById('syncProgressContainer');
     const progressCountEl = document.getElementById('syncProgressCount');
     const totalCountEl = document.getElementById('syncTotalCount');
     const progressBarEl = document.getElementById('syncProgressBar');
 
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+    if (!startDate || !endDate) {
+        alert("الرجاء تحديد فترة زمنية أولاً (من تاريخ - إلى تاريخ) قبل بدء المزامنة.");
+        return;
+    }
+
     rankingContainer.classList.add('hidden');
     progressContainer.classList.remove('hidden');
     progressCountEl.innerText = '0';
     progressBarEl.style.width = '0%';
-
+    
     try {
-        // 1. جلب جميع البيانات الأولية المطلوبة
-        const [athletesRes, competitionPointsRes] = await Promise.all([
-            _supabase.from('athletes').select('id, attendanceDates'),
-            _supabase.from('samurai_competition').select('athlete_id, date, reason').eq('reason', 'حضور الحصة')
+        // 1. جلب البيانات المطلوبة
+        const [athletesRes, pointsRes] = await Promise.all([
+            _supabase.from('athletes').select('id, attendanceDates').filter('isArchived', 'is', 'false'),
+            _supabase.from('samurai_competition').select('athlete_id, date').eq('reason', 'حضور الحصة')
         ]);
 
-        if (athletesRes.error || competitionPointsRes.error) {
-            throw new Error(`فشل في جلب البيانات الأولية: ${athletesRes.error?.message || competitionPointsRes.error?.message}`);
+        if (athletesRes.error || pointsRes.error) {
+            throw new Error(`فشل في جلب البيانات: ${athletesRes.error?.message || pointsRes.error?.message}`);
         }
 
-        const allAthletes = athletesRes.data || [];
-        const existingPoints = competitionPointsRes.data || [];
-        totalCountEl.innerText = allAthletes.length;
+        const activeAthletes = athletesRes.data || [];
+        const existingPoints = pointsRes.data || [];
+        totalCountEl.innerText = activeAthletes.length;
 
-        // 2. إنشاء مجموعة (Set) من النقاط الموجودة لتسريع البحث
-        const existingPointsSet = new Set();
-        for (const p of existingPoints) {
-            if (p.athlete_id && p.date) existingPointsSet.add(`${p.athlete_id}-${p.date}`);
-        }
+        // 2. إنشاء مجموعة (Set) من نقاط الحضور الموجودة لتسريع البحث
+        // المفتاح هو `athlete_id-date`
+        const existingPointsSet = new Set(existingPoints.map(p => `${p.athlete_id}-${p.date}`));
 
-        // 3. تحديد النقاط الناقصة فقط
+        // 3. تحديد نقاط الحضور الناقصة بدقة
         const missingPointsToInsert = [];
-        for (const athlete of allAthletes) {
-            if (athlete.attendanceDates && Array.isArray(athlete.attendanceDates)) {
-                for (const date of athlete.attendanceDates) {
-                    if (date && typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        const pointKey = `${athlete.id}-${date}`;
-                        if (!existingPointsSet.has(pointKey)) {
-                            missingPointsToInsert.push({
-                                athlete_id: athlete.id,
-                                date: date,
-                                points: 0.5,
-                                reason: 'حضور الحصة',
-                                notes: 'مزامنة تلقائية'
-                            });
-                        }
-                    }
+        activeAthletes.forEach((athlete, index) => {
+            const attendanceInPeriod = (athlete.attendanceDates || []).filter(d => d >= startDate && d <= endDate);
+
+            attendanceInPeriod.forEach(attDate => {
+                const pointKey = `${athlete.id}-${attDate}`;
+                if (!existingPointsSet.has(pointKey)) {
+                    missingPointsToInsert.push({
+                        athlete_id: athlete.id,
+                        date: attDate, // استخدام تاريخ الحضور الفعلي
+                        points: 0.5,
+                        reason: 'حضور الحصة',
+                        notes: `مزامنة آلية`
+                    });
                 }
-            }
-        }
+            });
+
+            // تحديث واجهة التقدم لكل رياضي تتم معالجته
+            progressCountEl.innerText = index + 1;
+            progressBarEl.style.width = `${((index + 1) / activeAthletes.length) * 100}%`;
+        });
 
         if (missingPointsToInsert.length === 0) {
             alert("✅ النظام محدّث بالفعل! لا توجد نقاط حضور ناقصة لمزامنتها.");
@@ -429,20 +582,22 @@ async function runAttendanceSync() {
 
         // 4. إرسال النقاط الناقصة على دفعات
         const BATCH_SIZE = 500;
+        totalCountEl.innerText = missingPointsToInsert.length; // تحديث الإجمالي ليعكس عدد النقاط
+        progressCountEl.innerText = '0';
+
         for (let i = 0; i < missingPointsToInsert.length; i += BATCH_SIZE) {
             const batch = missingPointsToInsert.slice(i, i + BATCH_SIZE);
             const { error: insertError } = await _supabase.from('samurai_competition').insert(batch);
 
             if (insertError) throw new Error(`فشل في إضافة دفعة من النقاط: ${insertError.message}`);
             
-            // تحديث شريط التقدم
             const processedCount = Math.min(i + BATCH_SIZE, missingPointsToInsert.length);
             progressCountEl.innerText = processedCount;
             progressBarEl.style.width = `${(processedCount / missingPointsToInsert.length) * 100}%`;
         }
 
         alert(`🎉 تمت المزامنة بنجاح! تم إضافة ${missingPointsToInsert.length} نقطة حضور جديدة.`);
-        await fetchData(); // إعادة تحميل كل البيانات لعرض الترتيب المحدث
+        await fetchInitialData(); // إعادة تحميل كل البيانات لعرض الترتيب المحدث
 
     } catch (err) {
         console.error("❌ حدث خطأ فادح أثناء المزامنة:", err);
@@ -454,45 +609,58 @@ async function runAttendanceSync() {
     }
 }
 
-// دوال خاصة بقائمة اختيار الرياضيين
-function filterAthletes() {
-    const term = athleteSearchInput.value.toLowerCase();
-    document.querySelectorAll('.athlete-checkbox-item').forEach(item => {
-        const name = item.getAttribute('data-name');
-        item.style.display = name.includes(term) ? 'flex' : 'none';
+// --- التهيئة (Initialization) وربط معالجات الأحداث ---
+
+/**
+ * يربط معالجات الأحداث لعناصر DOM بعد تحميل الصفحة.
+ */
+function attachEventListeners() {
+    // ربط معالجات الأحداث للأزرار
+    document.getElementById('filterButton').addEventListener('click', renderRankings);
+    document.getElementById('printRankingsButton').addEventListener('click', printRankings);
+    document.getElementById('exportExcelButton').addEventListener('click', exportToExcel);
+    document.getElementById('syncAttendanceButton').addEventListener('click', runAttendanceSync);
+
+    // معالج حدث لإرسال نموذج النقاط
+    pointsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const [pointsValueStr, reasonText] = document.getElementById('pointReason').value.split('|');
+        const pointsValue = parseFloat(pointsValueStr);
+        const selectedCheckboxes = document.querySelectorAll('.athlete-cb:checked');
+
+        if (selectedCheckboxes.length === 0) {
+            alert('الرجاء تحديد رياضي واحد على الأقل.');
+            return;
+        }
+
+        const newPointsRecords = Array.from(selectedCheckboxes).map(cb => {
+            return {
+                athlete_id: parseInt(cb.value, 10), // التأكد من أن athlete_id رقم صحيح
+                date: document.getElementById('pointDate').value,
+                points: pointsValue,
+                reason: reasonText,
+                notes: document.getElementById('pointNotes').value.trim()
+            };
+        });
+
+        const { data, error } = await _supabase.from('samurai_competition').insert(newPointsRecords).select();
+
+        if (error) {
+            alert('حدث خطأ أثناء حفظ التقييمات: ' + error.message);
+            console.error(error);
+        } else {
+            alert(`تم حفظ التقييم لـ ${data.length} رياضيين بنجاح!`);
+            competitionPoints.push(...data); // تحديث الحالة المحلية
+            pointsForm.reset();
+            pointDateInput.value = formatDate(new Date()); // إعادة ضبط التاريخ لتاريخ اليوم
+            selectedCheckboxes.forEach(cb => cb.checked = false); // إلغاء تحديد جميع المربعات
+            updateSelectedCount();
+            renderRankings(); // تحديث الترتيب
+        }
     });
-}
 
-function updateSelectedCount() {
-    const count = document.querySelectorAll('.athlete-cb:checked').length;
-    selectedAthletesCount.innerText = `المحدد: ${count}`;
-}
-
-
-
-// ===== دوال عامة =====
-
-function toggleMobileMenu() {
-    const menu = document.getElementById("mobileMenu");
-    menu.classList.toggle("hidden");
-    menu.classList.toggle("flex");
-    document.body.classList.toggle("overflow-hidden");
-}
-
-function applyTheme() {
-    const theme = localStorage.getItem('theme') || 'system';
-    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    applyTheme();
-    fetchData();
-
-    // إغلاق النافذة عند النقر خارجها
+    // إغلاق النافذة المنبثقة عند النقر خارجها
     window.addEventListener('click', function(event) {
         const modal = document.getElementById('detailsModal');
         if (event.target === modal) {
@@ -500,21 +668,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // تطبيق الوضع الليلي عند تغييره من النظام
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        if ((localStorage.getItem('theme') || 'system') === 'system') applyTheme();
-    });
-
-    // إخفاء وإظهار القائمة العلوية عند التمرير
-    let lastScrollTop = 0;
-    window.addEventListener('scroll', function() {
-        const header = document.querySelector('.header-wrapper');
-        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        if (scrollTop > lastScrollTop && scrollTop > 80) {
-            header.classList.add('header-hidden');
-        } else {
-            header.classList.remove('header-hidden');
+    // Event delegation for ranking items
+    rankingsList.addEventListener('click', (event) => {
+        const rankingItem = event.target.closest('.ranking-item');
+        if (rankingItem) {
+            const athleteId = parseInt(rankingItem.dataset.athleteId, 10);
+            if (!isNaN(athleteId)) {
+                showAthleteDetails(athleteId);
+            }
         }
-        lastScrollTop = scrollTop;
     });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setDefaultDates(); // ضبط التواريخ الافتراضية
+    fetchInitialData(); // جلب البيانات الأولية
+    attachEventListeners(); // Attach all event listeners
 });

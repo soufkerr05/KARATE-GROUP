@@ -176,59 +176,64 @@
                     <input type="date" id="endDate" required class="p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800 font-bold">
                 </div>
                 <div class="flex flex-wrap gap-2 justify-center">
-                    <button onclick="calculateAndRenderRankings()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-md">عرض الترتيب</button>
-                    <button onclick="printRankings()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition shadow-md flex items-center gap-2">
+                    <button id="filterButton" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-md print:hidden">عرض الترتيب</button>
+                    <button id="printRankingsButton" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition shadow-md flex items-center gap-2 print:hidden">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                         طباعة
                     </button>
-                    <button onclick="exportToExcel()" class="bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-6 rounded-xl transition shadow-md flex items-center gap-2">
+                    <button id="exportExcelButton" class="bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-6 rounded-xl transition shadow-md flex items-center gap-2 print:hidden">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         تصدير Excel
                     </button>
-                    <button onclick="runAttendanceSync()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-md flex items-center gap-2">
+                    <button id="syncAttendanceButton" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-md flex items-center gap-2 print:hidden">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         مزامنة الحضور
                     </button>
                 </div>
             </div>
-
-            <!-- قائمة الترتيب -->
-            <div id="rankingsList" class="space-y-3">
-                <!-- سيتم ملء هذا الجزء بواسطة الجافاسكريبت -->
-                <div class="text-center py-10 text-slate-500">
-                    الرجاء تحديد فترة زمنية لعرض الترتيب.
+            
+            <div id="rankingContainer">
+                <!-- قائمة الترتيب -->
+                <div id="rankingsList" class="space-y-3">
+                    <!-- سيتم ملء هذا الجزء بواسطة الجافاسكريبت -->
+                    <div class="text-center py-10 text-slate-500">
+                        الرجاء تحديد فترة زمنية لعرض الترتيب.
+                    </div>
                 </div>
             </div>
+            
+            <div id="loadingState" class="flex justify-center items-center gap-2 py-16 hidden">
+                <div class="w-4 h-4 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                <div class="w-4 h-4 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                <div class="w-4 h-4 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                <p class="text-slate-500 font-bold ml-3">جاري تحميل البيانات...</p>
+            </div>
 
-            <!-- نافذة عرض تفاصيل نقاط اللاعب -->
-            <div id="detailsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg relative flex flex-col overflow-hidden animate-[fade-in_0.2s_ease-out] max-h-[80vh]">
-                    <button onclick="closeDetailsModal()" class="absolute top-4 left-4 text-slate-400 hover:text-red-500 transition-colors p-1" aria-label="إغلاق">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                    <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
-                        <h2 id="modalAthleteName" class="text-xl font-bold text-slate-800">سجل نقاط اللاعب</h2>
-                    </div>
-                    <div id="modalPointsList" class="p-6 overflow-y-auto"></div>
+            <div id="syncProgressContainer" class="hidden text-center py-10">
+                <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="font-bold text-slate-700">جاري مزامنة نقاط الحضور...</p>
+                <p class="text-sm text-slate-500">تمت معالجة <span id="syncProgressCount">0</span> من <span id="syncTotalCount">0</span> رياضياً.</p>
+                <div class="w-full bg-slate-200 rounded-full h-2.5 mt-4">
+                    <div id="syncProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
                 </div>
             </div>
 
         </div>
     </main>
     <script src="samurai_competition.js"></script>
-</body>
 
-<!-- نافذة عرض تفاصيل نقاط اللاعب -->
-<div id="detailsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg relative flex flex-col overflow-hidden animate-[fade-in_0.2s_ease-out] max-h-[80vh]">
-        <button onclick="closeDetailsModal()" class="absolute top-4 left-4 text-slate-400 hover:text-red-500 transition-colors p-1" aria-label="إغلاق">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
-            <h2 id="modalAthleteName" class="text-xl font-bold text-slate-800">سجل نقاط اللاعب</h2>
+    <!-- نافذة عرض تفاصيل نقاط اللاعب -->
+    <div id="detailsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg relative flex flex-col overflow-hidden animate-[fade-in_0.2s_ease-out] max-h-[80vh]">
+            <button onclick="closeDetailsModal()" class="absolute top-4 left-4 text-slate-400 hover:text-red-500 transition-colors p-1" aria-label="إغلاق">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
+                <h2 id="modalAthleteName" class="text-xl font-bold text-slate-800">سجل نقاط اللاعب</h2>
+            </div>
+            <div id="modalPointsList" class="p-6 overflow-y-auto"></div>
         </div>
-        <div id="modalPointsList" class="p-6 overflow-y-auto"></div>
     </div>
-</div>
 
+</body>
 </html>
