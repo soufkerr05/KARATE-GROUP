@@ -4,6 +4,7 @@
 // ===================================================================
 
 // --- المتغيرات العامة (Global State) ---
+let currentDetailAthleteId = null; // لتتبع الرياضي المفتوح حالياً في نافذة التفاصيل
 let athletes = [];
 let competitionPoints = [];
 
@@ -229,6 +230,7 @@ function renderRankings() {
  * @param {number} athleteId - معرّف الرياضي.
  */
 function showAthleteDetails(athleteId) {
+    currentDetailAthleteId = athleteId; // حفظ معرّف الرياضي الحالي
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
     const athlete = athletes.find(a => a.id === athleteId);
@@ -246,13 +248,16 @@ function showAthleteDetails(athleteId) {
         listEl.innerHTML = athletePoints.sort((a,b) => new Date(b.date) - new Date(a.date)).map(p => {
             const isPositive = p.points > 0;
             return `
-                <div class="flex justify-between items-start p-3 rounded-lg ${isPositive ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'} border mb-2">
+                <div class="flex justify-between items-center p-3 rounded-lg ${isPositive ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'} border mb-2">
                     <div>
                         <p class="font-bold ${isPositive ? 'text-emerald-800' : 'text-red-800'}">${p.reason}</p>
                         <p class="text-xs text-slate-500 mt-1">${p.date}${p.notes ? ` - ${p.notes}`: ''}</p>
                     </div>
-                    <div class="font-black text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}">
-                        ${isPositive ? '+' : ''}${parseFloat(p.points).toFixed(1)}
+                    <div class="flex items-center gap-3">
+                        <button onclick="openEditPointModal(${p.id})" class="p-2 text-slate-500 hover:bg-slate-200 rounded-lg transition" title="تعديل النقطة">✏️</button>
+                        <div class="font-black text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}">
+                            ${isPositive ? '+' : ''}${parseFloat(p.points).toFixed(1)}
+                        </div>
                     </div>
                 </div>
             `;
@@ -267,6 +272,58 @@ function showAthleteDetails(athleteId) {
  */
 function closeDetailsModal() {
     document.getElementById('detailsModal').style.display = 'none';
+    currentDetailAthleteId = null;
+}
+
+/**
+ * يفتح نافذة تعديل نقطة معينة ويملأ النموذج ببياناتها.
+ * @param {number} pointId - معرّف النقطة.
+ */
+function openEditPointModal(pointId) {
+    const point = competitionPoints.find(p => p.id === pointId);
+    if (!point) {
+        alert('لم يتم العثور على النقطة المحددة.');
+        return;
+    }
+
+    // لا يمكن تعديل نقاط الحضور التلقائية
+    if (point.reason === 'حضور الحصة') {
+        alert('لا يمكن تعديل نقاط الحضور التلقائية من هنا. يرجى تعديلها من صفحة الحضور.');
+        return;
+    }
+
+    document.getElementById('editPointId').value = point.id;
+    document.getElementById('editPointDate').value = point.date;
+    document.getElementById('editPointNotes').value = point.notes || '';
+
+    // تحديد السبب والنقاط في القائمة المنسدلة
+    const reasonSelect = document.getElementById('editPointReason');
+    const pointValueStr = parseFloat(point.points).toFixed(1);
+    const reasonText = point.reason;
+    const combinedValue = `${pointValueStr}|${reasonText}`;
+
+    let optionFound = false;
+    for (let option of reasonSelect.options) {
+        if (option.value === combinedValue) {
+            option.selected = true;
+            optionFound = true;
+            break;
+        }
+    }
+    // إذا لم يتم العثور على الخيار (قد يكون سبباً قديماً)، قم بإضافته
+    if (!optionFound) {
+        const newOption = new Option(`${reasonText} (${pointValueStr} نقطة)`, combinedValue, true, true);
+        reasonSelect.add(newOption);
+    }
+
+    document.getElementById('editPointModal').style.display = 'flex';
+}
+
+/**
+ * يغلق نافذة تعديل النقطة.
+ */
+function closeEditPointModal() {
+    document.getElementById('editPointModal').style.display = 'none';
 }
 
 // --- معالجات الأحداث (Event Handlers) ---
@@ -352,13 +409,13 @@ async function printRankings() {
         let rankingBody1Html = '';
         remainingAthletes.slice(0, midPoint).forEach((athlete, index) => {
             const rank = index + 4;
-            rankingBody1Html += `<tr><td>${athlete.totalPoints.toFixed(1)}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${rank}</td></tr>`;
+            rankingBody1Html += `<tr><td>${rank}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${athlete.totalPoints.toFixed(1)}</td></tr>`;
         });
 
         let rankingBody2Html = '';
         remainingAthletes.slice(midPoint).forEach((athlete, index) => {
             const rank = index + 4 + midPoint;
-            rankingBody2Html += `<tr><td>${athlete.totalPoints.toFixed(1)}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${rank}</td></tr>`;
+            rankingBody2Html += `<tr><td>${rank}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${athlete.totalPoints.toFixed(1)}</td></tr>`;
         });
 
         // القالب الكامل مع الأنماط المضمنة
@@ -423,9 +480,9 @@ async function printRankings() {
                     /* --- جداول الترتيب الرئيسية --- */
                     .ranking-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 15px; }
                     .ranking-table th, .ranking-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: right; }
-                    .ranking-table th { background-color: #f1f5f9; font-weight: 700; }
-                    .ranking-table td:first-child, .ranking-table th:first-child { text-align: center; font-weight: bold; width: 20%; } /* عمود النقاط */
-                    .ranking-table td:last-child, .ranking-table th:last-child { text-align: center; width: 20%; font-weight: bold; background-color: #f8fafc; } /* عمود الترتيب */
+                    .ranking-table th { background-color: #f1f5f9; font-weight: 700; text-align: center; }
+                    .ranking-table td:first-child, .ranking-table th:first-child { text-align: center; width: 20%; font-weight: bold; background-color: #f8fafc; } /* عمود الترتيب */
+                    .ranking-table td:last-child, .ranking-table th:last-child { text-align: center; width: 20%; font-weight: bold; } /* عمود النقاط */
                     
                     /* منع انقسام السطر بين الأعمدة */
                     .ranking-table tr {
@@ -471,13 +528,13 @@ async function printRankings() {
                     <!-- حاوية الجدولين المتجاورين -->
                     <div class="main-tables-container">
                         <table class="ranking-table">
-                            <thead><tr><th>النقاط</th><th>الاسم</th><th>الترتيب</th></tr></thead>
+                            <thead><tr><th>الترتيب</th><th>الاسم</th><th>النقاط</th></tr></thead>
                             <tbody id="ranking-body-1">
                                 ${rankingBody1Html}
                             </tbody>
                         </table>
                         <table class="ranking-table">
-                            <thead><tr><th>النقاط</th><th>الاسم</th><th>الترتيب</th></tr></thead>
+                            <thead><tr><th>الترتيب</th><th>الاسم</th><th>النقاط</th></tr></thead>
                             <tbody id="ranking-body-2">
                                 ${rankingBody2Html}
                             </tbody>
@@ -665,6 +722,42 @@ function attachEventListeners() {
         const modal = document.getElementById('detailsModal');
         if (event.target === modal) {
             closeDetailsModal();
+        }
+    });
+
+    // معالج حدث لإرسال نموذج تعديل النقطة
+    document.getElementById('editPointForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const pointId = parseInt(document.getElementById('editPointId').value, 10);
+        const [pointsValueStr, reasonText] = document.getElementById('editPointReason').value.split('|');
+
+        const updatedPoint = {
+            date: document.getElementById('editPointDate').value,
+            points: parseFloat(pointsValueStr),
+            reason: reasonText,
+            notes: document.getElementById('editPointNotes').value.trim()
+        };
+
+        const { data, error } = await _supabase
+            .from('samurai_competition')
+            .update(updatedPoint)
+            .eq('id', pointId)
+            .select();
+
+        if (error) {
+            alert('حدث خطأ أثناء تحديث النقطة: ' + error.message);
+            console.error(error);
+        } else {
+            alert('تم تحديث النقطة بنجاح!');
+            // تحديث الحالة المحلية
+            const index = competitionPoints.findIndex(p => p.id === pointId);
+            if (index !== -1) {
+                competitionPoints[index] = data[0];
+            }
+            closeEditPointModal();
+            renderRankings(); // تحديث الترتيب
+            if (currentDetailAthleteId) showAthleteDetails(currentDetailAthleteId); // إعادة فتح نافذة التفاصيل
         }
     });
 

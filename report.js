@@ -174,7 +174,7 @@ async function generateReport() {
             'subscription': '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-200">اشتراك شهري</span>',
             'uniform': '<span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold border border-indigo-200">بدلة رياضية</span>',
             'insurance': '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold border border-emerald-200">تأمين رياضي</span>',
-            'samurai_competition': '<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold border border-yellow-200">مسابقة الساموراي</span>'
+            'samurai_competition': '<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold border border-yellow-200">مسابقة الساموراي</span>',
 
         };
         
