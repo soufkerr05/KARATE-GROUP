@@ -332,3 +332,4 @@ window.addEventListener('click', function(event) {
 });
 
 // عرض الجدول عند التحميل
+fetchAthletes();
