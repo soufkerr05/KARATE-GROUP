@@ -25,6 +25,8 @@
     <!-- مكتبات خارجية -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
     <script src="supabase-config.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -191,6 +193,77 @@
             </div>
         </div>
 
+        <!-- طباعة وتصدير قائمة الرياضيين -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b border-slate-100 pb-3 gap-3">
+                <h3 class="text-lg font-bold text-slate-800 border-r-4 border-teal-500 pr-2">طباعة وتصدير قائمة الرياضيين</h3>
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    <select id="exportAgeRange" class="w-full sm:w-auto p-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700 bg-slate-50 transition-all">
+                        <option value="all">كل الأعمار</option>
+                        <option value="5-8">5-8 سنوات</option>
+                        <option value="9-12">9-12 سنة</option>
+                        <option value="13-16">13-16 سنة</option>
+                        <option value="17+">17+ سنة</option>
+                    </select>
+                    <select id="exportGender" class="w-full sm:w-auto p-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700 bg-slate-50 transition-all">
+                        <option value="all">كلا الجنسين</option>
+                        <option value="ذكر">ذكر</option>
+                        <option value="أنثى">أنثى</option>
+                    </select>
+                    <select id="exportStatus" class="w-full sm:w-auto p-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700 bg-slate-50 transition-all">
+                        <option value="all">كل الحالات</option>
+                        <option value="active">نشط</option>
+                        <option value="archived">مؤرشف</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-6">
+                <div id="exportableTableContainer" class="overflow-auto rounded-xl border border-slate-200 bg-white max-h-[600px]">
+                    <table class="w-full text-right">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm sticky top-0 z-10">
+                            <tr>
+                                <th class="px-4 py-3 font-black text-center w-16">#</th>
+                                <th class="px-4 py-3 font-black cursor-pointer hover:bg-slate-100 transition-colors text-right" data-sort="name">
+                                    <div class="flex items-center justify-start gap-1"><span>الاسم الكامل</span><span class="sort-indicator"></span></div>
+                                </th>
+                                <th class="px-4 py-3 font-black cursor-pointer hover:bg-slate-100 transition-colors text-center" data-sort="age">
+                                    <div class="flex items-center justify-center gap-1"><span>العمر</span><span class="sort-indicator"></span></div>
+                                </th>
+                                <th class="px-4 py-3 font-black cursor-pointer hover:bg-slate-100 transition-colors text-center" data-sort="gender">
+                                    <div class="flex items-center justify-center gap-1"><span>الجنس</span><span class="sort-indicator text-xs"></span></div>
+                                </th>
+                                <th class="px-4 py-3 font-black cursor-pointer hover:bg-slate-100 transition-colors text-center" data-sort="status">
+                                    <div class="flex items-center justify-center gap-1"><span>الحالة</span><span class="sort-indicator text-xs"></span></div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="exportableAthletesTbody" class="divide-y divide-slate-100">
+                            <!-- سيتم ملء القائمة هنا بواسطة الجافاسكريبت -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="loadMoreContainer" class="mt-4 text-center hidden">
+                    <button id="loadMoreBtn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-xl transition shadow-sm flex items-center justify-center gap-2 mx-auto">
+                        عرض المزيد...
+                    </button>
+                </div>
+            </div>
+            <div class="mt-4 flex flex-col sm:flex-row items-center justify-end gap-3 w-full sm:w-auto">
+                <div id="exportableListCount" class="text-sm font-bold text-slate-500 mr-auto">
+                    <!-- سيتم عرض العدد هنا -->
+                </div>
+                <button id="exportPdfBtn" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm0 1h12a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm5 2.5a.5.5 0 00-1 0v2.793L6.354 7.146a.5.5 0 10-.708.708l2 2a.5.5 0 00.708 0l2-2a.5.5 0 00-.708-.708L9 9.293V5.5z"></path><path d="M4.5 14a.5.5 0 000 1h11a.5.5 0 000-1H4.5z"></path></svg>
+                        تصدير PDF
+                    </button>
+                <button id="exportExcelBtn" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm2 1v12h12V4H4zm3 2.5a.5.5 0 00-1 0v7a.5.5 0 001 0v-7zm4 0a.5.5 0 00-1 0v7a.5.5 0 001 0v-7z"></path></svg>
+                        تصدير Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- إحصائيات الحضور -->
         <div class="mb-8 border-b border-slate-200 pb-4 mt-12">
             <h2 class="text-3xl font-black text-slate-800">إحصائيات الحضور</h2>
@@ -352,374 +425,6 @@
             </div>
         </div>
     </main>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const formatDate = (date) => date.toISOString().split('T')[0];
-            const today = new Date();
-            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-            const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-            document.getElementById('attendanceStartDate').value = formatDate(firstDayOfMonth);
-            document.getElementById('attendanceEndDate').value = formatDate(lastDayOfMonth);
-
-            try {
-                // جلب البيانات من جدول الرياضيين
-                const [athletesRes, paymentsRes] = await Promise.all([
-                    _supabase.from('athletes').select('*'),
-                    _supabase.from('payments').select('*')
-                ]);
-                if (athletesRes.error) throw athletesRes.error;
-                if (paymentsRes.error) throw paymentsRes.error;
-        
-                const allAthletes = athletesRes.data || [];
-                const allPayments = paymentsRes.data || [];
-
-                // تحديث sessionsLimit ديناميكياً
-                allAthletes.forEach(a => {
-                    const subPayments = allPayments.filter(p => p.athlete_id === a.id && (!p.type || p.type === 'subscription'));
-                    const totalPaid = subPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-                    a.sessionsLimit = (totalPaid / 1000) * 12;
-                });
-
-                const activeAthletes = allAthletes.filter(a => !a.isArchived);
-                const inactiveAthletes = allAthletes.filter(a => a.isArchived);
-        
-                const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-                const newThisMonth = activeAthletes.filter(a => a.subDate && a.subDate.startsWith(currentMonth)).length;
-        
-                const malesCount = activeAthletes.filter(a => a.gender === 'ذكر').length;
-                const femalesCount = activeAthletes.filter(a => a.gender === 'أنثى').length;
-        
-                // تحديث العدادات في واجهة المستخدم
-                document.getElementById('statTotal').innerText = allAthletes.length;
-                document.getElementById('statActive').innerText = activeAthletes.length;
-                document.getElementById('statInactive').innerText = inactiveAthletes.length;
-                document.getElementById('statNew').innerText = newThisMonth;
-                document.getElementById('statMales').innerText = malesCount;
-                document.getElementById('statFemales').innerText = femalesCount;
-        
-                // حساب توزيع الأعمار للرياضيين النشطين
-                let rawAgeGroups = {};
-                activeAthletes.forEach(a => {
-                    if (a.dob) {
-                        const birthYear = new Date(a.dob).getFullYear();
-                        const currentYear = new Date().getFullYear();
-                        const age = currentYear - birthYear;
-                        const ageLabel = age + ' سنة';
-                        rawAgeGroups[ageLabel] = (rawAgeGroups[ageLabel] || 0) + 1;
-                    }
-                });
-        
-                // ترتيب الفئات العمرية من الأصغر للأكبر
-                let ageGroups = {};
-                Object.keys(rawAgeGroups).sort((a, b) => parseInt(a) - parseInt(b)).forEach(key => {
-                    ageGroups[key] = rawAgeGroups[key];
-                });
-        
-                // رسم المخطط البياني
-                const ctxAge = document.getElementById('ageChart');
-                if (ctxAge) {
-                    new Chart(ctxAge.getContext('2d'), {
-                        type: 'bar',
-                        data: {
-                            labels: Object.keys(ageGroups),
-                            datasets: [{
-                                label: 'عدد الرياضيين',
-                                data: Object.values(ageGroups),
-                                backgroundColor: '#6366f1', // لون نيلجي يتوافق مع التصميم
-                                borderRadius: 6,
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-                        }
-                    });
-                }
-
-                // --- فلترة قائمة الرياضيين ---
-                const filterYearSelect = document.getElementById('filterYear');
-                const filterGenderSelect = document.getElementById('filterGender');
-                const filterStatusSelect = document.getElementById('filterStatus');
-                const filteredAthletesList = document.getElementById('sortedAthletesList');
-                const filteredAthletesCount = document.getElementById('filteredAthletesCount');
-
-                // ملء قائمة السنوات
-                const years = [...new Set(allAthletes.map(a => a.dob ? new Date(a.dob).getFullYear() : null).filter(y => y).sort((a, b) => b - a))];
-                years.forEach(year => {
-                    filterYearSelect.innerHTML += `<option value="${year}">${year}</option>`;
-                });
-
-                const renderFilteredAthletes = () => {
-                    const year = filterYearSelect.value;
-                    const gender = filterGenderSelect.value;
-                    const status = filterStatusSelect.value;
-
-                    const filtered = allAthletes.filter(a => {
-                        const athleteYear = a.dob ? new Date(a.dob).getFullYear().toString() : null;
-                        const athleteStatus = a.isArchived ? 'archived' : 'active';
-
-                        const yearMatch = (year === 'all') || (athleteYear === year);
-                        const genderMatch = (gender === 'all') || (a.gender === gender);
-                        const statusMatch = (status === 'all') || (athleteStatus === status);
-
-                        return yearMatch && genderMatch && statusMatch;
-                    });
-
-                    filteredAthletesCount.innerText = filtered.length;
-
-                    if (filtered.length === 0) {
-                        filteredAthletesList.innerHTML = `<div class="p-4 text-center text-slate-500 col-span-full">لا يوجد رياضيون يطابقون معايير البحث.</div>`;
-                        return;
-                    }
-
-                    filteredAthletesList.innerHTML = filtered.map(a => {
-                        const age = a.dob ? new Date().getFullYear() - new Date(a.dob).getFullYear() : 'غير معروف';
-                        const statusClass = a.isArchived ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-600';
-                        const statusText = a.isArchived ? 'مؤرشف' : 'نشط';
-                        return `
-                            <div class="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
-                                <div class="flex items-center gap-3">
-                                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(a.firstName)}+${encodeURIComponent(a.lastName)}&background=818cf8&color=fff&rounded=true&font-size=0.4" class="w-10 h-10 rounded-full shadow-sm" alt="Avatar" loading="lazy">
-                                    <div>
-                                        <div class="font-bold text-slate-700 text-sm">${a.firstName} ${a.lastName}</div>
-                                        <div class="text-xs text-slate-500">${age} سنة - ${a.gender}</div>
-                                    </div>
-                                </div>
-                                <div class="text-xs font-bold px-2.5 py-1 rounded-full ${statusClass}">${statusText}</div>
-                            </div>
-                        `;
-                    }).join('');
-                };
-
-                filterYearSelect.addEventListener('change', renderFilteredAthletes);
-                filterGenderSelect.addEventListener('change', renderFilteredAthletes);
-                filterStatusSelect.addEventListener('change', renderFilteredAthletes);
-                renderFilteredAthletes(); // العرض الأولي
-
-                // --- إحصائيات الحضور ---
-                const sessionCounts = {};
-                activeAthletes.forEach(a => {
-                    if (a.attendanceDates && Array.isArray(a.attendanceDates)) {
-                        a.attendanceDates.forEach(date => {
-                            sessionCounts[date] = (sessionCounts[date] || 0) + 1;
-                        });
-                    }
-                });
-
-                const sortedDates = Object.keys(sessionCounts).sort();
-                
-                // آخر 10 حصص
-                const last10Dates = sortedDates.slice(-10);
-                const last10Counts = last10Dates.map(d => sessionCounts[d]);
-
-                // أعلى وأقل حصة حضوراً
-                let highestSessionCount = 0, highestSessionDate = '-';
-                let lowestSessionCount = Infinity, lowestSessionDate = '-';
-                let totalAttendanceCount = 0;
-
-                sortedDates.forEach(date => {
-                    const count = sessionCounts[date];
-                    totalAttendanceCount += count;
-                    if (count > highestSessionCount) { highestSessionCount = count; highestSessionDate = date; }
-                    if (count < lowestSessionCount) { lowestSessionCount = count; lowestSessionDate = date; }
-                });
-                if (sortedDates.length === 0) lowestSessionCount = 0;
-
-                // المتوسط الأسبوعي والشهري (بافتراض 3 حصص أسبوعياً كمعيار)
-                let avgPerSession = sortedDates.length > 0 ? (totalAttendanceCount / sortedDates.length) : 0;
-                let weeklyAvg = Math.round(avgPerSession * 3);
-                let monthlyAvg = Math.round(avgPerSession * 12);
-
-                // نسبة الغياب الإجمالية بناءً على الحد الأقصى للحصص لكل رياضي
-                let totalExpected = 0;
-                let totalActual = 0;
-                activeAthletes.forEach(a => {
-                    totalExpected += (a.sessionsLimit || 0);
-                    totalActual += (a.attendance || 0);
-                });
-                let overallAbsenceRate = totalExpected > 0 ? Math.round(((totalExpected - totalActual) / totalExpected) * 100) : 0;
-                if (overallAbsenceRate < 0) overallAbsenceRate = 0;
-
-                document.getElementById('statWeeklyAvg').innerText = weeklyAvg;
-                document.getElementById('statMonthlyAvg').innerText = monthlyAvg;
-                document.getElementById('statHighestSession').innerText = highestSessionCount;
-                document.getElementById('statHighestDate').innerText = highestSessionDate;
-                document.getElementById('statLowestSession').innerText = lowestSessionCount;
-                document.getElementById('statLowestDate').innerText = lowestSessionDate;
-                document.getElementById('statAbsenceRate').innerText = overallAbsenceRate + '%';
-
-                // رسم بياني لآخر 10 حصص
-                const ctxAttendance = document.getElementById('attendanceChart');
-                if (ctxAttendance) {
-                    new Chart(ctxAttendance.getContext('2d'), {
-                        type: 'line',
-                        data: {
-                            labels: last10Dates.length > 0 ? last10Dates : ['لا توجد حصص'],
-                            datasets: [{
-                                label: 'عدد الحضور',
-                                data: last10Counts.length > 0 ? last10Counts : [0],
-                                borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                borderWidth: 3, fill: true, tension: 0.4,
-                                pointBackgroundColor: '#2563eb', pointRadius: 5
-                            }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-                    });
-                }
-
-                // ترتيب الالتزام للرياضيين النشطين
-                const commitmentData = activeAthletes.map(a => {
-                    const limit = a.sessionsLimit || 0;
-                    const att = a.attendance || 0;
-                    const absence = Math.max(0, limit - att);
-                    const absenceRate = Math.round((absence / limit) * 100);
-                    return { ...a, absence, absenceRate, att };
-                });
-
-                const topCommitted = [...commitmentData].sort((a, b) => b.att - a.att).slice(0, 10);
-                const leastCommitted = [...commitmentData].sort((a, b) => b.absenceRate - a.absenceRate).slice(0, 10); // الأعلى في نسبة الغياب
-
-                const buildListHtml = (data) => {
-                    if (data.length === 0) return `<div class="p-4 text-center text-slate-500">لا توجد بيانات.</div>`;
-                    return data.map(a => `
-                        <div class="flex items-center justify-between p-3 sm:p-4 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
-                            <div class="font-bold text-slate-700 flex-grow text-sm sm:text-base truncate pl-2">${a.firstName} ${a.lastName}</div>
-                            <div class="flex items-center gap-4 sm:gap-6 flex-shrink-0">
-                                <div class="text-center w-12 sm:w-16">
-                                    <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">حضور</span>
-                                    <span class="font-black text-emerald-600 text-sm sm:text-base">${a.att}</span>
-                                </div>
-                                <div class="text-center w-14 sm:w-20 border-r border-slate-100 md:border-none pr-4 md:pr-0">
-                                    <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">غياب</span>
-                                    <div class="flex flex-col items-center">
-                                        <span class="text-rose-600 font-bold text-sm sm:text-base">${a.absence}</span>
-                                        <span class="text-[10px] text-slate-400 leading-none mt-1" dir="ltr">${a.absenceRate}%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                };
-
-                document.getElementById('topCommittedList').innerHTML = buildListHtml(topCommitted);
-                document.getElementById('leastCommittedList').innerHTML = buildListHtml(leastCommitted);
-
-                // --- قائمة الحضور ليوم محدد ---
-                const attendanceDatePicker = document.getElementById('attendanceDatePicker');
-                const attendanceByDateList = document.getElementById('attendanceByDateList');
-                const attendanceByDateCount = document.getElementById('attendanceByDateCount');
-                const attendanceByDateCountNumber = document.getElementById('attendanceByDateCountNumber');
-
-                const todayStr = new Date().toISOString().split('T')[0];
-                attendanceDatePicker.value = todayStr;
-
-                const renderAttendanceByDate = () => {
-                    const selectedDate = attendanceDatePicker.value;
-                    if (!selectedDate) {
-                        attendanceByDateList.innerHTML = `<div class="p-4 text-center text-slate-500">اختر تاريخاً لعرض قائمة الحضور.</div>`;
-                        attendanceByDateCount.classList.add('hidden');
-                        return;
-                    }
-
-                    const attendees = activeAthletes.filter(a => a.attendanceDates && a.attendanceDates.includes(selectedDate));
-                    
-                    if (attendees.length === 0) {
-                        attendanceByDateList.innerHTML = `<div class="p-4 text-center text-slate-500">لا يوجد حضور مسجل في هذا التاريخ.</div>`;
-                        attendanceByDateCount.classList.add('hidden');
-                        return;
-                    }
-
-                    attendanceByDateList.innerHTML = attendees.map(a => `<div class="flex items-center justify-between p-3 sm:p-4 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"><div class="font-bold text-slate-700 flex-grow text-sm sm:text-base truncate pl-2">${a.firstName} ${a.lastName}</div><div class="text-center w-24 sm:w-32 md:border-none pr-2 sm:pr-0"><span class="text-[10px] text-slate-400 block md:hidden mb-0.5">الهاتف</span><a href="tel:${a.guardianPhone}" class="text-blue-500 hover:underline dir-ltr inline-block font-bold text-[11px] sm:text-sm whitespace-nowrap">${a.guardianPhone || 'لا يوجد'}</a></div></div>`).join('');
-                    
-                    attendanceByDateCountNumber.innerText = attendees.length;
-                    attendanceByDateCount.classList.remove('hidden');
-                };
-
-                attendanceDatePicker.addEventListener('change', renderAttendanceByDate);
-                renderAttendanceByDate(); // عرض قائمة اليوم فوراً
-
-                // --- إحصائيات الاشتراكات والدفع ---
-                const activeSubsCount = activeAthletes.filter(a => a.attendance < (a.sessionsLimit || 0)).length;
-                const expiredSubs = activeAthletes.filter(a => a.attendance >= (a.sessionsLimit || 0));
-                const expiredSubsCount = expiredSubs.length;
-                
-                const latePaymentsCount = expiredSubsCount; // المتأخرون هم نفسهم أصحاب الاشتراكات المنتهية
-
-                const monthlyRevenue = allPayments
-                    .filter(p => p.date && p.date.startsWith(currentMonth))
-                    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-
-                // حساب الرياضيين الذين جددوا اشتراكاتهم هذا الشهر
-                const renewedAthletesThisMonth = new Set(
-                    allPayments.filter(p => p.date && p.date.startsWith(currentMonth) && p.type === 'subscription').map(p => p.athlete_id)
-                ).size;
-                
-                const renewalRate = activeAthletes.length > 0 ? Math.round((renewedAthletesThisMonth / activeAthletes.length) * 100) : 0;
-
-                document.getElementById('statActiveSubs').innerText = activeSubsCount;
-                document.getElementById('statExpiredSubs').innerText = expiredSubsCount;
-                document.getElementById('statLatePayments').innerText = latePaymentsCount;
-                document.getElementById('statMonthlyRevenue').innerText = monthlyRevenue.toLocaleString() + ' د.ج';
-                document.getElementById('statRenewalRate').innerText = renewalRate + '%';
-
-                const lateList = document.getElementById('latePaymentsList');
-                if (expiredSubs.length === 0) {
-                    lateList.innerHTML = `<div class="p-4 text-center text-slate-500">لا يوجد رياضيون متأخرون في الدفع حالياً.</div>`;
-                } else {
-                    expiredSubs.sort((a, b) => (b.attendance - (b.sessionsLimit || 0)) - (a.attendance - (a.sessionsLimit || 0)));
-                    lateList.innerHTML = expiredSubs.map(a => `
-                        <div class="flex items-center justify-between p-3 sm:p-4 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
-                            <div class="font-bold text-slate-700 flex-grow text-sm sm:text-base truncate pl-2">${a.firstName} ${a.lastName}</div>
-                            <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                                <div class="text-center w-16 sm:w-24">
-                                    <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">عدد الحصص</span>
-                                    <span class="bg-rose-100 text-rose-700 font-bold px-2 py-1 rounded text-xs sm:text-sm">${a.attendance - (a.sessionsLimit || 0)}</span>
-                                </div>
-                                <div class="text-center w-20 sm:w-32 border-r border-slate-100 md:border-none pr-2 sm:pr-0">
-                                    <span class="text-[10px] text-slate-400 block md:hidden mb-0.5">الهاتف</span>
-                                    <a href="tel:${a.guardianPhone}" class="text-blue-500 hover:underline dir-ltr inline-block font-bold text-[11px] sm:text-sm whitespace-nowrap">${a.guardianPhone || 'لا يوجد'}</a>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-
-                // --- إحصائيات الحضور الفردي ---
-                const individualAttendanceBtn = document.getElementById('runIndividualAttendance');
-                const individualAttendanceList = document.getElementById('individualAttendanceList');
-                const attendanceStartDateInput = document.getElementById('attendanceStartDate');
-                const attendanceEndDateInput = document.getElementById('attendanceEndDate');
-
-                const renderIndividualAttendanceStats = () => {
-                    const startDate = attendanceStartDateInput.value;
-                    const endDate = attendanceEndDateInput.value;
-                    if (!startDate || !endDate) return;
-
-                    const attendanceCounts = activeAthletes.map(a => {
-                        const count = (a.attendanceDates || []).filter(d => d >= startDate && d <= endDate).length;
-                        return { name: `${a.firstName} ${a.lastName}`, count };
-                    }).sort((a, b) => b.count - a.count);
-
-                    if (attendanceCounts.length === 0) {
-                        individualAttendanceList.innerHTML = `<div class="p-4 text-center text-slate-500">لا توجد بيانات حضور في هذه الفترة.</div>`;
-                    } else {
-                        individualAttendanceList.innerHTML = attendanceCounts.map(item => `<div class="flex items-center justify-between p-3 sm:p-4 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"><div class="font-bold text-slate-700 flex-grow text-sm sm:text-base truncate pl-2">${item.name}</div><div class="text-center w-28"><span class="bg-cyan-100 text-cyan-800 font-black px-3 py-1.5 rounded-lg text-sm">${item.count}</span></div></div>`).join('');
-                    }
-                };
-
-                individualAttendanceBtn.addEventListener('click', renderIndividualAttendanceStats);
-                attendanceStartDateInput.addEventListener('change', renderIndividualAttendanceStats);
-                attendanceEndDateInput.addEventListener('change', renderIndividualAttendanceStats);
-                renderIndividualAttendanceStats(); // استدعاء أولي
-            } catch (err) {
-                console.error('Error fetching athletes stats:', err);
-            }
-        });
-
-    </script>
+    <script src="dashboard.js"></script>
 </body>
 </html>
