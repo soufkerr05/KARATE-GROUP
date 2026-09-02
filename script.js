@@ -418,8 +418,54 @@ function printAthleteQr(id) {
         return;
     }
 
-    const printWindow = window.open('', '_blank', 'width=420,height=520');
-    printWindow.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>بطاقة ${athlete.firstName} ${athlete.lastName}</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:28px;color:#0f172a}#qr{display:inline-block;margin:18px}h1{font-size:24px;margin-bottom:8px}p{font-size:14px;color:#475569}@media print{button{display:none}}</style></head><body><h1>${athlete.firstName} ${athlete.lastName}</h1><p>بطاقة الانخراط - امسح الرمز لتسجيل الحضور</p><div id="qr"></div><p>معرّف الرياضي: ${athlete.id}</p><button onclick="window.print()">طباعة</button><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById('qr'), {text:'karate-athlete:${athlete.id}', width:180, height:180});<\/script></body></html>`);
+    const escapeHtml = value => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    const firstName = escapeHtml(athlete.firstName || '');
+    const lastName = escapeHtml(athlete.lastName || '');
+    const birthDate = escapeHtml(athlete.dob || 'غير محدد');
+    const group = escapeHtml(athlete.group || athlete.groupName || '');
+    const subscriptionDate = escapeHtml(athlete.subDate || 'غير محدد');
+    const printWindow = window.open('', '_blank', 'width=500,height=420');
+    if (!printWindow) {
+        alert('تعذر فتح نافذة الطباعة. اسمح بالنوافذ المنبثقة ثم أعد المحاولة.');
+        return;
+    }
+    printWindow.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>بطاقة ${firstName} ${lastName}</title><style>
+        *{box-sizing:border-box}
+        html,body{margin:0;padding:0;background:#fff}
+        body{font-family:Arial,"Tahoma",sans-serif;color:#000}
+        .print-exact-size{position:relative;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;width:8.5cm;height:5.5cm;padding:.4cm;background:#fff;border:1px solid #d1d5db;direction:rtl;font-family:Arial,sans-serif}
+        .watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:.08;font-size:54px;font-weight:900;letter-spacing:2px;transform:rotate(-25deg);pointer-events:none}
+        .card-content{position:relative;z-index:1;display:flex;flex-direction:row;width:100%;flex:1;min-height:0}
+        .info{display:flex;flex:0 0 56%;flex-direction:column;justify-content:space-around;width:56%;min-width:0;padding-left:2mm;font-size:12px;font-weight:700}
+        .field{display:flex;flex-direction:row;align-items:center;width:100%;margin-bottom:2mm;white-space:nowrap}
+        .field-label{flex:0 0 auto;margin-left:1mm;font-size:12px;font-weight:400;white-space:nowrap}
+        .field-value{flex:1;min-width:0;padding:0 1mm;text-align:center;font-size:15px;line-height:1.15;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0!important}
+        .date .field-value{font-size:13px}
+        .qr-section{display:flex;flex:0 0 44%;align-items:center;justify-content:center;width:44%;min-width:0}
+        .qr-box{display:flex;align-items:center;justify-content:center;padding:1mm;background:#fff;border:2px solid #000}
+        #qr{width:3cm;height:3cm}
+        #qr img,#qr canvas{display:block;width:3cm!important;height:3cm!important}
+        .card-footer{position:relative;z-index:1;width:100%;text-align:center;margin-top:1mm;font-size:18px;font-weight:700;letter-spacing:0;text-decoration:underline;text-underline-offset:1.5px;white-space:nowrap;color:#000}
+        .print-button{display:block;margin:16px auto;padding:8px 20px;border:0;border-radius:6px;background:#1e293b;color:#fff;cursor:pointer}
+        @media print{
+            @page{size:8.5cm 5.5cm;margin:.5cm}
+            .print-exact-size{width:8.5cm!important;height:5.5cm!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-inside:avoid}
+            .print-button{display:none}
+        }
+    </style></head><body><div class="print-exact-size"><div class="watermark">KARATE</div><div class="card-content"><div class="info"><div class="field"><span class="field-label">الاسم :</span><span class="field-value">${firstName}</span></div><div class="field"><span class="field-label">اللقب :</span><span class="field-value">${lastName}</span></div><div class="field date"><span class="field-label">تاريخ الميلاد :</span><span class="field-value">${birthDate}</span></div><div class="field"><span class="field-label">الفوج :</span><span class="field-value">${group}</span></div><div class="field date"><span class="field-label">تاريخ الاشتراك :</span><span class="field-value">${subscriptionDate}</span></div></div><div class="qr-section"><div class="qr-box"><div id="qr"></div></div></div></div><div class="card-footer">يرجى إحضار البطاقة دائمًا، لا تضيعها!</div></div><button class="print-button" onclick="printCard()">طباعة البطاقة</button><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script><script>
+        function renderQr(){
+            var qrElement = document.getElementById('qr');
+            if (qrElement && !qrElement.innerHTML && window.QRCode) new QRCode(qrElement,{text:'karate-athlete:${escapeHtml(athlete.id)}',width:90,height:90});
+        }
+        function printCard(){ window.focus(); setTimeout(function(){ window.print(); }, 250); }
+        window.addEventListener('load', function(){ renderQr(); });
+        setTimeout(renderQr, 300);
+    <\/script></body></html>`);
     printWindow.document.close();
 }
 

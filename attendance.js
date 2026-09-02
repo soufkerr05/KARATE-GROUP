@@ -155,6 +155,7 @@ async function toggleQrScanner() {
     if (qrScannerRunning) {
         await stopQrScanner();
         panel.classList.add('hidden');
+        document.body.classList.remove('scanner-open');
         button.textContent = 'فتح الماسح';
         return;
     }
@@ -163,6 +164,7 @@ async function toggleQrScanner() {
         return;
     }
     panel.classList.remove('hidden');
+    document.body.classList.add('scanner-open');
     button.textContent = 'إغلاق الماسح';
     try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -171,6 +173,7 @@ async function toggleQrScanner() {
     } catch (error) {
         qrScanner = null;
         panel.classList.add('hidden');
+        document.body.classList.remove('scanner-open');
         button.textContent = 'فتح الماسح';
         setQrStatus(`تعذر تشغيل الكاميرا: ${error.message}`, true);
     }
@@ -205,10 +208,14 @@ async function removeAttendanceForDate(id) {
     if (athlete && athlete.attendanceDates && athlete.attendanceDates.includes(sessionDate)) {
         if (confirm(`هل أنت متأكد من إلغاء حضور هذا الرياضي لتاريخ ${sessionDate}؟`)) {
             athlete.attendanceDates = athlete.attendanceDates.filter(d => d !== sessionDate);
+            athlete.cardAttendanceDates = Array.isArray(athlete.cardAttendanceDates)
+                ? athlete.cardAttendanceDates.filter(d => d !== sessionDate)
+                : [];
             if (athlete.attendance > 0) athlete.attendance--;
             
             const { error } = await _supabase.from('athletes').update({
                 attendanceDates: athlete.attendanceDates,
+                cardAttendanceDates: athlete.cardAttendanceDates,
                 attendance: athlete.attendance
             }).eq('id', id);
             
@@ -225,11 +232,15 @@ async function deleteAttendanceHistory(athleteId, dateStr) {
         if (confirm(`هل أنت متأكد من حذف الحصة بتاريخ ${dateStr} من سجل هذا الرياضي؟`)) {
             // إزالة التاريخ من المصفوفة وتقليل عدد الحضور
             athlete.attendanceDates = athlete.attendanceDates.filter(d => d !== dateStr);
+            athlete.cardAttendanceDates = Array.isArray(athlete.cardAttendanceDates)
+                ? athlete.cardAttendanceDates.filter(d => d !== dateStr)
+                : [];
             if (athlete.attendance > 0) athlete.attendance--;
             
             // تحديث قاعدة البيانات
             const { error } = await _supabase.from('athletes').update({
                 attendanceDates: athlete.attendanceDates,
+                cardAttendanceDates: athlete.cardAttendanceDates,
                 attendance: athlete.attendance
             }).eq('id', athleteId);
             

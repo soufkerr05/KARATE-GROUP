@@ -220,7 +220,7 @@
 
         </div>
     </main>
-    <script src="samurai_competition.js?v=20260902-qr-half-point"></script>
+    <script src="samurai_competition.js?v=20260902-sync-deleted-attendance-v1"></script>
 
     <!-- نافذة عرض تفاصيل نقاط اللاعب -->
     <div id="detailsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
@@ -232,6 +232,37 @@
                 <h2 id="modalAthleteName" class="text-xl font-bold text-slate-800">سجل نقاط اللاعب</h2>
             </div>
             <div id="modalPointsList" class="p-6 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="editPointModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md relative overflow-hidden">
+            <button type="button" onclick="closeEditPointModal()" class="absolute top-4 left-4 text-slate-400 hover:text-red-500 transition-colors p-1" aria-label="إغلاق">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
+                <h2 class="text-xl font-bold text-slate-800">تعديل النقطة</h2>
+            </div>
+            <form id="editPointForm" class="p-6 space-y-4">
+                <input type="hidden" id="editPointId">
+                <div>
+                    <label for="editPointValue" class="block text-sm font-semibold text-slate-700 mb-1">قيمة النقطة</label>
+                    <input type="number" id="editPointValue" min="-9.9" max="9.9" step="0.1" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold">
+                </div>
+                <div>
+                    <label for="editPointReason" class="block text-sm font-semibold text-slate-700 mb-1">السبب</label>
+                    <input type="text" id="editPointReason" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold">
+                </div>
+                <div>
+                    <label for="editPointDate" class="block text-sm font-semibold text-slate-700 mb-1">التاريخ</label>
+                    <input type="date" id="editPointDate" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold">
+                </div>
+                <div>
+                    <label for="editPointNotes" class="block text-sm font-semibold text-slate-700 mb-1">ملاحظات</label>
+                    <input type="text" id="editPointNotes" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">حفظ التعديل</button>
+            </form>
         </div>
     </div>
 

@@ -73,6 +73,8 @@ async function fetchInitialData() {
     const [athletesRes, pointsRes] = await Promise.all([
         _supabase.from('athletes').select('id, firstName, lastName, isArchived').order('firstName', { ascending: true }), // جلب جميع الرياضيين (نشطين ومؤرشفين)
         _supabase.from('samurai_competition').select('*')
+            .gte('date', startDateInput.value)
+            .lte('date', endDateInput.value)
     ]);
 
     if (athletesRes.error) {
@@ -237,8 +239,16 @@ function showAthleteDetails(athleteId) {
                         <p class="font-bold ${isPositive ? 'text-emerald-800' : 'text-red-800'}">${p.reason}</p>
                         <p class="text-xs text-slate-500 mt-1">${p.date}${p.notes ? ` - ${p.notes}`: ''}</p>
                     </div>
-                    <div class="font-black text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}">
-                        ${isPositive ? '+' : ''}${parseFloat(p.points).toFixed(1)}
+                    <div class="flex items-center gap-3">
+                        <div class="font-black text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}">
+                            ${isPositive ? '+' : ''}${parseFloat(p.points).toFixed(1)}
+                        </div>
+                        <button type="button" class="bg-blue-100 hover:bg-blue-200 text-blue-700 p-2 rounded-lg transition-colors" onclick="openEditPointModal(${p.id}); event.stopPropagation();" title="تعديل النقطة" aria-label="تعديل النقطة">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.5-8.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 8.5-8.5z"></path></svg>
+                        </button>
+                        <button type="button" class="bg-red-100 hover:bg-red-200 text-red-700 p-2 rounded-lg transition-colors" onclick="deleteCompetitionPoint(${p.id}); event.stopPropagation();" title="حذف النقطة" aria-label="حذف النقطة">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
                     </div>
                 </div>
             `;
@@ -253,6 +263,43 @@ function showAthleteDetails(athleteId) {
  */
 function closeDetailsModal() {
     document.getElementById('detailsModal').style.display = 'none';
+}
+
+function openEditPointModal(pointId) {
+    const point = competitionPoints.find(item => String(item.id) === String(pointId));
+    if (!point) return;
+    document.getElementById('editPointId').value = point.id;
+    document.getElementById('editPointValue').value = point.points;
+    document.getElementById('editPointReason').value = point.reason || '';
+    document.getElementById('editPointDate').value = point.date || '';
+    document.getElementById('editPointNotes').value = point.notes || '';
+    document.getElementById('editPointModal').style.display = 'flex';
+}
+
+function closeEditPointModal() {
+    document.getElementById('editPointModal').style.display = 'none';
+}
+
+async function deleteCompetitionPoint(pointId) {
+    const point = competitionPoints.find(item => String(item.id) === String(pointId));
+    if (!point) return;
+
+    if (!confirm(`هل أنت متأكد من حذف نقطة ${point.points} بسبب: ${point.reason}؟`)) return;
+
+    const { error } = await _supabase
+        .from('samurai_competition')
+        .delete()
+        .eq('id', pointId);
+
+    if (error) {
+        alert('حدث خطأ أثناء حذف النقطة: ' + error.message);
+        console.error(error);
+        return;
+    }
+
+    competitionPoints = competitionPoints.filter(item => String(item.id) !== String(pointId));
+    closeDetailsModal();
+    renderRankings();
 }
 
 // --- معالجات الأحداث (Event Handlers) ---
@@ -522,7 +569,7 @@ async function runAttendanceSync() {
     try {
         // 1. جلب البيانات المطلوبة
         const [athletesRes, pointsRes] = await Promise.all([
-            _supabase.from('athletes').select('id, cardAttendanceDates').filter('isArchived', 'is', 'false'),
+            _supabase.from('athletes').select('id, attendanceDates, cardAttendanceDates').filter('isArchived', 'is', 'false'),
             _supabase.from('samurai_competition').select('athlete_id, date').in('reason', ['حضور بالبطاقة QR', 'حضور بالبطاقة QR - الساموراي الصغير'])
         ]);
 
@@ -541,7 +588,9 @@ async function runAttendanceSync() {
         // 3. تحديد نقاط الحضور الناقصة بدقة
         const missingPointsToInsert = [];
         activeAthletes.forEach((athlete, index) => {
-            const attendanceInPeriod = (athlete.cardAttendanceDates || []).filter(d => d >= startDate && d <= endDate);
+            const attendanceDates = Array.isArray(athlete.attendanceDates) ? athlete.attendanceDates : [];
+            const attendanceInPeriod = (athlete.cardAttendanceDates || [])
+                .filter(d => attendanceDates.includes(d) && d >= startDate && d <= endDate);
 
             attendanceInPeriod.forEach(attDate => {
                 const pointKey = `${athlete.id}-${attDate}`;
@@ -648,11 +697,45 @@ function attachEventListeners() {
         }
     });
 
+    document.getElementById('editPointForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pointId = document.getElementById('editPointId').value;
+        const updatedPoint = {
+            points: parseFloat(document.getElementById('editPointValue').value),
+            reason: document.getElementById('editPointReason').value.trim(),
+            date: document.getElementById('editPointDate').value,
+            notes: document.getElementById('editPointNotes').value.trim()
+        };
+
+        const { data, error } = await _supabase
+            .from('samurai_competition')
+            .update(updatedPoint)
+            .eq('id', pointId)
+            .select()
+            .single();
+
+        if (error) {
+            alert('حدث خطأ أثناء تعديل النقطة: ' + error.message);
+            console.error(error);
+            return;
+        }
+
+        const pointIndex = competitionPoints.findIndex(point => String(point.id) === String(pointId));
+        if (pointIndex !== -1) competitionPoints[pointIndex] = data;
+        closeEditPointModal();
+        closeDetailsModal();
+        renderRankings();
+    });
+
     // إغلاق النافذة المنبثقة عند النقر خارجها
     window.addEventListener('click', function(event) {
         const modal = document.getElementById('detailsModal');
         if (event.target === modal) {
             closeDetailsModal();
+        }
+        const editModal = document.getElementById('editPointModal');
+        if (event.target === editModal) {
+            closeEditPointModal();
         }
     });
 

@@ -25,6 +25,7 @@
     <!-- مكتبات خارجية -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     
     <script src="supabase-config.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -123,9 +124,12 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 md:px-8 mb-12">
-        <div class="mb-8 border-b border-slate-200 pb-4">
-            <h2 class="text-3xl font-black text-slate-800">إحصائيات الرياضيين</h2>
-            <p class="text-slate-500 mt-2 font-medium">نظرة عامة على أعداد وتوزيع الرياضيين في النادي.</p>
+        <div class="mb-8 border-b border-slate-200 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-3xl font-black text-slate-800">إحصائيات الرياضيين</h2>
+                <p class="text-slate-500 mt-2 font-medium">نظرة عامة على أعداد وتوزيع الرياضيين في النادي.</p>
+            </div>
+            <button id="printActiveQrButton" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2.5 rounded-xl shadow-md print:hidden">طباعة بطاقات QR للنشطين</button>
         </div>
 
         <!-- العدادات -->
@@ -325,6 +329,78 @@
     </main>
 
     <script>
+        function escapePrintValue(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function printActiveAthleteQrs(activeAthletes) {
+            if (!window.QRCode) {
+                alert('تعذر تحميل مولد رمز QR. تحقق من اتصال الإنترنت.');
+                return;
+            }
+            if (!activeAthletes.length) {
+                alert('لا يوجد رياضيون نشطون لطباعة بطاقاتهم.');
+                return;
+            }
+
+            const cards = activeAthletes.map((athlete, index) => {
+                const firstName = escapePrintValue(athlete.firstName || '');
+                const lastName = escapePrintValue(athlete.lastName || '');
+                const birthDate = escapePrintValue(athlete.dob || 'غير محدد');
+                const group = escapePrintValue(athlete.group || athlete.groupName || '');
+                const subscriptionDate = escapePrintValue(athlete.subDate || 'غير محدد');
+                return `<article class="print-card"><div class="watermark">KARATE</div><div class="card-content"><div class="info"><div class="field"><span class="label">الاسم :</span><span class="value">${firstName}</span></div><div class="field"><span class="label">اللقب :</span><span class="value">${lastName}</span></div><div class="field"><span class="label">تاريخ الميلاد :</span><span class="value date-value">${birthDate}</span></div><div class="field"><span class="label">الفوج :</span><span class="value">${group}</span></div><div class="field"><span class="label">تاريخ الاشتراك :</span><span class="value date-value">${subscriptionDate}</span></div></div><div class="qr-section"><div class="qr-box"><div id="qr-${index}"></div></div></div></div><div class="card-footer">يرجى إحضار البطاقة دائمًا، لا تضيعها!</div></article>`;
+            }).join('');
+
+            const printStyles = document.createElement('style');
+            printStyles.id = 'batchQrPrintStyles';
+            printStyles.textContent = `
+                *{box-sizing:border-box}
+                #batchQrPrintContainer{display:none}
+                body.batch-qr-print-mode> :not(#batchQrPrintContainer):not(#batchQrPrintStyles){display:none!important}
+                body.batch-qr-print-mode{margin:0;padding:0;background:#fff}
+                body.batch-qr-print-mode #batchQrPrintContainer{display:grid!important;font-family:Arial,Tahoma,sans-serif;color:#000}
+                .print-sheet{display:grid;grid-template-columns:repeat(2,8.5cm);grid-auto-rows:5.5cm;gap:4mm;justify-content:center;align-content:start}
+                .print-card{position:relative;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;width:8.5cm;height:5.5cm;padding:4mm;background:#fff;border:1px solid #cbd5e1;direction:rtl;page-break-inside:avoid}
+                .watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:.07;font-size:42px;font-weight:900;letter-spacing:2px;transform:rotate(-25deg);pointer-events:none}
+                .card-content{position:relative;z-index:1;display:flex;flex-direction:row;width:100%;flex:1;min-height:0}
+                .info{display:flex;flex:0 0 56%;flex-direction:column;justify-content:space-around;width:56%;min-width:0;padding-left:2mm;font-size:12px;font-weight:700}
+                .field{display:flex;flex-direction:row;align-items:center;width:100%;margin-bottom:2mm;white-space:nowrap}
+                .label{flex:0 0 auto;margin-left:1mm;font-size:12px;font-weight:400;white-space:nowrap}
+                .value{flex:1;min-width:0;padding:0 1mm;text-align:center;font-size:15px;line-height:1.15;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0!important}
+                .date-value{font-size:13px}
+                .qr-section{display:flex;flex:0 0 44%;align-items:center;justify-content:center;width:44%;min-width:0}
+                .qr-box{display:flex;align-items:center;justify-content:center;padding:1mm;background:#fff;border:2px solid #000}
+                .qr-box img,.qr-box canvas{display:block;width:3cm!important;height:3cm!important}
+                .card-footer{position:relative;z-index:1;width:100%;text-align:center;margin-top:1mm;font-size:18px;font-weight:700;text-decoration:underline;text-underline-offset:1.5px;white-space:nowrap}
+                .print-button{display:block;margin:15px auto;padding:8px 18px;border:0;border-radius:6px;background:#1e293b;color:#fff;cursor:pointer}
+                @media print{ @page{size:A4 portrait;margin:8mm} .print-sheet{gap:4mm} .print-button{display:none!important} }
+            `;
+            const printContainer = document.createElement('div');
+            printContainer.id = 'batchQrPrintContainer';
+            printContainer.innerHTML = `<main class="print-sheet">${cards}</main>`;
+            document.head.appendChild(printStyles);
+            document.body.appendChild(printContainer);
+            document.body.classList.add('batch-qr-print-mode');
+            activeAthletes.forEach((athlete, index) => {
+                const qrElement = document.getElementById(`qr-${index}`);
+                if (qrElement) new QRCode(qrElement, { text: `karate-athlete:${athlete.id}`, width: 120, height: 120 });
+            });
+            const cleanupPrint = () => {
+                document.body.classList.remove('batch-qr-print-mode');
+                printContainer.remove();
+                printStyles.remove();
+                window.removeEventListener('afterprint', cleanupPrint);
+            };
+            window.addEventListener('afterprint', cleanupPrint);
+            setTimeout(() => window.print(), 400);
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             const formatDate = (date) => date.toISOString().split('T')[0];
             const today = new Date();
@@ -355,6 +431,8 @@
 
                 const activeAthletes = allAthletes.filter(a => !a.isArchived);
                 const inactiveAthletes = allAthletes.filter(a => a.isArchived);
+
+                document.getElementById('printActiveQrButton').addEventListener('click', () => printActiveAthleteQrs(activeAthletes));
         
                 const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
                 const newThisMonth = activeAthletes.filter(a => a.subDate && a.subDate.startsWith(currentMonth)).length;
