@@ -173,11 +173,21 @@
                         <h2 class="font-black text-indigo-900">تسجيل الحضور بالبطاقة</h2>
                         <p class="text-sm text-indigo-700 mt-1">امسح رمز QR الموجود على بطاقة الرياضي لمنحه نقطة الساموراي.</p>
                     </div>
-                    <button type="button" id="toggleQrScanner" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-sm">فتح الماسح</button>
+                    <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                        <label class="flex items-center gap-2 bg-white border border-indigo-200 rounded-xl px-3 py-2 text-sm font-bold text-indigo-900">
+                            <span>الكاميرا</span>
+                            <select id="qrCameraFacing" class="bg-transparent outline-none cursor-pointer">
+                                <option value="environment">الخلفية</option>
+                                <option value="user">الأمامية</option>
+                            </select>
+                        </label>
+                        <button type="button" id="toggleQrScanner" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-sm">فتح الماسح</button>
+                    </div>
                 </div>
                 <div id="qrScannerPanel" class="hidden mt-4 max-w-md mx-auto">
                     <div id="qrReader" class="overflow-hidden rounded-xl border-4 border-indigo-200 bg-slate-900"></div>
                     <p id="qrScanStatus" class="text-center text-sm font-bold text-indigo-800 mt-3">وجّه الكاميرا نحو رمز البطاقة.</p>
+                    <p class="text-center text-xs text-slate-500 mt-2">سيبقى الماسح مفتوحًا لتسجيل الرياضيين واحدًا تلو الآخر.</p>
                 </div>
             </section>
             <form id="attendanceForm">

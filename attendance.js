@@ -5,6 +5,9 @@ const sessionDateInput = document.getElementById('sessionDate');
 const attendanceForm = document.getElementById('attendanceForm');
 let qrScanner = null;
 let qrScannerRunning = false;
+let lastQrValue = '';
+let lastQrScanTime = 0;
+let qrScanInProgress = false;
 
 async function fetchAthletes() {
     const [athletesRes, paymentsRes] = await Promise.all([
@@ -65,11 +68,11 @@ async function markQrAttendance(rawValue) {
 
     if (!athlete) {
         setQrStatus(`لم يتم العثور على الرياضي. القيمة المقروءة: ${scannedValue}`, true);
-        return;
+        return false;
     }
     if (athlete.attendanceDates?.includes(sessionDate)) {
         setQrStatus(`تم تسجيل حضور ${athlete.firstName} ${athlete.lastName} اليوم مسبقًا.`, true);
-        return;
+        return false;
     }
 
     const attendanceDates = Array.isArray(athlete.attendanceDates) ? [...athlete.attendanceDates, sessionDate] : [sessionDate];
@@ -82,7 +85,7 @@ async function markQrAttendance(rawValue) {
 
     if (athleteError) {
         setQrStatus(`تعذر تسجيل الحضور: ${athleteError.message}`, true);
-        return;
+        return false;
     }
 
     const { error: pointError } = await _supabase.from('samurai_competition').insert([{
@@ -98,6 +101,25 @@ async function markQrAttendance(rawValue) {
         setQrStatus(`تم تسجيل حضور ${athlete.firstName} ${athlete.lastName} وإضافة نقطة.`, false);
     }
     await fetchAthletes();
+    return !pointError;
+}
+
+function playQrSuccessSound() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 880;
+        gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.18);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.18);
+    } catch (error) {
+        console.warn('تعذر تشغيل صوت تأكيد QR:', error);
+    }
 }
 
 async function stopQrScanner() {
@@ -105,6 +127,25 @@ async function stopQrScanner() {
         await qrScanner.stop();
         qrScannerRunning = false;
     }
+}
+
+async function startQrScanner() {
+    const cameraFacing = document.getElementById('qrCameraFacing')?.value || 'environment';
+    qrScanner = new Html5Qrcode('qrReader');
+    await qrScanner.start({ facingMode: cameraFacing }, { fps: 10, qrbox: { width: 220, height: 220 } }, async decodedText => {
+        const now = Date.now();
+        if (qrScanInProgress || (decodedText === lastQrValue && now - lastQrScanTime < 2500)) return;
+        lastQrValue = decodedText;
+        lastQrScanTime = now;
+        qrScanInProgress = true;
+        try {
+            const attendanceRegistered = await markQrAttendance(decodedText);
+            if (attendanceRegistered) playQrSuccessSound();
+        } finally {
+            qrScanInProgress = false;
+        }
+    }, () => {});
+    qrScannerRunning = true;
 }
 
 async function toggleQrScanner() {
@@ -123,22 +164,31 @@ async function toggleQrScanner() {
     }
     panel.classList.remove('hidden');
     button.textContent = 'إغلاق الماسح';
-    qrScanner = new Html5Qrcode('qrReader');
     try {
-        await qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, async decodedText => {
-            await stopQrScanner();
-            await markQrAttendance(decodedText);
-            button.textContent = 'فتح الماسح';
-        }, () => {});
-        qrScannerRunning = true;
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        await audioContext.resume();
+        await startQrScanner();
     } catch (error) {
+        qrScanner = null;
         panel.classList.add('hidden');
         button.textContent = 'فتح الماسح';
         setQrStatus(`تعذر تشغيل الكاميرا: ${error.message}`, true);
     }
 }
 
+async function changeQrCamera() {
+    if (!qrScannerRunning) return;
+    await stopQrScanner();
+    try {
+        await startQrScanner();
+        setQrStatus('تم تبديل الكاميرا. وجّهها نحو رمز البطاقة.', false);
+    } catch (error) {
+        setQrStatus(`تعذر تبديل الكاميرا: ${error.message}`, true);
+    }
+}
+
 document.getElementById('toggleQrScanner')?.addEventListener('click', toggleQrScanner);
+document.getElementById('qrCameraFacing')?.addEventListener('change', changeQrCamera);
 
 // تعيين تاريخ اليوم كافتراضي للحصة
 sessionDateInput.value = new Date().toISOString().split('T')[0];
