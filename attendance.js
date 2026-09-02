@@ -37,12 +37,34 @@ function setQrStatus(message, isError = false) {
 }
 
 async function markQrAttendance(rawValue) {
-    const athleteId = Number.parseInt(String(rawValue).replace(/^karate-athlete:/, ''), 10);
+    const scannedValue = String(rawValue || '').trim();
+    let athleteId = scannedValue.replace(/^karate-athlete:/i, '').trim();
+
+    try {
+        const parsedUrl = new URL(scannedValue);
+        athleteId = parsedUrl.searchParams.get('athlete') || parsedUrl.searchParams.get('id') || athleteId;
+    } catch (_) {
+        // المحتوى ليس رابطًا، لذلك نتابع بالصيغة النصية العادية.
+    }
+
+    try {
+        const parsedJson = JSON.parse(athleteId);
+        athleteId = String(parsedJson.id || parsedJson.athlete_id || athleteId);
+    } catch (_) {
+        // المحتوى ليس JSON، لذلك نستخدم المعرف كما هو.
+    }
+
+    athleteId = String(athleteId).trim();
     const sessionDate = sessionDateInput.value;
-    const athlete = athletes.find(item => item.id === athleteId);
+    let athlete = athletes.find(item => String(item.id) === athleteId);
+
+    if (!athlete && athleteId) {
+        const { data, error } = await _supabase.from('athletes').select('*').eq('id', athleteId).maybeSingle();
+        if (!error && data) athlete = data;
+    }
 
     if (!athlete) {
-        setQrStatus('رمز غير صالح أو الرياضي غير موجود.', true);
+        setQrStatus(`لم يتم العثور على الرياضي. القيمة المقروءة: ${scannedValue}`, true);
         return;
     }
     if (athlete.attendanceDates?.includes(sessionDate)) {
@@ -56,7 +78,7 @@ async function markQrAttendance(rawValue) {
         attendance: (athlete.attendance || 0) + 1,
         attendanceDates,
         cardAttendanceDates
-    }).eq('id', athleteId);
+    }).eq('id', athlete.id);
 
     if (athleteError) {
         setQrStatus(`تعذر تسجيل الحضور: ${athleteError.message}`, true);
@@ -64,7 +86,7 @@ async function markQrAttendance(rawValue) {
     }
 
     const { error: pointError } = await _supabase.from('samurai_competition').insert([{
-        athlete_id: athleteId,
+        athlete_id: athlete.id,
         date: sessionDate,
         points: 1,
         reason: 'حضور بالبطاقة QR',
