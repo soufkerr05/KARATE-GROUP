@@ -39,9 +39,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // إعدادات دور القراءة فقط (Athlete)
     if (localStorage.getItem('karate_role') === 'athlete') {
         document.body.classList.add('role-athlete');
-        // إخفاء الروابط المحمية من شريط التنقل
-        const protectedLinks = document.querySelectorAll('a[href="payments.html"], a[href="expenses.html"], a[href="kimono.html"], a[href="report.html"], a[href="dashboard.html"]');
-        protectedLinks.forEach(link => link.style.display = 'none');
         // إخفاء أزرار الإضافة
         const adminButtons = document.querySelectorAll('button[onclick="openRegisterModal()"]');
         adminButtons.forEach(btn => btn.style.display = 'none');

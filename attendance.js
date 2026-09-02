@@ -192,6 +192,7 @@ document.getElementById('qrCameraFacing')?.addEventListener('change', changeQrCa
 
 // تعيين تاريخ اليوم كافتراضي للحصة
 sessionDateInput.value = new Date().toISOString().split('T')[0];
+fetchAthletes();
 
 // تحديث القائمة عند تغيير تاريخ الحصة لمنع التكرار في نفس اليوم
 sessionDateInput.addEventListener('change', renderAttendanceTable);
