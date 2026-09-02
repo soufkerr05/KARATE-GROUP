@@ -88,20 +88,20 @@ async function markQrAttendance(rawValue) {
         return false;
     }
 
-    const { error: pointError } = await _supabase.from('samurai_competition').insert([{
+    const { data: pointRecord, error: pointError } = await _supabase.from('samurai_competition').insert([{
         athlete_id: athlete.id,
         date: sessionDate,
         points: 0.5,
         reason: 'حضور بالبطاقة QR - الساموراي الصغير',
         notes: `حضور بالبطاقة ليوم ${sessionDate}`
-    }]);
+    }]).select().single();
     if (pointError) {
-        setQrStatus(`تم الحضور لكن تعذر إضافة النقطة: ${pointError.message}`, true);
+        setQrStatus(`تم الحضور لكن تعذر إضافة نصف نقطة للمسابقة: ${pointError.message}`, true);
     } else {
-        setQrStatus(`تم تسجيل حضور ${athlete.firstName} ${athlete.lastName} وإضافة نقطة.`, false);
+        setQrStatus(`تم تسجيل حضور ${athlete.firstName} ${athlete.lastName} وإضافة نصف نقطة.`, false);
     }
     await fetchAthletes();
-    return !pointError;
+    return Boolean(pointRecord) && !pointError;
 }
 
 function playQrSuccessSound() {

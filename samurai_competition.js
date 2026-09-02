@@ -145,7 +145,7 @@ function calculateScoresAndRankings(startDate, endDate) {
     // تجميع النقاط لكل رياضي
     pointsInPeriod.forEach(p => {
         // التأكد من أن athlete_id يتم التعامل معه كرقم للبحث المتسق
-        const athleteId = parseInt(p.athlete_id, 10);
+        const athleteId = String(p.athlete_id);
         if (scores[athleteId]) {
             scores[athleteId].totalPoints += parseFloat(p.points);
             scores[athleteId].pointsData.push(p);
@@ -218,9 +218,8 @@ function renderRankings() {
 function showAthleteDetails(athleteId) {
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
-    const athlete = athletes.find(a => a.id === athleteId);
-    // تصفية النقاط للرياضي المحدد والفترة الزمنية، مع التأكد من تحويل athlete_id إلى رقم
-    const athletePoints = competitionPoints.filter(p => parseInt(p.athlete_id, 10) === athleteId && p.date >= startDate && p.date <= endDate);
+    const athlete = athletes.find(a => String(a.id) === String(athleteId));
+    const athletePoints = competitionPoints.filter(p => String(p.athlete_id) === String(athleteId) && p.date >= startDate && p.date <= endDate);
 
     if (!athlete) return;
 
@@ -661,8 +660,8 @@ function attachEventListeners() {
     rankingsList.addEventListener('click', (event) => {
         const rankingItem = event.target.closest('.ranking-item');
         if (rankingItem) {
-            const athleteId = parseInt(rankingItem.dataset.athleteId, 10);
-            if (!isNaN(athleteId)) {
+            const athleteId = rankingItem.dataset.athleteId;
+            if (athleteId) {
                 showAthleteDetails(athleteId);
             }
         }
