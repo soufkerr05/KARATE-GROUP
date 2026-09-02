@@ -125,7 +125,23 @@ function playQrSuccessSound() {
 async function stopQrScanner() {
     if (qrScanner && qrScannerRunning) {
         await qrScanner.stop();
+    }
+    qrScannerRunning = false;
+}
+
+async function closeQrScanner() {
+    const panel = document.getElementById('qrScannerPanel');
+    const button = document.getElementById('toggleQrScanner');
+    try {
+        if (qrScanner) await stopQrScanner();
+    } catch (error) {
+        console.warn('تعذر إيقاف الكاميرا، سيتم إغلاق واجهة الماسح:', error);
+    } finally {
+        qrScanner = null;
         qrScannerRunning = false;
+        panel?.classList.add('hidden');
+        document.body.classList.remove('scanner-open');
+        if (button) button.textContent = 'فتح الماسح';
     }
 }
 
@@ -153,10 +169,7 @@ async function toggleQrScanner() {
     const button = document.getElementById('toggleQrScanner');
     if (!panel || !button) return;
     if (qrScannerRunning) {
-        await stopQrScanner();
-        panel.classList.add('hidden');
-        document.body.classList.remove('scanner-open');
-        button.textContent = 'فتح الماسح';
+        await closeQrScanner();
         return;
     }
     if (!window.Html5Qrcode) {
@@ -192,7 +205,7 @@ async function changeQrCamera() {
 
 document.getElementById('toggleQrScanner')?.addEventListener('click', toggleQrScanner);
 document.getElementById('qrCameraFacing')?.addEventListener('change', changeQrCamera);
-document.getElementById('closeQrScanner')?.addEventListener('click', toggleQrScanner);
+document.getElementById('closeQrScanner')?.addEventListener('click', closeQrScanner);
 
 // تعيين تاريخ اليوم كافتراضي للحصة
 sessionDateInput.value = new Date().toISOString().split('T')[0];
