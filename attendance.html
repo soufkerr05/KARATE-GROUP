@@ -57,10 +57,22 @@
                 flex-direction: column;
                 justify-content: center;
                 width: 100vw;
+                height: 100vh;
+                height: 100dvh;
+                max-height: 100vh;
+                max-height: 100dvh;
                 max-width: none;
                 margin: 0;
-                padding: 1rem;
+                padding: 4rem 1rem 1rem;
                 background: #0f172a;
+                overflow: hidden;
+            }
+            #qrScannerPanel:not(.hidden) .qr-close-button {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                z-index: 2;
+                display: inline-flex;
             }
             #qrScannerPanel:not(.hidden) #qrReader {
                 display: flex;
@@ -74,8 +86,9 @@
             }
             #qrScannerPanel:not(.hidden) #qrReader video {
                 width: 100% !important;
-                height: 100% !important;
-                object-fit: cover;
+                height: auto !important;
+                max-height: 100% !important;
+                object-fit: contain;
             }
             #qrScannerPanel:not(.hidden) #qrScanStatus {
                 flex: 0 0 auto;
@@ -222,6 +235,7 @@
                     </div>
                 </div>
                 <div id="qrScannerPanel" class="hidden mt-4 max-w-md mx-auto">
+                    <button type="button" id="closeQrScanner" class="qr-close-button hidden bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg" aria-label="إغلاق الماسح">إغلاق الماسح</button>
                     <div id="qrReader" class="overflow-hidden rounded-xl border-4 border-indigo-200 bg-slate-900"></div>
                     <p id="qrScanStatus" class="text-center text-sm font-bold text-indigo-800 mt-3">وجّه الكاميرا نحو رمز البطاقة.</p>
                     <p class="text-center text-xs text-slate-500 mt-2">سيبقى الماسح مفتوحًا لتسجيل الرياضيين واحدًا تلو الآخر.</p>

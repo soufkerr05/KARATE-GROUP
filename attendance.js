@@ -192,6 +192,7 @@ async function changeQrCamera() {
 
 document.getElementById('toggleQrScanner')?.addEventListener('click', toggleQrScanner);
 document.getElementById('qrCameraFacing')?.addEventListener('change', changeQrCamera);
+document.getElementById('closeQrScanner')?.addEventListener('click', toggleQrScanner);
 
 // تعيين تاريخ اليوم كافتراضي للحصة
 sessionDateInput.value = new Date().toISOString().split('T')[0];
