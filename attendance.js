@@ -91,8 +91,8 @@ async function markQrAttendance(rawValue) {
     const { error: pointError } = await _supabase.from('samurai_competition').insert([{
         athlete_id: athlete.id,
         date: sessionDate,
-        points: 1,
-        reason: 'حضور بالبطاقة QR',
+        points: 0.5,
+        reason: 'حضور بالبطاقة QR - الساموراي الصغير',
         notes: `حضور بالبطاقة ليوم ${sessionDate}`
     }]);
     if (pointError) {

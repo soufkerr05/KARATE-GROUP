@@ -524,7 +524,7 @@ async function runAttendanceSync() {
         // 1. جلب البيانات المطلوبة
         const [athletesRes, pointsRes] = await Promise.all([
             _supabase.from('athletes').select('id, cardAttendanceDates').filter('isArchived', 'is', 'false'),
-            _supabase.from('samurai_competition').select('athlete_id, date').eq('reason', 'حضور بالبطاقة QR')
+            _supabase.from('samurai_competition').select('athlete_id, date').in('reason', ['حضور بالبطاقة QR', 'حضور بالبطاقة QR - الساموراي الصغير'])
         ]);
 
         if (athletesRes.error || pointsRes.error) {
@@ -550,8 +550,8 @@ async function runAttendanceSync() {
                     missingPointsToInsert.push({
                         athlete_id: athlete.id,
                         date: attDate, // استخدام تاريخ الحضور الفعلي
-                        points: 1,
-                        reason: 'حضور بالبطاقة QR',
+                        points: 0.5,
+                        reason: 'حضور بالبطاقة QR - الساموراي الصغير',
                         notes: `مزامنة آلية`
                     });
                 }
