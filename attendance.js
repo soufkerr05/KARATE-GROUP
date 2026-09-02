@@ -3,6 +3,8 @@ let athletes = [];
 const attendanceList = document.getElementById('attendanceList');
 const sessionDateInput = document.getElementById('sessionDate');
 const attendanceForm = document.getElementById('attendanceForm');
+let qrScanner = null;
+let qrScannerRunning = false;
 
 async function fetchAthletes() {
     const [athletesRes, paymentsRes] = await Promise.all([
@@ -25,6 +27,96 @@ async function fetchAthletes() {
         renderAttendanceTable();
     }
 }
+
+function setQrStatus(message, isError = false) {
+    const status = document.getElementById('qrScanStatus');
+    if (status) {
+        status.textContent = message;
+        status.className = `text-center text-sm font-bold mt-3 ${isError ? 'text-red-700' : 'text-indigo-800'}`;
+    }
+}
+
+async function markQrAttendance(rawValue) {
+    const athleteId = Number.parseInt(String(rawValue).replace(/^karate-athlete:/, ''), 10);
+    const sessionDate = sessionDateInput.value;
+    const athlete = athletes.find(item => item.id === athleteId);
+
+    if (!athlete) {
+        setQrStatus('رمز غير صالح أو الرياضي غير موجود.', true);
+        return;
+    }
+    if (athlete.attendanceDates?.includes(sessionDate)) {
+        setQrStatus(`تم تسجيل حضور ${athlete.firstName} ${athlete.lastName} اليوم مسبقًا.`, true);
+        return;
+    }
+
+    const attendanceDates = Array.isArray(athlete.attendanceDates) ? [...athlete.attendanceDates, sessionDate] : [sessionDate];
+    const cardAttendanceDates = Array.isArray(athlete.cardAttendanceDates) ? [...athlete.cardAttendanceDates, sessionDate] : [sessionDate];
+    const { error: athleteError } = await _supabase.from('athletes').update({
+        attendance: (athlete.attendance || 0) + 1,
+        attendanceDates,
+        cardAttendanceDates
+    }).eq('id', athleteId);
+
+    if (athleteError) {
+        setQrStatus(`تعذر تسجيل الحضور: ${athleteError.message}`, true);
+        return;
+    }
+
+    const { error: pointError } = await _supabase.from('samurai_competition').insert([{
+        athlete_id: athleteId,
+        date: sessionDate,
+        points: 1,
+        reason: 'حضور بالبطاقة QR',
+        notes: `حضور بالبطاقة ليوم ${sessionDate}`
+    }]);
+    if (pointError) {
+        setQrStatus(`تم الحضور لكن تعذر إضافة النقطة: ${pointError.message}`, true);
+    } else {
+        setQrStatus(`تم تسجيل حضور ${athlete.firstName} ${athlete.lastName} وإضافة نقطة.`, false);
+    }
+    await fetchAthletes();
+}
+
+async function stopQrScanner() {
+    if (qrScanner && qrScannerRunning) {
+        await qrScanner.stop();
+        qrScannerRunning = false;
+    }
+}
+
+async function toggleQrScanner() {
+    const panel = document.getElementById('qrScannerPanel');
+    const button = document.getElementById('toggleQrScanner');
+    if (!panel || !button) return;
+    if (qrScannerRunning) {
+        await stopQrScanner();
+        panel.classList.add('hidden');
+        button.textContent = 'فتح الماسح';
+        return;
+    }
+    if (!window.Html5Qrcode) {
+        setQrStatus('تعذر تحميل مكتبة الكاميرا. تحقق من اتصال الإنترنت.', true);
+        return;
+    }
+    panel.classList.remove('hidden');
+    button.textContent = 'إغلاق الماسح';
+    qrScanner = new Html5Qrcode('qrReader');
+    try {
+        await qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, async decodedText => {
+            await stopQrScanner();
+            await markQrAttendance(decodedText);
+            button.textContent = 'فتح الماسح';
+        }, () => {});
+        qrScannerRunning = true;
+    } catch (error) {
+        panel.classList.add('hidden');
+        button.textContent = 'فتح الماسح';
+        setQrStatus(`تعذر تشغيل الكاميرا: ${error.message}`, true);
+    }
+}
+
+document.getElementById('toggleQrScanner')?.addEventListener('click', toggleQrScanner);
 
 // تعيين تاريخ اليوم كافتراضي للحصة
 sessionDateInput.value = new Date().toISOString().split('T')[0];
@@ -256,7 +348,6 @@ attendanceForm.addEventListener('submit', async function(e) {
     const sessionDate = sessionDateInput.value;
     let updatedCount = 0;
     const updatePromises = [];
-    const competitionPointsToAdd = []; // مصفوفة لتجميع نقاط المسابقة
 
     checkboxes.forEach(cb => {
         const id = parseInt(cb.value);
@@ -275,23 +366,10 @@ attendanceForm.addEventListener('submit', async function(e) {
                 }).eq('id', id)
             );
 
-            // إضافة نصف نقطة تلقائياً لمسابقة الساموراي الصغير
-            competitionPointsToAdd.push({
-                athlete_id: parseInt(id, 10), // تحويل المعرف إلى رقم
-                date: sessionDate,
-                points: 0.5,
-                reason: 'حضور الحصة',
-                notes: `تسجيل حضور تلقائي ليوم ${sessionDate}`
-            });
         }
     });
 
     if (updatedCount > 0) {
-        // إضافة نقاط المسابقة إلى قاعدة البيانات
-        if (competitionPointsToAdd.length > 0) {
-            updatePromises.push(_supabase.from('samurai_competition').insert(competitionPointsToAdd));
-        }
-
         await Promise.all(updatePromises); // تنفيذ جميع التحديثات دفعة واحدة
         alert(`تم تسجيل حضور ${updatedCount} رياضيين بنجاح في تاريخ ${sessionDateInput.value}.`);
         
@@ -332,4 +410,3 @@ window.addEventListener('click', function(event) {
 });
 
 // عرض الجدول عند التحميل
-fetchAthletes();

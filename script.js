@@ -395,6 +395,7 @@ function renderTable() {
                 </td>
                 <td class="p-4 align-middle actions-cell text-center admin-only" data-label="إجراءات">
                 ${showMessageBtn ? `<button class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" title="إرسال رسالة هاتفية" onclick="window.location.href='sms:${athlete.guardianPhone.replace(/\s+/g, '')}?body=${encodeURIComponent(messageBody)}'">رسالة</button>` : ''}
+                    <button class="bg-slate-700 hover:bg-slate-800 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="printAthleteQr(${athlete.id})">طباعة QR</button>
                     <button class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="editDocs(${athlete.id})">تعديل</button>
                     ${viewMode === 'active' 
                         ? `<button class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="toggleArchive(${athlete.id}, true)">أرشفة</button>`
@@ -408,6 +409,18 @@ function renderTable() {
 
     html += rowsHtml + `</tbody></table>`;
     listContainer.innerHTML = html;
+}
+
+function printAthleteQr(id) {
+    const athlete = athletes.find(item => item.id === id);
+    if (!athlete || !window.QRCode) {
+        alert('تعذر تحميل مولد رمز QR. تحقق من اتصال الإنترنت.');
+        return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=420,height=520');
+    printWindow.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>بطاقة ${athlete.firstName} ${athlete.lastName}</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:28px;color:#0f172a}#qr{display:inline-block;margin:18px}h1{font-size:24px;margin-bottom:8px}p{font-size:14px;color:#475569}@media print{button{display:none}}</style></head><body><h1>${athlete.firstName} ${athlete.lastName}</h1><p>بطاقة الانخراط - امسح الرمز لتسجيل الحضور</p><div id="qr"></div><p>معرّف الرياضي: ${athlete.id}</p><button onclick="window.print()">طباعة</button><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById('qr'), {text:'karate-athlete:${athlete.id}', width:180, height:180});<\/script></body></html>`);
+    printWindow.document.close();
 }
 
 // عرض الجدول عند تحميل الصفحة لأول مرة

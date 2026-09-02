@@ -12,7 +12,6 @@
         }
     </script>
     <title>مسابقة الساموراي الصغير - قاعة KARATE</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥋</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -236,38 +235,5 @@
         </div>
     </div>
 
-    <!-- نافذة تعديل نقطة -->
-    <div id="editPointModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" style="display: none;" dir="rtl">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg relative flex flex-col overflow-hidden animate-[fade-in_0.2s_ease-out] max-h-[90vh]">
-            <button onclick="closeEditPointModal()" class="absolute top-4 left-4 text-slate-400 hover:text-red-500 transition-colors p-1" aria-label="إغلاق">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
-                <h2 class="text-xl font-bold text-slate-800">✏️ تعديل النقطة المسجلة</h2>
-            </div>
-            <div class="p-6 overflow-y-auto">
-                <form id="editPointForm" class="space-y-4">
-                    <input type="hidden" id="editPointId">
-                    <div>
-                        <label for="editPointReason" class="block text-sm font-semibold text-slate-700 mb-1">السبب:</label>
-                        <select id="editPointReason" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold">
-                            <option value="1.0|الفوز في مسابقة">➕ الفوز في مسابقة (+1.0 نقطة)</option>
-                            <option value="0.5|أحسن أداء">➕ أحسن أداء (+0.5 نقطة)</option>
-                            <option value="0.5|أحسن أخلاق">➕ أحسن أخلاق (+0.5 نقطة)</option>
-                            <option value="0.5|حضور والتزام">➕ حضور والتزام (+0.5 نقطة)</option>
-                            <option value="0.5|حضور الحصة">➕ حضور الحصة (+0.5 نقطة)</option>
-                            <option value="-0.5|أسوأ أداء">➖ أسوأ أداء (-0.5 نقطة)</option>
-                            <option value="-0.5|أسوأ أخلاق">➖ أسوأ أخلاق (-0.5 نقطة)</option>
-                            <option value="-0.5|لباس غير نظيف">➖ لباس غير نظيف (-0.5 نقطة)</option>
-                            <option value="-0.5|أظافر طويلة">➖ أظافر طويلة (-0.5 نقطة)</option>
-                        </select>
-                    </div>
-                    <div><label for="editPointDate" class="block text-sm font-semibold text-slate-700 mb-1">التاريخ:</label><input type="date" id="editPointDate" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-slate-800 font-bold"></div>
-                    <div><label for="editPointNotes" class="block text-sm font-semibold text-slate-700 mb-1">ملاحظات (اختياري):</label><input type="text" id="editPointNotes" placeholder="تفاصيل إضافية..." class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-slate-800"></div>
-                    <button type="submit" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-3 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">حفظ التعديلات</button>
-                </form>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

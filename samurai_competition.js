@@ -4,7 +4,6 @@
 // ===================================================================
 
 // --- المتغيرات العامة (Global State) ---
-let currentDetailAthleteId = null; // لتتبع الرياضي المفتوح حالياً في نافذة التفاصيل
 let athletes = [];
 let competitionPoints = [];
 
@@ -72,12 +71,8 @@ async function fetchInitialData() {
     loadingState.classList.remove('hidden'); // Show loading indicator
 
     const [athletesRes, pointsRes] = await Promise.all([
-        // 1. جلب الرياضيين مع تواريخ الحضور لتجاوز حد الـ 1000 صف
-        _supabase.from('athletes').select('id, firstName, lastName, isArchived, attendanceDates').order('firstName', { ascending: true }),
-        // 2. جلب النقاط اليدوية فقط (استثناء نقاط الحضور)
-        _supabase.from('samurai_competition')
-            .select('*')
-            .neq('reason', 'حضور الحصة')
+        _supabase.from('athletes').select('id, firstName, lastName, isArchived').order('firstName', { ascending: true }), // جلب جميع الرياضيين (نشطين ومؤرشفين)
+        _supabase.from('samurai_competition').select('*')
     ]);
 
     if (athletesRes.error) {
@@ -133,8 +128,6 @@ function renderAthletesChecklist() {
  * @returns {Array<Object>} مصفوفة مرتبة من الرياضيين مع مجموع نقاطهم وتفاصيل النقاط.
  */
 function calculateScoresAndRankings(startDate, endDate) {
-    const POINTS_PER_ATTENDANCE = 0.5; // قيمة النقطة لكل حصة حضور
-
     const scores = {};
 
     // تهيئة النقاط لجميع الرياضيين (بما في ذلك المؤرشفين، حيث قد تكون نقاطهم ذات صلة بالسياق التاريخي أو إعادة التفعيل)
@@ -146,22 +139,15 @@ function calculateScoresAndRankings(startDate, endDate) {
         };
     });
 
-    // 1. حساب نقاط الحضور من جدول الرياضيين مباشرة
-    athletes.forEach(athlete => {
-        if (scores[athlete.id] && Array.isArray(athlete.attendanceDates)) {
-            const attendanceInPeriod = athlete.attendanceDates.filter(d => d >= startDate && d <= endDate);
-            scores[athlete.id].totalPoints += attendanceInPeriod.length * POINTS_PER_ATTENDANCE;
-        }
-    });
+    // تصفية النقاط ضمن الفترة المحددة
+    const pointsInPeriod = competitionPoints.filter(p => p.date >= startDate && p.date <= endDate);
 
-    // 2. تجميع النقاط اليدوية (الاستثنائية) ضمن الفترة المحددة
-    const manualPointsInPeriod = competitionPoints.filter(p => p.date >= startDate && p.date <= endDate);
-
-    manualPointsInPeriod.forEach(p => {
+    // تجميع النقاط لكل رياضي
+    pointsInPeriod.forEach(p => {
         // التأكد من أن athlete_id يتم التعامل معه كرقم للبحث المتسق
         const athleteId = parseInt(p.athlete_id, 10);
         if (scores[athleteId]) {
-            scores[athleteId].totalPoints += parseFloat(p.points || 0);
+            scores[athleteId].totalPoints += parseFloat(p.points);
             scores[athleteId].pointsData.push(p);
         }
     });
@@ -230,7 +216,6 @@ function renderRankings() {
  * @param {number} athleteId - معرّف الرياضي.
  */
 function showAthleteDetails(athleteId) {
-    currentDetailAthleteId = athleteId; // حفظ معرّف الرياضي الحالي
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
     const athlete = athletes.find(a => a.id === athleteId);
@@ -248,16 +233,13 @@ function showAthleteDetails(athleteId) {
         listEl.innerHTML = athletePoints.sort((a,b) => new Date(b.date) - new Date(a.date)).map(p => {
             const isPositive = p.points > 0;
             return `
-                <div class="flex justify-between items-center p-3 rounded-lg ${isPositive ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'} border mb-2">
+                <div class="flex justify-between items-start p-3 rounded-lg ${isPositive ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'} border mb-2">
                     <div>
                         <p class="font-bold ${isPositive ? 'text-emerald-800' : 'text-red-800'}">${p.reason}</p>
                         <p class="text-xs text-slate-500 mt-1">${p.date}${p.notes ? ` - ${p.notes}`: ''}</p>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <button onclick="openEditPointModal(${p.id})" class="p-2 text-slate-500 hover:bg-slate-200 rounded-lg transition" title="تعديل النقطة">✏️</button>
-                        <div class="font-black text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}">
-                            ${isPositive ? '+' : ''}${parseFloat(p.points).toFixed(1)}
-                        </div>
+                    <div class="font-black text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}">
+                        ${isPositive ? '+' : ''}${parseFloat(p.points).toFixed(1)}
                     </div>
                 </div>
             `;
@@ -272,58 +254,6 @@ function showAthleteDetails(athleteId) {
  */
 function closeDetailsModal() {
     document.getElementById('detailsModal').style.display = 'none';
-    currentDetailAthleteId = null;
-}
-
-/**
- * يفتح نافذة تعديل نقطة معينة ويملأ النموذج ببياناتها.
- * @param {number} pointId - معرّف النقطة.
- */
-function openEditPointModal(pointId) {
-    const point = competitionPoints.find(p => p.id === pointId);
-    if (!point) {
-        alert('لم يتم العثور على النقطة المحددة.');
-        return;
-    }
-
-    // لا يمكن تعديل نقاط الحضور التلقائية
-    if (point.reason === 'حضور الحصة') {
-        alert('لا يمكن تعديل نقاط الحضور التلقائية من هنا. يرجى تعديلها من صفحة الحضور.');
-        return;
-    }
-
-    document.getElementById('editPointId').value = point.id;
-    document.getElementById('editPointDate').value = point.date;
-    document.getElementById('editPointNotes').value = point.notes || '';
-
-    // تحديد السبب والنقاط في القائمة المنسدلة
-    const reasonSelect = document.getElementById('editPointReason');
-    const pointValueStr = parseFloat(point.points).toFixed(1);
-    const reasonText = point.reason;
-    const combinedValue = `${pointValueStr}|${reasonText}`;
-
-    let optionFound = false;
-    for (let option of reasonSelect.options) {
-        if (option.value === combinedValue) {
-            option.selected = true;
-            optionFound = true;
-            break;
-        }
-    }
-    // إذا لم يتم العثور على الخيار (قد يكون سبباً قديماً)، قم بإضافته
-    if (!optionFound) {
-        const newOption = new Option(`${reasonText} (${pointValueStr} نقطة)`, combinedValue, true, true);
-        reasonSelect.add(newOption);
-    }
-
-    document.getElementById('editPointModal').style.display = 'flex';
-}
-
-/**
- * يغلق نافذة تعديل النقطة.
- */
-function closeEditPointModal() {
-    document.getElementById('editPointModal').style.display = 'none';
 }
 
 // --- معالجات الأحداث (Event Handlers) ---
@@ -409,13 +339,13 @@ async function printRankings() {
         let rankingBody1Html = '';
         remainingAthletes.slice(0, midPoint).forEach((athlete, index) => {
             const rank = index + 4;
-            rankingBody1Html += `<tr><td>${rank}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${athlete.totalPoints.toFixed(1)}</td></tr>`;
+            rankingBody1Html += `<tr><td>${athlete.totalPoints.toFixed(1)}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${rank}</td></tr>`;
         });
 
         let rankingBody2Html = '';
         remainingAthletes.slice(midPoint).forEach((athlete, index) => {
             const rank = index + 4 + midPoint;
-            rankingBody2Html += `<tr><td>${rank}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${athlete.totalPoints.toFixed(1)}</td></tr>`;
+            rankingBody2Html += `<tr><td>${athlete.totalPoints.toFixed(1)}</td><td>${athlete.firstName} ${athlete.lastName}</td><td>${rank}</td></tr>`;
         });
 
         // القالب الكامل مع الأنماط المضمنة
@@ -430,24 +360,22 @@ async function printRankings() {
                     /* --- الإعدادات العامة --- */
                     body {
                         font-family: 'Tajawal', 'Cairo', sans-serif;
-                        background-color: #fff; /* خلفية بيضاء للطباعة */
+                        background-color: #f0f2f5;
                         margin: 0;
-                        padding: 0;
+                        padding: 20px;
+                        display: flex;
+                        justify-content: center;
                         color: #333;
                     }
 
                     .page-container {
                         background-color: #fff;
-                        width: 100%;
-                        min-height: auto;
-                        padding: 0;
-                        box-shadow: none;
+                        width: 210mm; /* عرض ورقة A4 */
+                        min-height: 297mm; /* ارتفاع ورقة A4 */
+                        padding: 20px;
+                        box-shadow: 0 0 15px rgba(0,0,0,0.1);
                         box-sizing: border-box;
                     }
-
-                    /* حاوية العرض على الشاشة قبل الطباعة */
-                    .preview-wrapper { background-color: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
-                    .preview-wrapper .page-container { width: 210mm; min-height: 297mm; padding: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
 
                     /* --- زر الطباعة (مخفي في الطباعة) --- */
                     .print-button { display: none; }
@@ -457,57 +385,43 @@ async function printRankings() {
                         text-align: center;
                         font-size: 24px;
                         font-weight: 800;
-                        color: #1e293b;
+                        color: #1e3a8a;
                         margin-bottom: 25px;
-                        border-bottom: 3px double #ccc;
+                        border-bottom: 2px solid #eee;
                         padding-bottom: 15px;
                     }
 
                     /* --- جدول المراكز الثلاثة الأولى --- */
-                    .top-three-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 1.1em; }
-                    .top-three-table th, .top-three-table td { border: 1px solid #bbb; padding: 8px; text-align: center; }
-                    .top-three-table th { background-color: #e2e8f0; font-weight: 700; }
-                    .top-three-table tbody tr { background-color: #f1f5f9; }
+                    .top-three-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 1.2em; }
+                    .top-three-table th, .top-three-table td { border: 1px solid #ccc; padding: 12px; text-align: center; }
+                    .top-three-table th { background-color: #e9ecef; font-weight: 700; }
+                    .top-three-table tbody tr { background-color: #f8f9fa; }
                     .title-underline { font-weight: bold; text-decoration: underline; text-decoration-color: #007bff; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 
                     /* --- حاوية الجدولين المتجاورين --- */
-                    .main-tables-container {
-                        column-count: 2; /* الحل السحري: تقسيم القائمة لعمودين */
-                        column-gap: 20px;
-                        width: 100%;
-                    }
+                    .main-tables-container { display: flex; justify-content: space-between; gap: 20px; }
+                    .ranking-column { width: 49%; }
 
                     /* --- جداول الترتيب الرئيسية --- */
-                    .ranking-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 15px; }
-                    .ranking-table th, .ranking-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: right; }
-                    .ranking-table th { background-color: #f1f5f9; font-weight: 700; text-align: center; }
-                    .ranking-table td:first-child, .ranking-table th:first-child { text-align: center; width: 20%; font-weight: bold; background-color: #f8fafc; } /* عمود الترتيب */
-                    .ranking-table td:last-child, .ranking-table th:last-child { text-align: center; width: 20%; font-weight: bold; } /* عمود النقاط */
-                    
-                    /* منع انقسام السطر بين الأعمدة */
-                    .ranking-table tr {
-                        page-break-inside: avoid !important;
-                        break-inside: avoid !important;
-                    }
+                    .ranking-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+                    .ranking-table th, .ranking-table td { border: 1px solid #ccc; padding: 6px 8px; text-align: right; }
+                    .ranking-table th { background-color: #f2f2f2; font-weight: 700; }
+                    .ranking-table td:first-child, .ranking-table th:first-child { text-align: center; font-weight: bold; width: 15%; } /* عمود النقاط */
+                    .ranking-table td:last-child, .ranking-table th:last-child { text-align: center; width: 15%; font-weight: bold; background-color: #f8f9fa; } /* عمود الترتيب */
 
                     /* --- إعدادات الطباعة --- */
                     @media print {
-                        @page {
-                            size: A4 portrait;
-                            margin: 7mm !important; /* هوامش ضيقة */
-                        }
-                        body { font-size: 9.5pt; }
-                        .preview-wrapper { background: transparent; padding: 0; }
-                        .page-container { box-shadow: none; padding: 0; margin: 0; }
-                        h1 { font-size: 18pt; margin-bottom: 15px; padding-bottom: 10px; }
-                        .top-three-table { font-size: 10pt; margin-bottom: 20px; }
-                        .top-three-table td, .top-three-table th { padding: 5px; }
-                        .ranking-table { font-size: 8.5pt; }
-                        .ranking-table td, .ranking-table th { padding: 3px 5px; }
+                        @page { size: A4; margin: 1cm; }
+                        body { background-color: #fff; padding: 0; margin: 0; font-size: 9.5pt; }
+                        .page-container { width: 100%; min-height: auto; box-shadow: none; padding: 0; }
+                        h1 { font-size: 20pt; }
+                        .top-three-table { font-size: 11pt; }
+                        .ranking-table { font-size: 9pt; }
+                        .ranking-table td, .ranking-table th { padding: 4px 6px; }
                     }
                 </style>
             </head>
-            <body class="preview-wrapper">
+            <body>
                 <div class="page-container">
                     <h1>${reportTitleText}</h1>
 
@@ -527,18 +441,36 @@ async function printRankings() {
 
                     <!-- حاوية الجدولين المتجاورين -->
                     <div class="main-tables-container">
-                        <table class="ranking-table">
-                            <thead><tr><th>الترتيب</th><th>الاسم</th><th>النقاط</th></tr></thead>
-                            <tbody id="ranking-body-1">
-                                ${rankingBody1Html}
-                            </tbody>
-                        </table>
-                        <table class="ranking-table">
-                            <thead><tr><th>الترتيب</th><th>الاسم</th><th>النقاط</th></tr></thead>
-                            <tbody id="ranking-body-2">
-                                ${rankingBody2Html}
-                            </tbody>
-                        </table>
+                        <!-- الجدول الأيمن -->
+                        <div class="ranking-column">
+                            <table class="ranking-table">
+                                <thead>
+                                    <tr>
+                                        <th>النقاط</th>
+                                        <th>الاسم</th>
+                                        <th>الترتيب</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ranking-body-1">
+                                    ${rankingBody1Html}
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- الجدول الأيسر -->
+                        <div class="ranking-column">
+                            <table class="ranking-table">
+                                <thead>
+                                    <tr>
+                                        <th>النقاط</th>
+                                        <th>الاسم</th>
+                                        <th>الترتيب</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ranking-body-2">
+                                    ${rankingBody2Html}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </body>
@@ -591,8 +523,8 @@ async function runAttendanceSync() {
     try {
         // 1. جلب البيانات المطلوبة
         const [athletesRes, pointsRes] = await Promise.all([
-            _supabase.from('athletes').select('id, attendanceDates').filter('isArchived', 'is', 'false'),
-            _supabase.from('samurai_competition').select('athlete_id, date').eq('reason', 'حضور الحصة')
+            _supabase.from('athletes').select('id, cardAttendanceDates').filter('isArchived', 'is', 'false'),
+            _supabase.from('samurai_competition').select('athlete_id, date').eq('reason', 'حضور بالبطاقة QR')
         ]);
 
         if (athletesRes.error || pointsRes.error) {
@@ -610,7 +542,7 @@ async function runAttendanceSync() {
         // 3. تحديد نقاط الحضور الناقصة بدقة
         const missingPointsToInsert = [];
         activeAthletes.forEach((athlete, index) => {
-            const attendanceInPeriod = (athlete.attendanceDates || []).filter(d => d >= startDate && d <= endDate);
+            const attendanceInPeriod = (athlete.cardAttendanceDates || []).filter(d => d >= startDate && d <= endDate);
 
             attendanceInPeriod.forEach(attDate => {
                 const pointKey = `${athlete.id}-${attDate}`;
@@ -618,8 +550,8 @@ async function runAttendanceSync() {
                     missingPointsToInsert.push({
                         athlete_id: athlete.id,
                         date: attDate, // استخدام تاريخ الحضور الفعلي
-                        points: 0.5,
-                        reason: 'حضور الحصة',
+                        points: 1,
+                        reason: 'حضور بالبطاقة QR',
                         notes: `مزامنة آلية`
                     });
                 }
@@ -722,42 +654,6 @@ function attachEventListeners() {
         const modal = document.getElementById('detailsModal');
         if (event.target === modal) {
             closeDetailsModal();
-        }
-    });
-
-    // معالج حدث لإرسال نموذج تعديل النقطة
-    document.getElementById('editPointForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const pointId = parseInt(document.getElementById('editPointId').value, 10);
-        const [pointsValueStr, reasonText] = document.getElementById('editPointReason').value.split('|');
-
-        const updatedPoint = {
-            date: document.getElementById('editPointDate').value,
-            points: parseFloat(pointsValueStr),
-            reason: reasonText,
-            notes: document.getElementById('editPointNotes').value.trim()
-        };
-
-        const { data, error } = await _supabase
-            .from('samurai_competition')
-            .update(updatedPoint)
-            .eq('id', pointId)
-            .select();
-
-        if (error) {
-            alert('حدث خطأ أثناء تحديث النقطة: ' + error.message);
-            console.error(error);
-        } else {
-            alert('تم تحديث النقطة بنجاح!');
-            // تحديث الحالة المحلية
-            const index = competitionPoints.findIndex(p => p.id === pointId);
-            if (index !== -1) {
-                competitionPoints[index] = data[0];
-            }
-            closeEditPointModal();
-            renderRankings(); // تحديث الترتيب
-            if (currentDetailAthleteId) showAthleteDetails(currentDetailAthleteId); // إعادة فتح نافذة التفاصيل
         }
     });
 

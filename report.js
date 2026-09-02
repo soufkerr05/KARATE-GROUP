@@ -85,12 +85,10 @@ async function generateReport() {
     // 1. حساب إجمالي الدخل من اشتراكات ومدفوعات الرياضيين
     let totalIncome = 0;
     let incomeData = [];
-    const POINTS_PER_ATTENDANCE = 0.5; // توحيد قيمة نقطة الحضور مع باقي النظام
     
     allPayments.forEach(payment => {
         if (payment.date && payment.date >= startDate && payment.date <= endDate) {
             const pType = payment.type || 'subscription';
-            const isSamuraiPoint = pType === 'samurai_competition'; // تحديد نقاط الساموراي
             
             if (filterType === 'all' || filterType === 'incomes' || filterType === pType) {
                 const athlete = athletes.find(a => a.id === payment.athlete_id) || {};
@@ -98,27 +96,13 @@ async function generateReport() {
                 const fName = athlete.firstName || '';
                 const lName = athlete.lastName || '';
                 
-                let amount = parseFloat(payment.amount);
-
-                // إذا كان السبب هو "حضور الحصة"، يتم استخدام القيمة الموحدة
-                if (isSamuraiPoint && payment.reason === 'حضور الحصة') {
-                    amount = POINTS_PER_ATTENDANCE;
-                }
-
-                // وصف الدفع لنقاط الساموراي
-                let paymentName = `${gName} (عن: ${fName} ${lName})`;
-                if (isSamuraiPoint) {
-                    paymentName = `${fName} ${lName}`; // اسم الرياضي مباشرة
-                }
-
                 incomeData.push({
-                    name: paymentName,
-                    amount: amount,
+                    name: `${gName} (عن: ${fName} ${lName})`,
+                    amount: parseFloat(payment.amount),
                     date: payment.date,
-                    type: pType,
-                    reason: payment.reason || null // إضافة السبب للتمييز
+                    type: pType
                 });
-                totalIncome += amount;
+                totalIncome += parseFloat(payment.amount);
             }
         }
     });
@@ -173,9 +157,7 @@ async function generateReport() {
         const typeLabels = {
             'subscription': '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-200">اشتراك شهري</span>',
             'uniform': '<span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold border border-indigo-200">بدلة رياضية</span>',
-            'insurance': '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold border border-emerald-200">تأمين رياضي</span>',
-            'samurai_competition': '<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold border border-yellow-200">مسابقة الساموراي</span>',
-
+            'insurance': '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold border border-emerald-200">تأمين رياضي</span>'
         };
         
         html += `<h3 class="text-xl font-bold text-emerald-700 mb-3 mt-6 border-r-4 border-emerald-500 pr-2">جدول المداخيل</h3>
@@ -191,16 +173,12 @@ async function generateReport() {
                     <tbody>`;
         incomeData.forEach(item => {
             const avatarName = item.name.split(' ')[0];
-            // تعديل اسم الدافع ليعرض سبب نقطة الساموراي
-            const displayName = item.type === 'samurai_competition' && item.reason 
-                ? `${item.name} <span class="text-xs text-slate-500 font-normal">(${item.reason})</span>`
-                : item.name;
             html += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition duration-200">
                         <td class="p-4" data-label="تاريخ الدفع">${item.date}</td>
                         <td class="p-4 font-medium text-slate-700" data-label="الدافع (الرياضي)">
                             <div class="flex items-center">
                                 <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(avatarName)}&background=4f46e5&color=fff&rounded=true&font-size=0.4" class="w-8 h-8 ml-2 shadow-sm rounded-full hidden sm:block" alt="Avatar">
-                                <span>${displayName}</span>
+                                <span>${item.name}</span>
                             </div>
                         </td>
                         <td class="p-4 align-middle" data-label="نوع الدفع">${typeLabels[item.type] || '<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold border border-gray-200">غير محدد</span>'}</td>
