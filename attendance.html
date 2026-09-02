@@ -67,12 +67,13 @@
                 background: #0f172a;
                 overflow: hidden;
             }
-            #qrScannerPanel:not(.hidden) .qr-close-button {
+            #qrScannerPanel:not(.hidden) .qr-scanner-actions {
                 position: absolute;
                 top: 1rem;
                 right: 1rem;
                 z-index: 2;
-                display: inline-flex;
+                display: flex;
+                gap: .5rem;
             }
             #qrScannerPanel:not(.hidden) #qrReader {
                 display: flex;
@@ -235,7 +236,10 @@
                     </div>
                 </div>
                 <div id="qrScannerPanel" class="hidden mt-4 max-w-md mx-auto">
-                    <button type="button" id="closeQrScanner" class="qr-close-button hidden bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg" aria-label="إغلاق الماسح">إغلاق الماسح</button>
+                    <div class="qr-scanner-actions">
+                        <button type="button" id="switchQrCamera" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg" aria-label="تبديل الكاميرا">تبديل الكاميرا</button>
+                        <button type="button" id="closeQrScanner" class="qr-close-button bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg" aria-label="إغلاق الماسح">إغلاق الماسح</button>
+                    </div>
                     <div id="qrReader" class="overflow-hidden rounded-xl border-4 border-indigo-200 bg-slate-900"></div>
                     <p id="qrScanStatus" class="text-center text-sm font-bold text-indigo-800 mt-3">وجّه الكاميرا نحو رمز البطاقة.</p>
                     <p class="text-center text-xs text-slate-500 mt-2">سيبقى الماسح مفتوحًا لتسجيل الرياضيين واحدًا تلو الآخر.</p>

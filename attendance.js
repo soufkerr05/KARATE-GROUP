@@ -203,9 +203,17 @@ async function changeQrCamera() {
     }
 }
 
+async function switchQrCamera() {
+    const cameraSelect = document.getElementById('qrCameraFacing');
+    if (!cameraSelect) return;
+    cameraSelect.value = cameraSelect.value === 'environment' ? 'user' : 'environment';
+    await changeQrCamera();
+}
+
 document.getElementById('toggleQrScanner')?.addEventListener('click', toggleQrScanner);
 document.getElementById('qrCameraFacing')?.addEventListener('change', changeQrCamera);
 document.getElementById('closeQrScanner')?.addEventListener('click', closeQrScanner);
+document.getElementById('switchQrCamera')?.addEventListener('click', switchQrCamera);
 
 // تعيين تاريخ اليوم كافتراضي للحصة
 sessionDateInput.value = new Date().toISOString().split('T')[0];
