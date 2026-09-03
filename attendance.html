@@ -47,8 +47,13 @@
             background-color: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(4px);
         }
+        .qr-scanner-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
         @media (max-width: 767px) {
-            body.scanner-open { overflow: hidden; }
             #qrScannerPanel:not(.hidden) {
                 position: fixed;
                 inset: 0;
@@ -68,12 +73,22 @@
                 overflow: hidden;
             }
             #qrScannerPanel:not(.hidden) .qr-scanner-actions {
-                position: absolute;
-                top: 1rem;
+                position: fixed;
+                top: max(1rem, env(safe-area-inset-top));
+                left: 1rem;
                 right: 1rem;
                 z-index: 2;
-                display: flex;
-                gap: .5rem;
+                justify-content: space-between;
+                padding: 0.5rem;
+                background: rgba(15, 23, 42, 0.92);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 0.9rem;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            }
+            #qrScannerPanel:not(.hidden) .qr-scanner-actions button {
+                flex: 1;
+                min-height: 3rem;
+                white-space: nowrap;
             }
             #qrScannerPanel:not(.hidden) #qrReader {
                 display: flex;
