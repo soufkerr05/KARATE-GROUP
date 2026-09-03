@@ -39,6 +39,22 @@ function setQrStatus(message, isError = false) {
     }
 }
 
+function showQrScanResult(isSuccess, athleteName, message) {
+    const result = document.getElementById('qrScanResult');
+    const icon = document.getElementById('qrScanResultIcon');
+    const name = document.getElementById('qrScanResultName');
+    const resultMessage = document.getElementById('qrScanResultMessage');
+    if (!result || !icon || !name || !resultMessage) return;
+
+    result.className = `mt-3 rounded-2xl border-2 p-4 text-center ${isSuccess ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`;
+    icon.textContent = isSuccess ? '✓' : '✕';
+    icon.className = `text-5xl leading-none ${isSuccess ? 'text-emerald-600' : 'text-red-600'}`;
+    name.textContent = athleteName || 'رياضي غير معروف';
+    name.className = `mt-2 text-xl font-black ${isSuccess ? 'text-emerald-800' : 'text-red-800'}`;
+    resultMessage.textContent = message;
+    resultMessage.className = `mt-1 text-sm font-bold ${isSuccess ? 'text-emerald-700' : 'text-red-700'}`;
+}
+
 async function markQrAttendance(rawValue) {
     const scannedValue = String(rawValue || '').trim();
     let athleteId = scannedValue.replace(/^karate-athlete:/i, '').trim();
@@ -68,10 +84,14 @@ async function markQrAttendance(rawValue) {
 
     if (!athlete) {
         setQrStatus(`لم يتم العثور على الرياضي. القيمة المقروءة: ${scannedValue}`, true);
+        showQrScanResult(false, '', 'لم يتم العثور على الرياضي');
         return false;
     }
+    const athleteName = `${athlete.firstName} ${athlete.lastName}`.trim();
     if (athlete.attendanceDates?.includes(sessionDate)) {
-        setQrStatus(`تم تسجيل حضور ${athlete.firstName} ${athlete.lastName} اليوم مسبقًا.`, true);
+        const message = 'تم تسجيل الحضور اليوم مسبقًا';
+        setQrStatus(`${message}: ${athleteName}.`, true);
+        showQrScanResult(false, athleteName, message);
         return false;
     }
 
@@ -85,6 +105,7 @@ async function markQrAttendance(rawValue) {
 
     if (athleteError) {
         setQrStatus(`تعذر تسجيل الحضور: ${athleteError.message}`, true);
+        showQrScanResult(false, athleteName, 'تعذر تسجيل الحضور');
         return false;
     }
 
@@ -97,8 +118,11 @@ async function markQrAttendance(rawValue) {
     }]).select().single();
     if (pointError) {
         setQrStatus(`تم الحضور لكن تعذر إضافة نصف نقطة للمسابقة: ${pointError.message}`, true);
+        showQrScanResult(false, athleteName, 'تم الحضور لكن تعذرت إضافة النقطة');
     } else {
-        setQrStatus(`تم تسجيل حضور ${athlete.firstName} ${athlete.lastName} وإضافة نصف نقطة.`, false);
+        const message = 'تم تسجيل الحضور وإضافة نصف نقطة';
+        setQrStatus(`${message}: ${athleteName}.`, false);
+        showQrScanResult(true, athleteName, message);
     }
     await fetchAthletes();
     return Boolean(pointRecord) && !pointError;
