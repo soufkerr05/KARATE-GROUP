@@ -3,17 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- تحويل تلقائي للرئيسية إذا كان مسجل الدخول -->
-    <script>
-        const authTime = localStorage.getItem('karate_auth_time');
-        const parsedTime = parseInt(authTime, 10);
-        if (authTime && !isNaN(parsedTime) && (Date.now() - parsedTime) < 21600000) {
-            window.location.replace('index.html');
-        } else {
-            localStorage.removeItem('karate_auth');
-            localStorage.removeItem('karate_auth_time');
-        }
-    </script>
     <title>التحقق من الجهاز - قاعة KARATE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
@@ -22,6 +11,8 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
+    <script src="auth-guard.js"></script>
+    <script src="brand-config.js"></script>
     <style>
         body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: white; overflow: hidden; }
         
@@ -79,14 +70,14 @@
 
         <form onsubmit="handleLogin(event)" class="space-y-5">
             <div>
-                <label class="block text-sm font-bold text-slate-300 mb-2">رمز المستخدم</label>
-                <input type="text" id="username" placeholder="KARATE" required dir="ltr" class="w-full px-4 py-3 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-white bg-slate-900/50 transition-colors placeholder-slate-600">
+                <label class="block text-sm font-bold text-slate-300 mb-2">البريد الإلكتروني</label>
+                    <input type="email" id="username" placeholder="name@example.com" required dir="ltr" class="w-full px-4 py-3 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-white bg-slate-900/50 transition-colors placeholder-slate-600">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-300 mb-2">مفتاح فك التشفير (كلمة المرور)</label>
                 <input type="password" id="password" required dir="ltr" class="w-full px-4 py-3 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-white bg-slate-900/50 transition-colors tracking-widest">
             </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] mt-4">
+            <button id="loginButton" type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] mt-4">
                 تأكيد وربط الجهاز
             </button>
         </form>
@@ -109,23 +100,24 @@
             
         }, 3500); // مدة عرض الرادار (3.5 ثواني)
 
-        function handleLogin(event) {
+        async function handleLogin(event) {
             event.preventDefault();
             const user = document.getElementById('username').value.trim();
-            const pass = document.getElementById('password').value.trim();
-            
-            if (user === 'Coach' && pass === 'Ayhem') {
-                localStorage.setItem('karate_auth', 'true');
-                localStorage.setItem('karate_role', 'admin');
-                localStorage.setItem('karate_auth_time', Date.now().toString());
-                window.location.replace('index.html');
-            } else if (user === 'Athlete' && pass === '2025') {
-                localStorage.setItem('karate_auth', 'true');
-                localStorage.setItem('karate_role', 'athlete');
-                localStorage.setItem('karate_auth_time', Date.now().toString());
+            const pass = document.getElementById('password').value;
+            const loginButton = document.getElementById('loginButton');
+            const errorMessage = document.getElementById('error-msg');
+            loginButton.disabled = true;
+            loginButton.textContent = 'جارٍ التحقق...';
+            errorMessage.classList.add('hidden');
+            const { error } = await _supabase.auth.signInWithPassword({ email: user, password: pass });
+
+            if (!error) {
                 window.location.replace('index.html');
             } else {
-                document.getElementById('error-msg').classList.remove('hidden');
+                errorMessage.textContent = error.message || 'تعذر تسجيل الدخول. تحقق من البريد وكلمة المرور.';
+                errorMessage.classList.remove('hidden');
+                loginButton.disabled = false;
+                loginButton.textContent = 'تأكيد وربط الجهاز';
             }
         }
     </script>

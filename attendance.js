@@ -534,7 +534,7 @@ attendanceForm.addEventListener('submit', async function(e) {
 
 // دالة لتحديد مربع الحضور عند الضغط على البطاقة ككل
 function toggleAttendanceCheckbox(event, checkboxId) {
-    if (localStorage.getItem('karate_role') === 'athlete') return;
+    if (document.body.classList.contains('role-athlete')) return;
     // تجاهل الضغط إذا كان على زر الإلغاء، أو اسم الرياضي، أو المربع نفسه (لتجنب التحديد المزدوج)
     if (event.target.closest('button') || event.target.closest('.clickable-name') || event.target.tagName === 'INPUT') {
         return;

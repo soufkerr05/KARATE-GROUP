@@ -1,6 +1,21 @@
-/* تنظيف التنسيقات القديمة والاعتماد على Tailwind CSS */
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap');
 
+/* تنظيف التنسيقات القديمة والاعتماد على Tailwind CSS */
+:root {
+    --brand-primary: #2563eb;
+    --brand-secondary: #0f172a;
+}
+
+/* طبقة ألوان الهوية، لتخصيص الصفحات الحالية من مكان واحد */
+.bg-blue-600 { background-color: var(--brand-primary) !important; }
+.hover\:bg-blue-700:hover { background-color: color-mix(in srgb, var(--brand-primary) 82%, black) !important; }
+.text-blue-600 { color: var(--brand-primary) !important; }
+.hover\:text-blue-600:hover { color: var(--brand-primary) !important; }
+.border-blue-500, .border-blue-600 { border-color: var(--brand-primary) !important; }
+.focus\:ring-blue-500:focus { --tw-ring-color: color-mix(in srgb, var(--brand-primary) 45%, transparent) !important; }
+.focus\:border-blue-500:focus { border-color: var(--brand-primary) !important; }
+.text-slate-800 { color: var(--brand-secondary); }
+.brand-logo { width: 2rem; height: 2rem; object-fit: contain; border-radius: 0.5rem; }
 body, input, select, button, textarea { 
     font-family: 'Tajawal', 'Cairo', sans-serif !important; 
 }

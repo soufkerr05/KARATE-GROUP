@@ -5,10 +5,10 @@ const supabaseKey = 'sb_publishable_vnrYeqJxy1OQIwaEvdnc_A_H2R9IC3v';
 const _supabase = createClient(supabaseUrl, supabaseKey);
 
 function logoutUser() {
-    localStorage.removeItem('karate_auth');
-    localStorage.removeItem('karate_auth_time');
-    window.location.replace('login.html');
+    _supabase.auth.signOut().finally(() => window.location.replace('login.html'));
 }
+
+window.dispatchEvent(new Event('supabase-ready'));
 
 /**
  * تبديل قائمة التنقل الخاصة بالهواتف المحمولة.
@@ -36,14 +36,17 @@ function applyTheme() {
 
 // إضافة زر العودة للأعلى في جميع الصفحات
 window.addEventListener('DOMContentLoaded', () => {
-    // إعدادات دور القراءة فقط (Athlete)
-    if (localStorage.getItem('karate_role') === 'athlete') {
-        document.body.classList.add('role-athlete');
-        // إخفاء أزرار الإضافة
-        const adminButtons = document.querySelectorAll('button[onclick="openRegisterModal()"]');
-        adminButtons.forEach(btn => btn.style.display = 'none');
+    // إعدادات دور القراءة فقط (Athlete) من بيانات المستخدم الموثقة.
+    if (window._supabase?.auth?.getUser) {
+        window._supabase.auth.getUser().then(({ data }) => {
+            const role = data.user?.user_metadata?.role;
+            if (role === 'athlete') {
+                document.body.classList.add('role-athlete');
+                const adminButtons = document.querySelectorAll('button[onclick="openRegisterModal()"]');
+                adminButtons.forEach(btn => btn.style.display = 'none');
+            }
+        });
     }
-    
     // تطبيق الثيم عند التحميل الأولي
     applyTheme();
     // الاستماع لتغييرات تفضيلات النظام للوضع الليلي
