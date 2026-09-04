@@ -60,7 +60,7 @@
                 z-index: 60;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
+                justify-content: flex-start;
                 width: 100vw;
                 height: 100vh;
                 height: 100dvh;
@@ -70,7 +70,7 @@
                 margin: 0;
                 padding: 4rem 1rem 1rem;
                 background: #0f172a;
-                overflow: hidden;
+                overflow-y: auto;
             }
             #qrScannerPanel:not(.hidden) .qr-scanner-actions {
                 position: fixed;
@@ -92,19 +92,21 @@
             }
             #qrScannerPanel:not(.hidden) #qrReader {
                 display: flex;
-                flex: 1;
+                flex: 0 0 auto;
                 align-items: center;
                 justify-content: center;
-                width: 100%;
-                min-height: 0;
+                width: min(100%, calc(100dvh - 18rem));
+                aspect-ratio: 1 / 1;
+                height: auto;
+                margin-left: auto;
+                margin-right: auto;
                 border-color: #6366f1;
                 border-radius: 0.75rem;
             }
             #qrScannerPanel:not(.hidden) #qrReader video {
                 width: 100% !important;
-                height: auto !important;
-                max-height: 100% !important;
-                object-fit: contain;
+                height: 100% !important;
+                object-fit: cover;
             }
             #qrScannerPanel:not(.hidden) #qrScanStatus {
                 flex: 0 0 auto;

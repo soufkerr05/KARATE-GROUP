@@ -112,15 +112,15 @@ async function markQrAttendance(rawValue) {
     const { data: pointRecord, error: pointError } = await _supabase.from('samurai_competition').insert([{
         athlete_id: athlete.id,
         date: sessionDate,
-        points: 0.5,
+        points: 1.0,
         reason: 'حضور بالبطاقة QR - الساموراي الصغير',
         notes: `حضور بالبطاقة ليوم ${sessionDate}`
     }]).select().single();
     if (pointError) {
-        setQrStatus(`تم الحضور لكن تعذر إضافة نصف نقطة للمسابقة: ${pointError.message}`, true);
+        setQrStatus(`تم الحضور لكن تعذر إضافة نقطة كاملة للمسابقة: ${pointError.message}`, true);
         showQrScanResult(false, athleteName, 'تم الحضور لكن تعذرت إضافة النقطة');
     } else {
-        const message = 'تم تسجيل الحضور وإضافة نصف نقطة';
+        const message = 'تم تسجيل الحضور وإضافة نقطة كاملة';
         setQrStatus(`${message}: ${athleteName}.`, false);
         showQrScanResult(true, athleteName, message);
     }
@@ -490,10 +490,19 @@ attendanceForm.addEventListener('submit', async function(e) {
             updatedCount++;
             
             updatePromises.push(
-                _supabase.from('athletes').update({
-                    attendance: athlete.attendance,
-                    attendanceDates: athlete.attendanceDates
-                }).eq('id', id)
+                Promise.all([
+                    _supabase.from('athletes').update({
+                        attendance: athlete.attendance,
+                        attendanceDates: athlete.attendanceDates
+                    }).eq('id', id),
+                    _supabase.from('samurai_competition').insert([{
+                        athlete_id: id,
+                        date: sessionDate,
+                        points: 0.5,
+                        reason: 'حضور يدوي - الساموراي الصغير',
+                        notes: `حضور يدوي ليوم ${sessionDate}`
+                    }])
+                ])
             );
 
         }

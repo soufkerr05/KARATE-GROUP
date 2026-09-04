@@ -542,8 +542,8 @@ async function printRankings() {
  * يقوم بمزامنة سجلات الحضور من جدول `athletes` إلى جدول `samurai_competition`.
  * يعالج البيانات على دفعات لتجنب تجميد الواجهة ويظهر شريط تقدم للمستخدم.
  */
-async function runAttendanceSync() {
-    if (!confirm("سيقوم هذا الإجراء بمزامنة نقاط الحضور بناءً على الفترة الزمنية المحددة في الصفحة. هل تريد المتابعة؟")) {
+async function runAttendanceSync(isAutomatic = false) {
+    if (!isAutomatic && !confirm("سيقوم هذا الإجراء بمزامنة نقاط الحضور بناءً على الفترة الزمنية المحددة في الصفحة. هل تريد المتابعة؟")) {
         return;
     }
 
@@ -570,7 +570,11 @@ async function runAttendanceSync() {
         // 1. جلب البيانات المطلوبة
         const [athletesRes, pointsRes] = await Promise.all([
             _supabase.from('athletes').select('id, attendanceDates, cardAttendanceDates').filter('isArchived', 'is', 'false'),
-            _supabase.from('samurai_competition').select('athlete_id, date').in('reason', ['حضور بالبطاقة QR', 'حضور بالبطاقة QR - الساموراي الصغير'])
+            _supabase.from('samurai_competition').select('athlete_id, date').in('reason', [
+                'حضور يدوي - الساموراي الصغير',
+                'حضور بالبطاقة QR',
+                'حضور بالبطاقة QR - الساموراي الصغير'
+            ])
         ]);
 
         if (athletesRes.error || pointsRes.error) {
@@ -589,17 +593,18 @@ async function runAttendanceSync() {
         const missingPointsToInsert = [];
         activeAthletes.forEach((athlete, index) => {
             const attendanceDates = Array.isArray(athlete.attendanceDates) ? athlete.attendanceDates : [];
-            const attendanceInPeriod = (athlete.cardAttendanceDates || [])
-                .filter(d => attendanceDates.includes(d) && d >= startDate && d <= endDate);
+            const cardAttendanceDates = Array.isArray(athlete.cardAttendanceDates) ? athlete.cardAttendanceDates : [];
+            const attendanceInPeriod = attendanceDates.filter(d => d >= startDate && d <= endDate);
 
             attendanceInPeriod.forEach(attDate => {
                 const pointKey = `${athlete.id}-${attDate}`;
                 if (!existingPointsSet.has(pointKey)) {
+                    const isCardAttendance = cardAttendanceDates.includes(attDate);
                     missingPointsToInsert.push({
                         athlete_id: athlete.id,
                         date: attDate, // استخدام تاريخ الحضور الفعلي
-                        points: 0.5,
-                        reason: 'حضور بالبطاقة QR - الساموراي الصغير',
+                        points: isCardAttendance ? 1.0 : 0.5,
+                        reason: isCardAttendance ? 'حضور بالبطاقة QR - الساموراي الصغير' : 'حضور يدوي - الساموراي الصغير',
                         notes: `مزامنة آلية`
                     });
                 }
@@ -611,7 +616,8 @@ async function runAttendanceSync() {
         });
 
         if (missingPointsToInsert.length === 0) {
-            alert("✅ النظام محدّث بالفعل! لا توجد نقاط حضور ناقصة لمزامنتها.");
+            if (!isAutomatic) alert("✅ النظام محدّث بالفعل! لا توجد نقاط حضور ناقصة لمزامنتها.");
+            if (isAutomatic) await fetchInitialData();
             rankingContainer.classList.remove('hidden');
             progressContainer.classList.add('hidden');
             return;
@@ -633,12 +639,12 @@ async function runAttendanceSync() {
             progressBarEl.style.width = `${(processedCount / missingPointsToInsert.length) * 100}%`;
         }
 
-        alert(`🎉 تمت المزامنة بنجاح! تم إضافة ${missingPointsToInsert.length} نقطة حضور جديدة.`);
+        if (!isAutomatic) alert(`🎉 تمت المزامنة بنجاح! تم إضافة ${missingPointsToInsert.length} نقطة حضور جديدة.`);
         await fetchInitialData(); // إعادة تحميل كل البيانات لعرض الترتيب المحدث
 
     } catch (err) {
         console.error("❌ حدث خطأ فادح أثناء المزامنة:", err);
-        alert("حدث خطأ أثناء المزامنة. يرجى مراجعة الـ console لمزيد من التفاصيل أو إعادة المحاولة.");
+        if (!isAutomatic) alert("حدث خطأ أثناء المزامنة. يرجى مراجعة الـ console لمزيد من التفاصيل أو إعادة المحاولة.");
     } finally {
         // إخفاء واجهة التقدم وإظهار قائمة الترتيب مجدداً
         rankingContainer.classList.remove('hidden');
@@ -653,7 +659,9 @@ async function runAttendanceSync() {
  */
 function attachEventListeners() {
     // ربط معالجات الأحداث للأزرار
-    document.getElementById('filterButton').addEventListener('click', renderRankings);
+    document.getElementById('filterButton').addEventListener('click', () => runAttendanceSync(true));
+    startDateInput.addEventListener('change', () => runAttendanceSync(true));
+    endDateInput.addEventListener('change', () => runAttendanceSync(true));
     document.getElementById('printRankingsButton').addEventListener('click', printRankings);
     document.getElementById('exportExcelButton').addEventListener('click', exportToExcel);
     document.getElementById('syncAttendanceButton').addEventListener('click', runAttendanceSync);
