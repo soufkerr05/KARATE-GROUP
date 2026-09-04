@@ -8,6 +8,7 @@ let qrScannerRunning = false;
 let lastQrValue = '';
 let lastQrScanTime = 0;
 let qrScanInProgress = false;
+let qrScanResultTimeout = null;
 
 async function fetchAthletes() {
     const [athletesRes, paymentsRes] = await Promise.all([
@@ -39,20 +40,31 @@ function setQrStatus(message, isError = false) {
     }
 }
 
-function showQrScanResult(isSuccess, athleteName, message) {
+function showQrScanResult(isSuccess, athleteName, message, resultType = 'error') {
     const result = document.getElementById('qrScanResult');
     const icon = document.getElementById('qrScanResultIcon');
     const name = document.getElementById('qrScanResultName');
     const resultMessage = document.getElementById('qrScanResultMessage');
     if (!result || !icon || !name || !resultMessage) return;
 
-    result.className = `mt-3 rounded-2xl border-2 p-4 text-center ${isSuccess ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`;
-    icon.textContent = isSuccess ? '✓' : '✕';
-    icon.className = `text-5xl leading-none ${isSuccess ? 'text-emerald-600' : 'text-red-600'}`;
+    const isAlreadyRegistered = resultType === 'already-registered';
+    const resultColors = isSuccess
+        ? ['border-emerald-200', 'bg-emerald-50', 'text-emerald-600', 'text-emerald-800', 'text-emerald-700']
+        : isAlreadyRegistered
+            ? ['border-amber-300', 'bg-amber-50', 'text-amber-500', 'text-amber-900', 'text-amber-800']
+            : ['border-red-200', 'bg-red-50', 'text-red-600', 'text-red-800', 'text-red-700'];
+    result.className = `mt-3 rounded-2xl border-2 p-4 text-center ${resultColors.join(' ')}`;
+    icon.textContent = isSuccess ? '✓' : isAlreadyRegistered ? '!' : '✕';
+    icon.className = `text-5xl leading-none ${resultColors[2]}`;
     name.textContent = athleteName || 'رياضي غير معروف';
-    name.className = `mt-2 text-xl font-black ${isSuccess ? 'text-emerald-800' : 'text-red-800'}`;
+    name.className = `mt-2 text-xl font-black ${resultColors[3]}`;
     resultMessage.textContent = message;
-    resultMessage.className = `mt-1 text-sm font-bold ${isSuccess ? 'text-emerald-700' : 'text-red-700'}`;
+    resultMessage.className = `mt-1 text-sm font-bold ${resultColors[4]}`;
+    result.classList.remove('hidden');
+    clearTimeout(qrScanResultTimeout);
+    qrScanResultTimeout = setTimeout(() => {
+        result.classList.add('hidden');
+    }, 5000);
 }
 
 async function markQrAttendance(rawValue) {
@@ -91,7 +103,7 @@ async function markQrAttendance(rawValue) {
     if (athlete.attendanceDates?.includes(sessionDate)) {
         const message = 'تم تسجيل الحضور اليوم مسبقًا';
         setQrStatus(`${message}: ${athleteName}.`, true);
-        showQrScanResult(false, athleteName, message);
+        showQrScanResult(false, athleteName, message, 'already-registered');
         return false;
     }
 
