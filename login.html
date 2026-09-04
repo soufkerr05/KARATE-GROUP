@@ -64,18 +64,18 @@
             <p class="text-slate-400 mt-2 font-medium text-sm">أدخل بيانات الاعتماد لربط هذا الجهاز بقاعدة البيانات</p>
         </div>
 
-        <div id="error-msg" class="hidden bg-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm font-bold border border-red-500/30 text-center">
+        <div id="errorMessage" class="hidden bg-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm font-bold border border-red-500/30 text-center">
             الرمز أو كلمة المرور غير صحيحة! تأكد من البيانات.
         </div>
 
-        <form onsubmit="handleLogin(event)" class="space-y-5">
+        <form id="loginForm" class="space-y-5">
             <div>
                 <label class="block text-sm font-bold text-slate-300 mb-2">البريد الإلكتروني</label>
-                    <input type="email" id="username" placeholder="name@example.com" required dir="ltr" class="w-full px-4 py-3 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-white bg-slate-900/50 transition-colors placeholder-slate-600">
+                    <input type="email" id="emailInput" placeholder="name@example.com" required dir="ltr" class="w-full px-4 py-3 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-white bg-slate-900/50 transition-colors placeholder-slate-600">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-300 mb-2">مفتاح فك التشفير (كلمة المرور)</label>
-                <input type="password" id="password" required dir="ltr" class="w-full px-4 py-3 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-white bg-slate-900/50 transition-colors tracking-widest">
+                <input type="password" id="passwordInput" required dir="ltr" class="w-full px-4 py-3 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-white bg-slate-900/50 transition-colors tracking-widest">
             </div>
             <button id="loginButton" type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] mt-4">
                 تأكيد وربط الجهاز
@@ -100,26 +100,30 @@
             
         }, 3500); // مدة عرض الرادار (3.5 ثواني)
 
-        async function handleLogin(event) {
+        document.getElementById('loginForm').addEventListener('submit', async function (event) {
             event.preventDefault();
-            const user = document.getElementById('username').value.trim();
-            const pass = document.getElementById('password').value;
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
             const loginButton = document.getElementById('loginButton');
-            const errorMessage = document.getElementById('error-msg');
+            const errorMessage = document.getElementById('errorMessage');
             loginButton.disabled = true;
             loginButton.textContent = 'جارٍ التحقق...';
             errorMessage.classList.add('hidden');
-            const { error } = await _supabase.auth.signInWithPassword({ email: user, password: pass });
+            const { error } = await _supabase.auth.signInWithPassword({
+                email,
+                password
+            });
 
-            if (!error) {
-                window.location.replace('index.html');
-            } else {
-                errorMessage.textContent = error.message || 'تعذر تسجيل الدخول. تحقق من البريد وكلمة المرور.';
+            if (error) {
+                console.error('خطأ في تسجيل الدخول:', error.message);
+                errorMessage.textContent = 'البريد الإلكتروني أو كلمة المرور غير صحيحة!';
                 errorMessage.classList.remove('hidden');
                 loginButton.disabled = false;
                 loginButton.textContent = 'تأكيد وربط الجهاز';
+            } else {
+                window.location.replace('index.html');
             }
-        }
+        });
     </script>
 </body>
 </html>
