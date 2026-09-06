@@ -5,22 +5,6 @@ const payDateInput = document.getElementById('payDate');
 const paymentsList = document.getElementById('paymentsList');
 let athleteOptionsMap = new Map(); // لحفظ معرف الرياضي بناءً على النص
 
-// مقاسات البدلات
-const UNIFORM_SIZES = {
-    '145': ['6', '8', '10', '12', '14'],
-    '180': ['1', '2', '3'],
-    '250': ['140', '150', '160', '170', '180']
-};
-
-window.updateUniformSizes = function(typeId, sizeId) {
-    const typeEl = document.getElementById(typeId);
-    const sizeEl = document.getElementById(sizeId);
-    if(typeEl && sizeEl) {
-        const sizes = UNIFORM_SIZES[typeEl.value] || [];
-        sizeEl.innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
-    }
-};
-
 async function fetchAthletes() {
     const [athletesRes, paymentsRes] = await Promise.all([
         _supabase.from('athletes').select('*'),
@@ -62,14 +46,9 @@ if (checkUniform && uniformAmountContainer) {
         } else {
             uniformAmountContainer.classList.add('hidden');
             if(document.getElementById('uniformType')) document.getElementById('uniformType').value = '250';
-            if(window.updateUniformSizes) window.updateUniformSizes('uniformType', 'uniformSize');
             if(document.getElementById('uniformQty')) document.getElementById('uniformQty').value = 1;
         }
     });
-}
-
-if(document.getElementById('uniformType')) {
-    updateUniformSizes('uniformType', 'uniformSize');
 }
 
 const checkInsurance = document.getElementById('checkInsurance');
@@ -301,8 +280,7 @@ paymentForm.addEventListener('submit', async function(e) {
     let uniformQty = 0;
     if (document.getElementById('checkUniform').checked) {
         const bType = document.getElementById('uniformType').value;
-        const bSize = document.getElementById('uniformSize').value;
-        uniformType = `${bType}-${bSize}`;
+        uniformType = bType;
         uniformQty = parseInt(document.getElementById('uniformQty').value) || 1;
         const unitPrice = bType === '250' ? 2500 : (bType === '180' ? 1800 : 1450);
         uniformAmount = unitPrice * uniformQty;
@@ -413,7 +391,6 @@ paymentForm.addEventListener('submit', async function(e) {
         // تصفير الحقول
         document.getElementById('subAmount').value = 0;
         if (document.getElementById('uniformType')) document.getElementById('uniformType').value = '250';
-        if (window.updateUniformSizes) window.updateUniformSizes('uniformType', 'uniformSize');
         if (document.getElementById('uniformQty')) document.getElementById('uniformQty').value = 1;
         document.getElementById('insuranceAmount').value = 0;
         document.getElementById('checkUniform').checked = false;

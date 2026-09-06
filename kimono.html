@@ -389,7 +389,7 @@
                                 <input type="date" id="tx-date" required class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" />
                             </div>
                             <div class="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-200">
-                                <label class="block text-sm font-bold text-slate-700 mb-3">اختر البدلات والمقاسات لإضافتها:</label>
+                                <label class="block text-sm font-bold text-slate-700 mb-3">اختر أنواع البدلات وكمياتها لإضافتها:</label>
                                 <div id="tx-items-container" class="space-y-3">
                                     <!-- Dynamic items here -->
                                 </div>
@@ -431,14 +431,9 @@
             '180': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' },
             '145': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-200' }
         };
+        const normalizeUniformType = type => String(type || '').split('-')[0];
         
         /* Tailwind classes for dynamic colors compilation: text-teal-700 bg-teal-50 border-teal-600 text-teal-800 border-teal-200 border-b-2 text-teal-500 bg-teal-100 bg-teal-600 hover:bg-teal-700 bg-teal-50 text-teal-600 text-indigo-600 focus:ring-indigo-500 bg-indigo-100 text-indigo-800 border-indigo-500 bg-indigo-50 text-indigo-700 text-purple-600 focus:ring-purple-500 bg-purple-100 text-purple-800 border-purple-500 bg-purple-50 text-purple-700 text-pink-600 focus:ring-pink-500 bg-pink-100 text-pink-800 border-pink-500 bg-pink-50 text-pink-700 */
-
-        const UNIFORM_SIZES = {
-            '145': ['6', '8', '10', '12', '14'],
-            '180': ['1', '2', '3'],
-            '250': ['140', '150', '160', '170', '180']
-        };
 
         const state = {
             isLoading: true,
@@ -596,7 +591,7 @@
         function calculateAndRenderStats() {
             const sQ = arr => arr.reduce((acc, curr) => acc + curr.quantity, 0);
             const sV = arr => arr.reduce((acc, curr) => acc + curr.value, 0);
-            const sQExactType = (arr, exactType) => arr.filter(c => c.type === exactType).reduce((acc, curr) => acc + curr.quantity, 0);
+            const sQExactType = (arr, exactType) => arr.filter(c => normalizeUniformType(c.type) === exactType).reduce((acc, curr) => acc + curr.quantity, 0);
 
             const commendQ = sQ(state.commendData), commendV = sV(state.commendData);
             const livreQ = sQ(state.livreData), livreV = sV(state.livreData);
@@ -637,76 +632,32 @@
             };
 
             ['145', '180', '250'].forEach(type => {
-                statsMap.stock[type] = { total: 0, sizes: {} };
-                statsMap.collectedNotDist[type] = { total: 0, sizes: {} };
-                statsMap.debtMerchant[type] = { total: 0, sizes: {} };
-                statsMap.debtAthletes[type] = { total: 0, sizes: {} };
-                statsMap.paidNotDist[type] = { total: 0, sizes: {} };
-
-                const sizes = UNIFORM_SIZES[type] || [];
-                
-                sizes.forEach(s => {
-                    const fullT = `${type}-${s}`;
-                    const stQ = sQExactType(state.commendData, fullT) - sQExactType(state.livreData, fullT) - sQExactType(state.retourData, fullT);
-                    const dmQ = sQExactType(state.commendData, fullT) - sQExactType(state.retourData, fullT) - sQExactType(state.paidData, fullT);
-                    const daQ = sQExactType(state.livreData, fullT) - sQExactType(state.collectedData, fullT);
-                    const pndQ = Math.max(0, sQExactType(state.paidData, fullT) - sQExactType(state.livreData, fullT));
-                    const cndQ = Math.max(0, sQExactType(state.collectedData, fullT) - sQExactType(state.livreData, fullT));
-
-                    statsMap.stock[type].sizes[s] = stQ;
-                    statsMap.debtMerchant[type].sizes[s] = dmQ;
-                    statsMap.debtAthletes[type].sizes[s] = daQ;
-                    statsMap.paidNotDist[type].sizes[s] = pndQ;
-                    statsMap.collectedNotDist[type].sizes[s] = cndQ;
-
-                    statsMap.stock[type].total += stQ;
-                    statsMap.debtMerchant[type].total += dmQ;
-                    statsMap.debtAthletes[type].total += daQ;
-                    statsMap.paidNotDist[type].total += pndQ;
-                    statsMap.collectedNotDist[type].total += cndQ;
-                });
-
-                const stQ_u = sQExactType(state.commendData, type) - sQExactType(state.livreData, type) - sQExactType(state.retourData, type);
-                const dmQ_u = sQExactType(state.commendData, type) - sQExactType(state.retourData, type) - sQExactType(state.paidData, type);
-                const daQ_u = sQExactType(state.livreData, type) - sQExactType(state.collectedData, type);
-                const pndQ_u = Math.max(0, sQExactType(state.paidData, type) - sQExactType(state.livreData, type));
-                const cndQ_u = Math.max(0, sQExactType(state.collectedData, type) - sQExactType(state.livreData, type));
-
-                if (stQ_u !== 0 || dmQ_u !== 0 || daQ_u !== 0 || pndQ_u !== 0 || cndQ_u !== 0) {
-                    statsMap.stock[type].sizes['غير محدد'] = stQ_u;
-                    statsMap.debtMerchant[type].sizes['غير محدد'] = dmQ_u;
-                    statsMap.debtAthletes[type].sizes['غير محدد'] = daQ_u;
-                    statsMap.paidNotDist[type].sizes['غير محدد'] = pndQ_u;
-                    statsMap.collectedNotDist[type].sizes['غير محدد'] = cndQ_u;
-
-                    statsMap.stock[type].total += stQ_u;
-                    statsMap.debtMerchant[type].total += dmQ_u;
-                    statsMap.debtAthletes[type].total += daQ_u;
-                    statsMap.paidNotDist[type].total += pndQ_u;
-                    statsMap.collectedNotDist[type].total += cndQ_u;
-                }
+                const stock = sQExactType(state.commendData, type) - sQExactType(state.livreData, type) - sQExactType(state.retourData, type);
+                const merchantDebt = sQExactType(state.commendData, type) - sQExactType(state.retourData, type) - sQExactType(state.paidData, type);
+                const athleteDebt = sQExactType(state.livreData, type) - sQExactType(state.collectedData, type);
+                const paidNotDistributed = Math.max(0, sQExactType(state.paidData, type) - sQExactType(state.livreData, type));
+                const collectedNotDistributed = Math.max(0, sQExactType(state.collectedData, type) - sQExactType(state.livreData, type));
+                statsMap.stock[type] = { total: stock };
+                statsMap.debtMerchant[type] = { total: merchantDebt };
+                statsMap.debtAthletes[type] = { total: athleteDebt };
+                statsMap.paidNotDist[type] = { total: paidNotDistributed };
+                statsMap.collectedNotDist[type] = { total: collectedNotDistributed };
             });
 
             const renderDetailsHTML = (dataObj, colorClass) => {
                 let html = '';
                 ['250', '180', '145'].forEach(bType => {
                     const typeData = dataObj[bType];
-                    if (typeData && (typeData.total !== 0 || Object.values(typeData.sizes).some(q => q !== 0))) {
+                    if (typeData && typeData.total !== 0) {
                         html += `<div class="bg-white/5 p-2.5 rounded-lg border border-white/10">`;
                         html += `<div class="flex justify-between text-sm font-bold text-white mb-2 border-b border-white/10 pb-1"><span>بذلة ${bType}</span><span class="${colorClass}">${typeData.total} قطع</span></div>`;
-                        html += `<div class="flex flex-wrap gap-1.5">`;
-                        for (const [s, qty] of Object.entries(typeData.sizes)) {
-                            if (qty !== 0) {
-                                html += `<span class="text-[11px] bg-black/30 px-2 py-1 rounded text-white/80 border border-white/5 shadow-inner">م ${s}: <span class="font-black text-white">${qty}</span></span>`;
-                            }
-                        }
-                        html += `</div></div>`;
+                        html += `</div>`;
                     }
                 });
                 return html || `<div class="text-sm text-white/50 text-center py-2 font-bold">لا توجد تفاصيل (0 قطع)</div>`;
             };
 
-            if (document.getElementById('details-stock')) document.getElementById('details-stock').innerHTML = renderDetailsHTML(statsMap.stock, 'text-blue-400');
+            if (document.getElementById('details-stock')) document.getElementById('details-stock').innerHTML = renderDetailsHTML(statsMap.stock, 'text-blue-400', false);
             if (document.getElementById('details-collectedNotDist')) document.getElementById('details-collectedNotDist').innerHTML = renderDetailsHTML(statsMap.collectedNotDist, 'text-cyan-400');
             if (document.getElementById('details-debtMerchant')) document.getElementById('details-debtMerchant').innerHTML = renderDetailsHTML(statsMap.debtMerchant, 'text-red-400');
             if (document.getElementById('details-debtAthletes')) document.getElementById('details-debtAthletes').innerHTML = renderDetailsHTML(statsMap.debtAthletes, 'text-amber-400');
@@ -780,15 +731,13 @@
             const tbody = document.getElementById('table-body');
             if (data.length > 0) {
                 tbody.innerHTML = data.map(row => {
-                    const baseType = row.type.split('-')[0];
-                    const size = row.type.split('-')[1] || 'غير محدد';
+                    const baseType = normalizeUniformType(row.type);
                     const colorObj = TYPE_COLORS[baseType] || { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-200' };
                     return `
                     <tr class="hover:bg-slate-50/80 transition group">
                         <td class="px-6 py-4 text-slate-600 font-bold text-sm" dir="ltr" data-label="التاريخ">${row.date}</td>
                         <td class="px-6 py-4" data-label="نوع البذلة">
                             <span class="inline-block px-3 py-1 rounded-lg text-sm font-bold border ${colorObj.bg} ${colorObj.text} ${colorObj.border}">نوع ${baseType}</span>
-                            <span class="text-xs text-slate-500 block mt-1 font-bold">المقاس: ${size}</span>
                         </td>
                         <td class="px-6 py-4 text-slate-800 font-black text-lg" data-label="الكمية">${row.quantity}</td>
                         <td class="px-6 py-4 text-slate-800 font-black text-lg" data-label="القيمة المالية (د.ج)">${row.value.toLocaleString()}</td>
@@ -843,46 +792,6 @@
                 }
             });
             
-            // تحديث جرد المقاسات للتبويبة النشطة
-            renderSizesStats();
-        }
-        
-        function renderSizesStats() {
-            const summaryContainer = document.getElementById('table-summary');
-            let sizesHtml = `<div class="w-full mt-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><h4 class="font-bold text-slate-700 mb-4 flex items-center gap-2">${Icons.Package} تفاصيل المقاسات للتبويبة الحالية:</h4><div class="grid grid-cols-1 sm:grid-cols-3 gap-4">`;
-            
-            const activeData = state[state.activeTab + 'Data'];
-            
-            ['250', '180', '145'].forEach(bType => {
-                let sizes = UNIFORM_SIZES[bType];
-                let sizeDetails = sizes.map(s => {
-                    const fullT = `${bType}-${s}`;
-                    const qty = activeData.filter(c => c.type === fullT).reduce((acc, curr) => acc + curr.quantity, 0);
-                    return `<div class="flex justify-between text-sm border-b border-slate-100 last:border-0 py-1.5"><span class="text-slate-600">مقاس ${s}</span> <span class="font-black ${qty > 0 ? 'text-blue-600' : 'text-slate-400'}">${qty}</span></div>`;
-                }).join('');
-                
-                const unkQty = activeData.filter(c => c.type === bType).reduce((acc, curr) => acc + curr.quantity, 0);
-                if (unkQty > 0) {
-                    sizeDetails += `<div class="flex justify-between text-sm border-b border-slate-100 last:border-0 py-1.5"><span class="text-slate-600">غير محدد</span> <span class="font-black text-amber-600">${unkQty}</span></div>`;
-                }
-                
-                sizesHtml += `
-                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                        <h5 class="font-black text-slate-800 text-center mb-2 pb-2 border-b border-slate-200">بذلة ${bType}</h5>
-                        ${sizeDetails}
-                    </div>
-                `;
-            });
-            sizesHtml += `</div></div>`;
-            
-            if(activeData.length > 0) {
-                const existingStats = document.getElementById('sizes-breakdown');
-                if(existingStats) existingStats.remove();
-                summaryContainer.insertAdjacentHTML('afterend', `<div id="sizes-breakdown">\${sizesHtml}</div>`);
-            } else {
-                const existingStats = document.getElementById('sizes-breakdown');
-                if(existingStats) existingStats.remove();
-            }
         }
 
         window.renderAddGrid = function() {
@@ -906,28 +815,9 @@
                         <span class="text-sm font-bold bg-${t.color}-100 text-${t.color}-800 px-3 py-1 rounded-lg">${PRICES[t.id].toLocaleString()} د.ج</span>
                     </label>
                     
-                    <div id="sizes-section-${t.id}" class="hidden border-t border-slate-100 bg-slate-50 p-4">
-                        <p class="text-sm font-bold text-slate-600 mb-3">انقر على المقاس لتحديد الكمية:</p>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                `;
-                
-                UNIFORM_SIZES[t.id].forEach(s => {
-                    html += `
-                            <label class="relative cursor-pointer select-none size-card" data-type="${t.id}" data-size="${s}">
-                                <input type="checkbox" class="peer hidden" onchange="toggleSizeInput(this, '${t.id}', '${s}')">
-                                <div class="size-label flex items-center justify-center p-3 border border-slate-200 bg-white rounded-xl hover:bg-slate-100 transition-colors shadow-sm font-bold text-slate-700 peer-checked:hidden">
-                                    مقاس ${s}
-                                </div>
-                                <div class="size-input-container hidden peer-checked:flex items-center gap-2 p-1.5 border-2 border-${t.color}-500 bg-${t.color}-50 rounded-xl shadow-sm transition-all">
-                                    <span class="font-black text-${t.color}-700 w-10 text-center shrink-0">م ${s}</span>
-                                    <input type="number" min="1" placeholder="الكمية" data-type="${t.id}" data-size="${s}" class="grid-qty-input w-full border-none p-1.5 text-center font-black text-${t.color}-700 outline-none bg-white rounded-lg shadow-inner" oninput="calculateTxValue()">
-                                </div>
-                            </label>
-                    `;
-                });
-                
-                html += `
-                        </div>
+                    <div class="border-t border-slate-100 bg-slate-50 p-4">
+                        <label class="text-sm font-bold text-slate-600 mb-2 block" for="qty-type-${t.id}">الكمية:</label>
+                        <input id="qty-type-${t.id}" type="number" min="1" placeholder="أدخل الكمية" data-type="${t.id}" class="grid-qty-input w-full border border-slate-200 p-2.5 text-center font-black text-${t.color}-700 outline-none bg-white rounded-lg shadow-inner" oninput="calculateTxValue()">
                     </div>
                 </div>
                 `;
@@ -939,54 +829,26 @@
 
         window.toggleTypeSection = function(typeId) {
             const checkbox = document.getElementById(`check-type-${typeId}`);
-            const section = document.getElementById(`sizes-section-${typeId}`);
             const container = document.getElementById(`type-container-${typeId}`);
             
             if (checkbox.checked) {
-                section.classList.remove('hidden');
                 container.classList.add('ring-2', 'ring-blue-500', 'border-transparent');
             } else {
-                section.classList.add('hidden');
                 container.classList.remove('ring-2', 'ring-blue-500', 'border-transparent');
-                const sizeChecks = section.querySelectorAll('input[type="checkbox"]');
-                sizeChecks.forEach(chk => {
-                    if(chk.checked) {
-                        chk.checked = false;
-                        toggleSizeInput(chk, typeId, chk.closest('label').dataset.size);
-                    }
-                });
+                const qtyInput = document.getElementById(`qty-type-${typeId}`);
+                if (qtyInput) qtyInput.value = '';
                 calculateTxValue();
             }
         }
-
-        window.toggleSizeInput = function(checkbox, typeId, size) {
-            const container = checkbox.closest('.size-card');
-            const qtyInput = container.querySelector('.grid-qty-input');
-            
-            if (checkbox.checked) {
-                qtyInput.value = 1;
-                setTimeout(() => qtyInput.focus(), 50);
-            } else {
-                qtyInput.value = '';
-            }
-            calculateTxValue();
-        }
-
-        window.getSizesOptions = function(type) {
-            return UNIFORM_SIZES[type].map(s => `<option value="${s}">${s}</option>`).join('');
-        }
         
-        window.addTxItem = function(type = '250', size = '', qty = 1) {
+        window.addTxItem = function(type = '250', qty = 1) {
             const id = Date.now() + Math.random().toString().substr(2, 5);
             const html = `
                 <div class="flex items-center gap-2 tx-item" id="tx-item-${id}">
-                    <select class="tx-item-type w-full p-2 border border-slate-300 rounded-lg font-bold outline-none focus:border-blue-500" onchange="updateTxItemSizes('${id}')">
+                    <select class="tx-item-type w-full p-2 border border-slate-300 rounded-lg font-bold outline-none focus:border-blue-500">
                         <option value="250" ${type==='250'?'selected':''}>بذلة 250</option>
                         <option value="180" ${type==='180'?'selected':''}>بذلة 180</option>
                         <option value="145" ${type==='145'?'selected':''}>بذلة 145</option>
-                    </select>
-                    <select class="tx-item-size w-full p-2 border border-slate-300 rounded-lg font-bold outline-none focus:border-blue-500">
-                        ${getSizesOptions(type)}
                     </select>
                     <input type="number" class="tx-item-qty w-24 p-2 border border-slate-300 rounded-lg font-bold text-center outline-none focus:border-blue-500" value="${qty}" min="1" oninput="calculateTxValue()">
                     <button type="button" onclick="removeTxItem('${id}')" class="text-red-400 hover:text-red-600 p-2 bg-red-50 hover:bg-red-100 rounded-lg transition" id="btn-del-${id}">
@@ -995,7 +857,6 @@
                 </div>
             `;
             document.getElementById('tx-items-container').insertAdjacentHTML('beforeend', html);
-            if(size) document.querySelector(`#tx-item-${id} .tx-item-size`).value = size;
             
             const items = document.querySelectorAll('.tx-item');
             if (items.length === 1) { document.querySelector('.tx-item button').style.display = 'none'; } 
@@ -1004,13 +865,6 @@
             calculateTxValue();
         }
 
-        window.updateTxItemSizes = function(id) {
-            const item = document.getElementById(`tx-item-${id}`);
-            const type = item.querySelector('.tx-item-type').value;
-            item.querySelector('.tx-item-size').innerHTML = getSizesOptions(type);
-            calculateTxValue();
-        }
-        
         window.removeTxItem = function(id) {
             document.getElementById(`tx-item-${id}`).remove();
             const items = document.querySelectorAll('.tx-item');
@@ -1050,10 +904,9 @@
                 const row = state[state.activeTab + 'Data'].find(d => d.id == id);
                 document.getElementById('tx-id').value = row.id;
                 document.getElementById('tx-date').value = row.date;
-                const baseType = row.type.split('-')[0];
-                const size = row.type.split('-')[1] || '';
+                const baseType = normalizeUniformType(row.type);
                 
-                addTxItem(baseType, size, row.quantity);
+                addTxItem(baseType, row.quantity);
             } else {
                 document.getElementById('tx-id').value = '';
                 document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
@@ -1083,8 +936,7 @@
                     return;
                 }
                 const baseType = item.querySelector('.tx-item-type').value;
-                const size = item.querySelector('.tx-item-size').value;
-                const type = `${baseType}-${size}`;
+                const type = baseType;
                 const quantity = parseInt(item.querySelector('.tx-item-qty').value);
                 
                 if (!quantity || quantity <= 0) {
@@ -1114,11 +966,9 @@
                     const quantity = parseInt(input.value);
                     if (quantity && quantity > 0) {
                         const baseType = input.dataset.type;
-                        const size = input.dataset.size;
-                        const type = `${baseType}-${size}`;
                         transactions.push({
                             date: date,
-                            type: type,
+                            type: baseType,
                             quantity: quantity,
                             value: quantity * PRICES[baseType],
                             status: activeTabInfo.statusText
@@ -1127,7 +977,7 @@
                 });
 
                 if (transactions.length === 0) {
-                    alert('الرجاء إدخال كمية صحيحة في مقاس واحد على الأقل.');
+                    alert('الرجاء إدخال كمية صحيحة لنوع بدلة واحد على الأقل.');
                     return;
                 }
 

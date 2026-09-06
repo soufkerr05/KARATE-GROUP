@@ -111,6 +111,7 @@ async function markQrAttendance(rawValue) {
     const cardAttendanceDates = Array.isArray(athlete.cardAttendanceDates) ? [...athlete.cardAttendanceDates, sessionDate] : [sessionDate];
     const { error: athleteError } = await _supabase.from('athletes').update({
         attendance: (athlete.attendance || 0) + 1,
+        beltAttendance: (athlete.beltAttendance || 0) + 1,
         attendanceDates,
         cardAttendanceDates
     }).eq('id', athlete.id);
@@ -270,11 +271,13 @@ async function removeAttendanceForDate(id) {
                 ? athlete.cardAttendanceDates.filter(d => d !== sessionDate)
                 : [];
             if (athlete.attendance > 0) athlete.attendance--;
+            if (athlete.beltAttendance > 0) athlete.beltAttendance--;
             
             const { error } = await _supabase.from('athletes').update({
                 attendanceDates: athlete.attendanceDates,
                 cardAttendanceDates: athlete.cardAttendanceDates,
-                attendance: athlete.attendance
+                attendance: athlete.attendance,
+                beltAttendance: athlete.beltAttendance || 0
             }).eq('id', id);
             
             if (error) console.error(error);
@@ -294,12 +297,14 @@ async function deleteAttendanceHistory(athleteId, dateStr) {
                 ? athlete.cardAttendanceDates.filter(d => d !== dateStr)
                 : [];
             if (athlete.attendance > 0) athlete.attendance--;
+            if (athlete.beltAttendance > 0) athlete.beltAttendance--;
             
             // تحديث قاعدة البيانات
             const { error } = await _supabase.from('athletes').update({
                 attendanceDates: athlete.attendanceDates,
                 cardAttendanceDates: athlete.cardAttendanceDates,
-                attendance: athlete.attendance
+                attendance: athlete.attendance,
+                beltAttendance: athlete.beltAttendance || 0
             }).eq('id', athleteId);
             
             if (error) {
@@ -498,6 +503,7 @@ attendanceForm.addEventListener('submit', async function(e) {
 
         if (athlete && !athlete.attendanceDates.includes(sessionDate)) {
             athlete.attendance++;
+            athlete.beltAttendance = (athlete.beltAttendance || 0) + 1;
             athlete.attendanceDates.push(sessionDate);
             updatedCount++;
             
@@ -505,7 +511,8 @@ attendanceForm.addEventListener('submit', async function(e) {
                 Promise.all([
                     _supabase.from('athletes').update({
                         attendance: athlete.attendance,
-                        attendanceDates: athlete.attendanceDates
+                        attendanceDates: athlete.attendanceDates,
+                        beltAttendance: athlete.beltAttendance
                     }).eq('id', id),
                     _supabase.from('samurai_competition').insert([{
                         athlete_id: id,

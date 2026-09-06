@@ -3,22 +3,23 @@ let athletes = [];
 let viewMode = 'active'; // تحديد وضع العرض (نشطين أو الأرشيف)
 const form = document.getElementById('registerForm');
 const listContainer = document.getElementById('athletesList');
+const beltSystem = [
+    { name: 'أبيض', requiredSessions: 0, next: 'أصفر' },
+    { name: 'أصفر', requiredSessions: 32, next: 'برتقالي' },
+    { name: 'برتقالي', requiredSessions: 36, next: 'أخضر' },
+    { name: 'أخضر', requiredSessions: 48, next: 'أزرق' },
+    { name: 'أزرق', requiredSessions: 60, next: 'بني' },
+    { name: 'بني', requiredSessions: 72, next: 'أسود' }
+];
 
-// مقاسات البدلات
-const UNIFORM_SIZES = {
-    '145': ['6', '8', '10', '12', '14'],
-    '180': ['1', '2', '3'],
-    '250': ['140', '150', '160', '170', '180']
-};
+function getBeltAttendance(athlete) {
+    const attendanceDates = Array.isArray(athlete.attendanceDates) ? athlete.attendanceDates : [];
+    if (attendanceDates.length === 0) return Math.max(0, Number(athlete.beltAttendance) || 0);
+    const uniqueDates = new Set(attendanceDates.filter(Boolean));
+    const lastBeltDate = athlete.lastBeltDate;
 
-window.updateUniformSizes = function(typeId, sizeId) {
-    const typeEl = document.getElementById(typeId);
-    const sizeEl = document.getElementById(sizeId);
-    if(typeEl && sizeEl) {
-        const sizes = UNIFORM_SIZES[typeEl.value] || [];
-        sizeEl.innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
-    }
-};
+    return [...uniqueDates].filter(date => !lastBeltDate || date > lastBeltDate).length;
+}
 
 async function fetchAthletes() {
     const [athletesRes, paymentsRes] = await Promise.all([
@@ -34,9 +35,70 @@ async function fetchAthletes() {
             const subPayments = allPayments.filter(p => p.athlete_id === a.id && (!p.type || p.type === 'subscription'));
             const totalPaid = subPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
             a.sessionsLimit = (totalPaid / 1000) * 12;
+            a.beltAttendance = getBeltAttendance(a);
         });
+        const pendingCount = athletes.filter(a => a.isPending === true).length;
+        const pendingBadge = document.getElementById('pendingCount');
+        if (pendingBadge) {
+            pendingBadge.textContent = pendingCount;
+            pendingBadge.classList.toggle('hidden', pendingCount === 0);
+        }
+        renderPromotionsList();
         renderTable();
     }
+}
+
+function checkPromotions(athletesList) {
+    return athletesList.reduce((readyAthletes, athlete) => {
+        if (athlete.isPending || athlete.isArchived) return readyAthletes;
+        const currentBelt = athlete.currentBelt || 'أبيض';
+        const beltInfo = beltSystem.find(belt => belt.name === currentBelt);
+        const nextBeltInfo = beltInfo?.next ? beltSystem.find(belt => belt.name === beltInfo.next) : null;
+        if (nextBeltInfo && (athlete.beltAttendance || 0) >= nextBeltInfo.requiredSessions) {
+            readyAthletes.push({ ...athlete, nextBelt: nextBeltInfo.name, required: nextBeltInfo.requiredSessions });
+        }
+        return readyAthletes;
+    }, []);
+}
+
+function renderPromotionsList() {
+    const container = document.getElementById('promotionsList');
+    const count = document.getElementById('readyCount');
+    if (!container || !count) return;
+
+    const readyAthletes = checkPromotions(athletes);
+    count.textContent = readyAthletes.length;
+    if (readyAthletes.length === 0) {
+        container.innerHTML = '<p class="py-4 text-center text-sm font-bold text-slate-500">لا يوجد رياضيون مؤهلون للترقية حالياً.</p>';
+        return;
+    }
+
+    container.innerHTML = readyAthletes.map(athlete => `
+        <div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="font-bold text-slate-800">${athlete.firstName} ${athlete.lastName}</p>
+                <p class="mt-1 text-xs font-bold text-slate-500">الحزام الحالي: <span class="text-slate-700">${athlete.currentBelt || 'أبيض'}</span> | الحصص: <span class="text-emerald-600">${athlete.beltAttendance || 0}</span> / ${athlete.required}</p>
+            </div>
+            <button onclick="promoteAthlete(${athlete.id}, '${athlete.nextBelt}')" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600">ترقية إلى ${athlete.nextBelt}</button>
+        </div>
+    `).join('');
+}
+
+async function promoteAthlete(athleteId, newBelt) {
+    if (!confirm(`هل أنت متأكد من ترقية الرياضي إلى الحزام ${newBelt}؟`)) return;
+    const today = new Date().toISOString().split('T')[0];
+    const { error } = await _supabase.from('athletes').update({
+        currentBelt: newBelt,
+        lastBeltDate: today,
+        beltAttendance: 0
+    }).eq('id', athleteId);
+
+    if (error) {
+        alert('حدث خطأ أثناء الترقية: ' + error.message);
+        return;
+    }
+    alert('تمت الترقية بنجاح! مبروك للبطل.');
+    fetchAthletes();
 }
 
 // معالجة إرسال النموذج
@@ -55,6 +117,10 @@ form.addEventListener('submit', async function(e) {
         attendanceDates: [], // مصفوفة لتخزين تواريخ الحضور لتجنب التكرار
         sessionsLimit: 0, // عدد الحصص يبدأ من صفر حتى يتم الدفع
         isArchived: false, // تحديد أن الرياضي نشط وليس في الأرشيف
+        isPending: false,
+        currentBelt: document.getElementById('currentBelt').value,
+        beltAttendance: Math.max(0, parseInt(document.getElementById('beltAttendance').value, 10) || 0),
+        lastBeltDate: document.getElementById('lastBeltDate').value || null,
         docs: {
             birth: document.getElementById('docBirth') ? document.getElementById('docBirth').checked : false,
             photos: document.getElementById('docPhotos') ? document.getElementById('docPhotos').checked : false,
@@ -78,8 +144,7 @@ form.addEventListener('submit', async function(e) {
     let uniformQty = 0;
     if (document.getElementById('initialCheckUniform')?.checked) {
         const bType = document.getElementById('initialUniformType').value;
-        const bSize = document.getElementById('initialUniformSize').value;
-        uniformType = `${bType}-${bSize}`;
+        uniformType = bType;
         uniformQty = parseInt(document.getElementById('initialUniformQty').value) || 1;
         const unitPrice = bType === '250' ? 2500 : (bType === '180' ? 1800 : 1450);
         uniformAmount = unitPrice * uniformQty;
@@ -139,15 +204,35 @@ function switchView(mode) {
     viewMode = mode;
     const btnActive = document.getElementById('btnViewActive');
     const btnArchived = document.getElementById('btnViewArchived');
+    const btnPending = document.getElementById('btnViewPending');
+    const activeClass = "px-4 py-2 rounded-lg text-sm font-bold bg-white text-blue-600 shadow-sm transition-all w-1/2 sm:w-auto";
+    const inactiveClass = "px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-700 transition-all w-1/2 sm:w-auto";
     
-    if (mode === 'active') {
-        btnActive.className = "px-4 py-2 rounded-lg text-sm font-bold bg-white text-blue-600 shadow-sm transition-all w-1/2 sm:w-auto";
-        btnArchived.className = "px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-700 transition-all w-1/2 sm:w-auto";
-    } else {
-        btnArchived.className = "px-4 py-2 rounded-lg text-sm font-bold bg-white text-blue-600 shadow-sm transition-all w-1/2 sm:w-auto";
-        btnActive.className = "px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-700 transition-all w-1/2 sm:w-auto";
-    }
+    btnActive.className = mode === 'active' ? activeClass : inactiveClass;
+    btnArchived.className = mode === 'archived' ? activeClass : inactiveClass;
+    btnPending.className = mode === 'pending' ? activeClass : inactiveClass;
     renderTable();
+}
+
+async function approveAthlete(id) {
+    const today = new Date().toISOString().split('T')[0];
+    const { error } = await _supabase.from('athletes').update({ isPending: false, subDate: today }).eq('id', id).eq('isPending', true);
+    if (error) {
+        alert('حدث خطأ أثناء الموافقة: ' + error.message);
+        return;
+    }
+    await fetchAthletes();
+    alert('تم قبول الرياضي وإضافته إلى القائمة النشطة.');
+}
+
+async function rejectAthlete(id) {
+    if (!confirm('هل تريد حذف طلب التسجيل هذا؟')) return;
+    const { error } = await _supabase.from('athletes').delete().eq('id', id).eq('isPending', true);
+    if (error) {
+        alert('حدث خطأ أثناء حذف الطلب: ' + error.message);
+        return;
+    }
+    fetchAthletes();
 }
 
 // دالة أرشفة أو استعادة الرياضي
@@ -186,6 +271,9 @@ function editDocs(id) {
         document.getElementById('editGuardianName').value = athlete.guardianName || '';
         document.getElementById('editGuardianPhone').value = athlete.guardianPhone || '';
         document.getElementById('editSubDate').value = athlete.subDate || '';
+        document.getElementById('editCurrentBelt').value = athlete.currentBelt || 'أبيض';
+        document.getElementById('editBeltAttendance').value = Math.max(0, athlete.beltAttendance || 0);
+        document.getElementById('editLastBeltDate').value = athlete.lastBeltDate || '';
 
         const docs = athlete.docs || { birth: false, photos: false, medical: false, guardian: false };
         document.getElementById('editDocBirth').checked = docs.birth;
@@ -217,6 +305,9 @@ document.getElementById('editDocsForm').addEventListener('submit', async functio
             guardianName: document.getElementById('editGuardianName').value,
             guardianPhone: document.getElementById('editGuardianPhone').value,
             subDate: document.getElementById('editSubDate').value,
+            currentBelt: document.getElementById('editCurrentBelt').value,
+            beltAttendance: Math.max(0, parseInt(document.getElementById('editBeltAttendance').value, 10) || 0),
+            lastBeltDate: document.getElementById('editLastBeltDate').value || null,
             docs: {
                 birth: document.getElementById('editDocBirth').checked,
                 photos: document.getElementById('editDocPhotos').checked,
@@ -252,7 +343,10 @@ window.addEventListener('click', function(event) {
 
 // دالة عرض الجدول
 function renderTable() {
-    let filteredAthletes = athletes.filter(a => viewMode === 'active' ? !a.isArchived : a.isArchived);
+    let filteredAthletes = athletes.filter(a => {
+        if (viewMode === 'pending') return a.isPending === true;
+        return !a.isPending && (viewMode === 'active' ? !a.isArchived : a.isArchived);
+    });
 
     const searchInput = document.getElementById('searchInput');
     if (searchInput && searchInput.value.trim() !== '') {
@@ -271,7 +365,7 @@ function renderTable() {
     }
 
     if (filteredAthletes.length === 0) {
-        const msg = viewMode === 'active' ? 'لا يوجد رياضيين نشطين مسجلين حالياً. قم بإضافة رياضي جديد للبدء.' : 'قائمة الأرشيف فارغة.';
+        const msg = viewMode === 'pending' ? 'لا توجد طلبات تسجيل جديدة حالياً.' : viewMode === 'active' ? 'لا يوجد رياضيين نشطين مسجلين حالياً. قم بإضافة رياضي جديد للبدء.' : 'قائمة الأرشيف فارغة.';
         listContainer.innerHTML = `
             <div class="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                 <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" alt="Empty" class="w-24 h-24 mx-auto mb-4 opacity-60 hover:opacity-100 transition">
@@ -358,6 +452,29 @@ function renderTable() {
     `;
 
     const rowsHtml = sortedAthletes.map(athlete => {
+        if (viewMode === 'pending') {
+            return `
+                <tr class="athlete-row border-b border-slate-100 hover:bg-amber-50/40 transition duration-200">
+                    <td class="p-4 align-top" data-label="الطلب">
+                        <div class="flex items-center flex-wrap gap-y-2 mb-3">
+                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(athlete.firstName)}+${encodeURIComponent(athlete.lastName)}&background=f59e0b&color=fff&rounded=true&font-size=0.4" class="w-12 h-12 ml-3 shadow-md border-2 border-white rounded-full" alt="Avatar">
+                            <div class="text-lg font-bold text-slate-800">${athlete.firstName} ${athlete.lastName}</div>
+                            <span class="mr-3 bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg text-xs font-black border border-amber-200">طلب جديد</span>
+                        </div>
+                        <div class="athlete-details">
+                            <div class="mb-1"><span class="font-semibold text-slate-600">الجنس:</span> ${athlete.gender || 'غير محدد'}</div>
+                            <div class="mb-1"><span class="font-semibold text-slate-600">تاريخ الميلاد:</span> ${athlete.dob || 'غير محدد'}</div>
+                            <div class="mb-1"><span class="font-semibold text-slate-600">اسم الولي:</span> ${athlete.guardianName || 'غير مسجل'}</div>
+                            <div class="mb-1"><span class="font-semibold text-slate-600">رقم الهاتف:</span> <a href="tel:${athlete.guardianPhone || ''}" class="text-blue-600 hover:underline">${athlete.guardianPhone || 'غير مسجل'}</a></div>
+                        </div>
+                    </td>
+                    <td class="p-4 align-middle actions-cell text-center admin-only" data-label="إجراءات">
+                        <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="approveAthlete(${athlete.id})">قبول وإضافة</button>
+                        <button class="bg-rose-500 hover:bg-rose-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5" onclick="rejectAthlete(${athlete.id})">رفض</button>
+                    </td>
+                </tr>
+            `;
+        }
         const limit = athlete.sessionsLimit || 0;
         const isExpired = athlete.attendance >= limit;
         
@@ -489,15 +606,11 @@ window.addEventListener('DOMContentLoaded', () => {
             initialUniformContainer.classList.toggle('hidden', !this.checked);
             if (!this.checked) {
                 if(document.getElementById('initialUniformType')) document.getElementById('initialUniformType').value = '250';
-                if(window.updateUniformSizes) window.updateUniformSizes('initialUniformType', 'initialUniformSize');
                 if(document.getElementById('initialUniformQty')) document.getElementById('initialUniformQty').value = 1;
             }
         });
     }
     
-    if(document.getElementById('initialUniformType')) {
-        if(window.updateUniformSizes) window.updateUniformSizes('initialUniformType', 'initialUniformSize');
-    }
 
     const initialCheckInsurance = document.getElementById('initialCheckInsurance');
     const initialInsuranceContainer = document.getElementById('initialInsuranceContainer');

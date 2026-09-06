@@ -120,8 +120,23 @@
                 <h2 class="text-3xl font-black text-slate-800">إحصائيات الرياضيين</h2>
                 <p class="text-slate-500 mt-2 font-medium">نظرة عامة على أعداد وتوزيع الرياضيين في النادي.</p>
             </div>
-            <button id="printActiveQrButton" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2.5 rounded-xl shadow-md print:hidden">طباعة بطاقات QR للنشطين</button>
+            <button id="printActiveQrButton" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2.5 rounded-xl shadow-md print:hidden">اختيار وطباعة بطاقات QR</button>
         </div>
+
+        <section id="qrSelectionPanel" class="hidden mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 print:hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                    <h3 class="font-black text-slate-800">اختيار الرياضيين للطباعة</h3>
+                    <p class="text-sm text-slate-500 mt-1">حدد رياضياً أو أكثر لطباعة بطاقاتهم فقط.</p>
+                </div>
+                <button id="printSelectedQrButton" type="button" disabled class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl transition">طباعة المحدد (0)</button>
+            </div>
+            <label class="flex items-center gap-2 pb-3 mb-3 border-b border-slate-100 font-bold text-slate-700 cursor-pointer">
+                <input id="selectAllQrAthletes" type="checkbox" class="w-4 h-4 accent-emerald-600">
+                <span>تحديد كل الرياضيين النشطين</span>
+            </label>
+            <div id="qrAthleteSelectionList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-72 overflow-y-auto"></div>
+        </section>
 
         <!-- العدادات -->
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
@@ -423,7 +438,44 @@
                 const activeAthletes = allAthletes.filter(a => !a.isArchived);
                 const inactiveAthletes = allAthletes.filter(a => a.isArchived);
 
-                document.getElementById('printActiveQrButton').addEventListener('click', () => printActiveAthleteQrs(activeAthletes));
+                const qrSelectionPanel = document.getElementById('qrSelectionPanel');
+                const qrAthleteSelectionList = document.getElementById('qrAthleteSelectionList');
+                const selectAllQrAthletes = document.getElementById('selectAllQrAthletes');
+                const printSelectedQrButton = document.getElementById('printSelectedQrButton');
+                const printActiveQrButton = document.getElementById('printActiveQrButton');
+
+                qrAthleteSelectionList.innerHTML = activeAthletes.map(athlete => {
+                    const fullName = `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
+                    return `<label class="flex items-center gap-2 p-2 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer">
+                        <input type="checkbox" value="${athlete.id}" class="qr-athlete-checkbox w-4 h-4 accent-emerald-600">
+                        <span class="font-bold text-sm text-slate-700 truncate">${escapePrintValue(fullName || 'بدون اسم')}</span>
+                    </label>`;
+                }).join('');
+
+                const updateQrSelectionState = () => {
+                    const checkboxes = [...qrAthleteSelectionList.querySelectorAll('.qr-athlete-checkbox')];
+                    const selectedCount = checkboxes.filter(checkbox => checkbox.checked).length;
+                    selectAllQrAthletes.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+                    selectAllQrAthletes.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+                    printSelectedQrButton.disabled = selectedCount === 0;
+                    printSelectedQrButton.textContent = `طباعة المحدد (${selectedCount})`;
+                };
+
+                printActiveQrButton.addEventListener('click', () => {
+                    qrSelectionPanel.classList.toggle('hidden');
+                    if (!qrSelectionPanel.classList.contains('hidden')) updateQrSelectionState();
+                });
+                selectAllQrAthletes.addEventListener('change', () => {
+                    qrAthleteSelectionList.querySelectorAll('.qr-athlete-checkbox').forEach(checkbox => {
+                        checkbox.checked = selectAllQrAthletes.checked;
+                    });
+                    updateQrSelectionState();
+                });
+                qrAthleteSelectionList.addEventListener('change', updateQrSelectionState);
+                printSelectedQrButton.addEventListener('click', () => {
+                    const selectedIds = new Set([...qrAthleteSelectionList.querySelectorAll('.qr-athlete-checkbox:checked')].map(checkbox => checkbox.value));
+                    printActiveAthleteQrs(activeAthletes.filter(athlete => selectedIds.has(String(athlete.id))));
+                });
         
                 const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
                 const newThisMonth = activeAthletes.filter(a => a.subDate && a.subDate.startsWith(currentMonth)).length;

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التسجيل في النادي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <style>body { font-family: 'Tajawal', sans-serif; }</style>
+</head>
+<body class="min-h-screen bg-slate-50 p-4 flex items-center justify-center">
+    <main class="w-full max-w-md rounded-3xl border border-slate-100 bg-white p-8 shadow-xl">
+        <section class="mb-8 text-center">
+            <span class="mb-4 block text-5xl" aria-hidden="true">🥋</span>
+            <h1 class="text-2xl font-black text-slate-800">التسجيل في النادي</h1>
+            <p class="mt-2 font-medium text-slate-500">املأ بيانات البطل وسنتواصل معك لتأكيد التسجيل.</p>
+        </section>
+
+        <form id="registrationForm" class="space-y-4" novalidate>
+            <div class="grid grid-cols-2 gap-4">
+                <label class="block text-sm font-bold text-slate-700">الاسم
+                    <input type="text" id="regFirstName" required maxlength="80" autocomplete="given-name" class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                </label>
+                <label class="block text-sm font-bold text-slate-700">اللقب
+                    <input type="text" id="regLastName" required maxlength="80" autocomplete="family-name" class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                </label>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <label class="block text-sm font-bold text-slate-700">تاريخ الميلاد
+                    <input type="date" id="regDob" required class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                </label>
+                <label class="block text-sm font-bold text-slate-700">الجنس
+                    <select id="regGender" required class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="ذكر">ذكر</option>
+                        <option value="أنثى">أنثى</option>
+                    </select>
+                </label>
+            </div>
+            <label class="block text-sm font-bold text-slate-700">اسم ولي الأمر
+                <input type="text" id="regGuardian" required maxlength="120" autocomplete="name" class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 p-3 outline-none focus:ring-2 focus:ring-blue-500">
+            </label>
+            <label class="block text-sm font-bold text-slate-700">رقم الهاتف المحمول (واتساب)
+                <input type="tel" id="regPhone" required maxlength="40" autocomplete="tel" dir="ltr" placeholder="05XX XX XX XX" class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-right outline-none focus:ring-2 focus:ring-blue-500">
+            </label>
+            <p id="formError" class="hidden rounded-xl bg-rose-50 p-3 text-sm font-bold text-rose-700"></p>
+            <button type="submit" id="submitBtn" class="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 text-lg font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">إرسال طلب التسجيل</button>
+        </form>
+
+        <section id="successMessage" class="hidden py-8 text-center">
+            <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-4xl text-emerald-600">✓</div>
+            <h2 class="mb-2 text-2xl font-black text-slate-800">تم استلام طلبك بنجاح!</h2>
+            <p class="text-slate-600">سيتواصل معك الكابتن قريباً لتأكيد موعد الحصة الأولى.</p>
+        </section>
+    </main>
+
+    <script>
+        const registrationForm = document.getElementById('registrationForm');
+        const submitButton = document.getElementById('submitBtn');
+        const formError = document.getElementById('formError');
+
+        registrationForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            formError.classList.add('hidden');
+            submitButton.disabled = true;
+            submitButton.textContent = 'جاري الإرسال...';
+
+            const newAthlete = {
+                firstName: document.getElementById('regFirstName').value.trim(),
+                lastName: document.getElementById('regLastName').value.trim(),
+                dob: document.getElementById('regDob').value,
+                gender: document.getElementById('regGender').value,
+                guardianName: document.getElementById('regGuardian').value.trim(),
+                guardianPhone: document.getElementById('regPhone').value.trim(),
+                attendance: 0,
+                attendanceDates: [],
+                sessionsLimit: 0,
+                isArchived: false,
+                isPending: true,
+                docs: { birth: false, photos: false, medical: false, guardian: false }
+            };
+
+            const { error } = await _supabase.from('athletes').insert([newAthlete]);
+            if (error) {
+                console.error('Registration error:', error);
+                formError.textContent = 'حدث خطأ أثناء الإرسال، يرجى المحاولة لاحقاً.';
+                formError.classList.remove('hidden');
+                submitButton.disabled = false;
+                submitButton.textContent = 'إرسال طلب التسجيل';
+                return;
+            }
+
+            registrationForm.classList.add('hidden');
+            document.getElementById('successMessage').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
