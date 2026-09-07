@@ -138,7 +138,14 @@
         </details>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 border-b border-slate-200 pb-4 gap-4">
-                <h2 class="text-2xl font-bold text-slate-800 whitespace-nowrap">قائمة الرياضيين</h2>
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-slate-800 whitespace-nowrap">قائمة الرياضيين</h2>
+                    <button type="button" onclick="copyRegistrationLink()" class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-100" title="نسخ رابط صفحة التسجيل">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                         رابط التسجيل
+                    </button>
+                    <span id="registrationLinkStatus" class="text-sm font-bold text-emerald-600" role="status" aria-live="polite"></span>
+                </div>
                 <div class="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto flex-grow justify-end">
                     <div class="relative w-full md:w-64 flex-shrink-0">
                         <input type="text" id="searchInput" oninput="renderTable()" placeholder="بحث بالاسم، الولي أو الهاتف..." class="w-full p-2.5 pr-10 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700 bg-slate-50 transition-all">

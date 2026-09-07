@@ -190,6 +190,34 @@ function closeRegisterModal() {
     document.getElementById('registerModal').style.display = 'none';
 }
 
+async function copyRegistrationLink() {
+    const registrationLink = new URL('register.html', window.location.href).href;
+    const statusElement = document.getElementById('registrationLinkStatus');
+
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(registrationLink);
+        } else {
+            const temporaryInput = document.createElement('textarea');
+            temporaryInput.value = registrationLink;
+            temporaryInput.setAttribute('readonly', '');
+            temporaryInput.style.position = 'fixed';
+            temporaryInput.style.opacity = '0';
+            document.body.appendChild(temporaryInput);
+            temporaryInput.select();
+            document.execCommand('copy');
+            temporaryInput.remove();
+        }
+        statusElement.textContent = 'تم نسخ الرابط';
+    } catch (error) {
+        statusElement.textContent = 'تعذر نسخ الرابط';
+    }
+
+    window.setTimeout(() => {
+        statusElement.textContent = '';
+    }, 2500);
+}
+
 // دالة حذف رياضي
 async function deleteAthlete(id) {
     if (confirm('هل أنت متأكد من رغبتك في حذف هذا الرياضي؟')) {
