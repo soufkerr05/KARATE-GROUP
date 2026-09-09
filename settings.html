@@ -234,6 +234,62 @@
                     </div>
                 </section>
 
+                <!-- قسم الرسائل الجماعية للأولياء -->
+                <section class="admin-only">
+                    <h2 class="text-xl font-bold text-slate-800 mb-4 border-r-4 border-emerald-500 pr-3">إرسال رسالة جماعية للأولياء</h2>
+                    <div class="p-5 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div>
+                                <h3 class="font-bold text-emerald-800 text-lg mb-1">رسالة واحدة لجميع أولياء الأمور</h3>
+                                <p class="text-sm text-emerald-700">يمكنك كتابة نص رسالة واحدة ثم فتحها لتوزيعها على جميع أرقام أولياء الأمور المسجلين.</p>
+                                <p class="mt-2 text-sm font-bold text-slate-600">عدد أولياء الأمور المسجلين: <span id="bulkGuardianCount">0</span></p>
+                            </div>
+                            <button type="button" onclick="openBulkGuardianMessageComposer()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all shadow-md flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16v10H8l-4 4V5z"></path></svg>
+                                إنشاء رسالة جماعية
+                            </button>
+                        </div>
+
+                        <div id="bulkGuardianComposer" class="hidden mt-5 rounded-xl border border-emerald-200 bg-white p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label for="bulkGuardianGroupSelect" class="block text-sm font-bold text-slate-700 mb-2">الفوج / المجموعة</label>
+                                    <select id="bulkGuardianGroupSelect" class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50 text-slate-800 font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
+                                        <option value="">كل أولياء الأمور</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">عدد المستهدفين</label>
+                                    <div id="bulkGuardianTargetCount" class="w-full p-3 border border-emerald-200 rounded-xl bg-emerald-50 text-emerald-700 font-black text-lg">0</div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2 mt-2">
+                                <button type="button" onclick="selectAllBulkGuardianRecipients()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-all shadow-sm">تحديد الكل</button>
+                                <button type="button" onclick="clearBulkGuardianRecipients()" class="bg-white hover:bg-slate-100 text-slate-700 font-bold py-2 px-4 rounded-lg border border-slate-300 transition-all">إلغاء</button>
+                            </div>
+
+                            <div id="bulkGuardianRecipientChooser" class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="font-black text-emerald-800">اختيار أولياء الأمور</span>
+                                    <span class="text-xs font-bold text-slate-600">العدد: <span id="bulkGuardianRecipientVisibleCount">0</span></span>
+                                </div>
+                                <div class="max-h-56 overflow-y-auto mt-3 rounded-lg border border-emerald-200 bg-white p-2">
+                                    <div id="bulkGuardianRecipientCheckboxList" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                                </div>
+                            </div>
+
+                            <label for="bulkGuardianMessageText" class="block text-sm font-bold text-slate-700 mb-2 mt-4">نص الرسالة</label>
+                            <textarea id="bulkGuardianMessageText" rows="5" class="w-full p-4 border border-slate-300 rounded-xl bg-slate-50 text-slate-800 font-bold focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="اكتب الرسالة هنا..."></textarea>
+                            <div class="flex flex-wrap items-center gap-3 mt-4">
+                                <button type="button" onclick="sendBulkGuardianMessage()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all shadow-md">إرسال للأولياء المحددين</button>
+                                <button type="button" onclick="copyBulkGuardianMessage()" class="bg-white hover:bg-slate-100 text-slate-700 font-bold py-2.5 px-6 rounded-lg border border-slate-300 transition-all">نسخ الرسالة</button>
+                                <span id="bulkGuardianStatus" class="text-sm font-bold text-emerald-700" role="status"></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- قسم الاستعادة -->
                 <section id="restoreSection" style="display: none;" class="admin-only">
                     <h2 class="text-xl font-bold text-slate-800 mb-4 border-r-4 border-emerald-500 pr-3">استعادة البيانات</h2>
@@ -455,12 +511,260 @@
             }
         }
 
-        // دالة تسجيل الخروج
+        async function loadBulkGuardianGroups() {
+            const groupSelect = document.getElementById('bulkGuardianGroupSelect');
+            if (!groupSelect || !_supabase) return;
+
+            const { data, error } = await _supabase
+                .from('athletes')
+                .select('group, groupName, guardianPhone')
+                .not('guardianPhone', 'is', null)
+                .neq('guardianPhone', '')
+                .eq('isArchived', false);
+
+            if (error) {
+                console.error('خطأ في جلب فئات أولياء الأمور:', error);
+                return;
+            }
+
+            const groups = [...new Set((data || [])
+                .map(row => String(row.group || row.groupName || '').trim())
+                .filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, 'ar'));
+
+            groupSelect.innerHTML = '<option value="">كل أولياء الأمور</option>';
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group;
+                option.textContent = group;
+                groupSelect.appendChild(option);
+            });
+
+            groupSelect.onchange = loadBulkGuardianRecipients;
+        }
+
+        async function loadBulkGuardianRecipients() {
+            const countBox = document.getElementById('bulkGuardianCount');
+            const targetCountBox = document.getElementById('bulkGuardianTargetCount');
+            const groupSelect = document.getElementById('bulkGuardianGroupSelect');
+            const recipientList = document.getElementById('bulkGuardianRecipientCheckboxList');
+            const visibleCount = document.getElementById('bulkGuardianRecipientVisibleCount');
+            const status = document.getElementById('bulkGuardianStatus');
+            if (!countBox || !recipientList || !_supabase) return;
+
+            const { data, error } = await _supabase
+                .from('athletes')
+                .select('guardianPhone, guardianName, group, groupName')
+                .not('guardianPhone', 'is', null)
+                .neq('guardianPhone', '')
+                .eq('isArchived', false);
+
+            if (error) {
+                console.error('خطأ في جلب أرقام أولياء الأمور:', error);
+                countBox.textContent = '0';
+                if (targetCountBox) targetCountBox.textContent = '0';
+                recipientList.innerHTML = '<span class="text-sm font-bold text-slate-500">لا توجد أرقام أولياء أمور</span>';
+                if (status) status.textContent = 'تعذر جلب قائمة أولياء الأمور.';
+                return;
+            }
+
+            const rows = [];
+            const seen = new Set();
+            (data || []).forEach(row => {
+                const phone = normalizeGuardianPhone(row.guardianPhone);
+                if (!phone) return;
+
+                const groupName = String(row.group || row.groupName || '').trim();
+                const guardianName = String(row.guardianName || '').trim();
+                const key = phone;
+                if (seen.has(key)) return;
+
+                seen.add(key);
+                rows.push({
+                    phone,
+                    guardianName,
+                    groupName
+                });
+            });
+
+            const selectedGroup = groupSelect ? groupSelect.value.trim() : '';
+            const filteredRows = selectedGroup
+                ? rows.filter(row => row.groupName === selectedGroup)
+                : rows;
+
+            const totalCount = rows.length;
+            const displayedCount = filteredRows.length;
+            const selectedPhones = filteredRows.map(row => row.phone);
+
+            countBox.textContent = String(totalCount);
+            if (targetCountBox) targetCountBox.textContent = String(displayedCount);
+            if (visibleCount) visibleCount.textContent = String(displayedCount);
+
+            window.bulkGuardianRecipients = selectedPhones;
+            window.bulkGuardianRecipientRows = filteredRows;
+
+            recipientList.innerHTML = '';
+            if (!filteredRows.length) {
+                recipientList.innerHTML = '<span class="text-sm font-bold text-slate-500">لا توجد أرقام أولياء أمور لهذا الفوج</span>';
+                return;
+            }
+
+            filteredRows
+                .sort((a, b) => (a.guardianName || a.phone).localeCompare(b.guardianName || b.phone, 'ar'))
+                .forEach(row => {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center gap-2 p-2 rounded-lg border border-emerald-100 bg-white hover:bg-emerald-50 cursor-pointer text-sm font-bold text-slate-700';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'bulk-guardian-recipient-checkbox';
+                    checkbox.value = row.phone;
+                    checkbox.checked = true;
+
+                    const phoneText = document.createElement('span');
+                    phoneText.className = 'dir-ltr';
+                    phoneText.textContent = row.phone;
+
+                    const nameText = document.createElement('span');
+                    nameText.className = 'text-slate-700';
+                    nameText.textContent = row.guardianName ? `${row.guardianName}` : 'ولي أمر';
+
+                    const groupText = document.createElement('span');
+                    groupText.className = 'text-slate-500';
+                    groupText.textContent = row.groupName ? `(${row.groupName})` : '';
+
+                    label.appendChild(checkbox);
+                    label.appendChild(nameText);
+                    label.appendChild(phoneText);
+                    if (row.groupName) label.appendChild(groupText);
+                    recipientList.appendChild(label);
+                });
+
+            const checkboxes = Array.from(document.querySelectorAll('.bulk-guardian-recipient-checkbox'));
+            checkboxes.forEach(box => {
+                box.addEventListener('change', () => {
+                    const selected = Array.from(document.querySelectorAll('.bulk-guardian-recipient-checkbox:checked')).map(item => item.value);
+                    window.bulkGuardianRecipients = selected;
+                    if (targetCountBox) targetCountBox.textContent = String(selected.length);
+                    if (visibleCount) visibleCount.textContent = String(selected.length);
+                    if (status) status.textContent = 'تم تحديث المستهدفين.';
+                });
+            });
+        }
+
+        function normalizeGuardianPhone(phone) {
+            if (!phone) return '';
+            const digits = String(phone).replace(/[^0-9+]/g, '').trim();
+            if (!digits) return '';
+
+            if (digits.startsWith('+')) {
+                return digits.replace(/\s+/g, '');
+            }
+
+            if (digits.startsWith('966')) {
+                return '+' + digits;
+            }
+
+            if (digits.startsWith('0')) {
+                return '+966' + digits.slice(1);
+            }
+
+            return '+' + digits;
+        }
+
+        function selectAllBulkGuardianRecipients() {
+            const groupSelect = document.getElementById('bulkGuardianGroupSelect');
+            if (groupSelect) {
+                groupSelect.value = '';
+            }
+            loadBulkGuardianRecipients();
+        }
+
+        function clearBulkGuardianRecipients() {
+            const groupSelect = document.getElementById('bulkGuardianGroupSelect');
+            if (groupSelect) {
+                groupSelect.value = '';
+            }
+            window.bulkGuardianRecipients = [];
+            const targetCountBox = document.getElementById('bulkGuardianTargetCount');
+            if (targetCountBox) targetCountBox.textContent = '0';
+            const status = document.getElementById('bulkGuardianStatus');
+            if (status) status.textContent = 'تم إلغاء التحديد.';
+        }
+
+        function openBulkGuardianMessageComposer() {
+            const box = document.getElementById('bulkGuardianComposer');
+            const text = document.getElementById('bulkGuardianMessageText');
+            if (!box || !text) return;
+            box.classList.toggle('hidden');
+            if (!box.classList.contains('hidden')) {
+                text.focus();
+            }
+        }
+
+        function copyBulkGuardianMessage() {
+            const text = document.getElementById('bulkGuardianMessageText');
+            const status = document.getElementById('bulkGuardianStatus');
+            if (!text || !status) return;
+
+            const content = text.value.trim();
+            if (!content) {
+                status.textContent = 'اكتب رسالة أولاً ثم انسخها.';
+                return;
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(content)
+                    .then(() => status.textContent = 'تم نسخ الرسالة')
+                    .catch(() => fallbackCopyBulkGuardianMessage(content, status));
+            } else {
+                fallbackCopyBulkGuardianMessage(content, status);
+            }
+        }
+
+        function fallbackCopyBulkGuardianMessage(content, status) {
+            const temp = document.createElement('textarea');
+            temp.value = content;
+            temp.setAttribute('readonly', '');
+            temp.style.position = 'fixed';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.select();
+            const ok = document.execCommand('copy');
+            temp.remove();
+            if (status) status.textContent = ok ? 'تم نسخ الرسالة' : 'تعذر نسخ الرسالة';
+        }
+
+        function sendBulkGuardianMessage() {
+            const text = document.getElementById('bulkGuardianMessageText');
+            const status = document.getElementById('bulkGuardianStatus');
+            if (!text || !status) return;
+
+            const message = text.value.trim();
+            if (!message) {
+                status.textContent = 'اكتب رسالة أولاً.';
+                return;
+            }
+
+            const phones = Array.isArray(window.bulkGuardianRecipients) ? window.bulkGuardianRecipients : [];
+            if (!phones.length) {
+                status.textContent = 'لا توجد أرقام أولياء أمور مسجلة في المجموعة المحددة.';
+                return;
+            }
+
+            const smsUri = 'sms:' + phones.map(phone => phone.replace(/^\+/, '')).join(',') + '?body=' + encodeURIComponent(message);
+            status.textContent = 'جارٍ فتح تطبيق الرسائل...';
+            window.location.href = smsUri;
+        }
+
         function logoutUser() {
             if (confirm('هل أنت متأكد أنك تريد تسجيل الخروج؟')) {
                 _supabase.auth.signOut().finally(() => window.location.replace('login.html'));
             }
         }
+
+        loadBulkGuardianGroups();
+        loadBulkGuardianRecipients();
     </script>
 </body>
 </html>

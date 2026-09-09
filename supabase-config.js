@@ -8,6 +8,16 @@ function logoutUser() {
     _supabase.auth.signOut().finally(() => window.location.replace('login.html'));
 }
 
+window.isReadOnlyUser = () => document.body.classList.contains('role-viewer') || document.body.classList.contains('role-athlete');
+
+function applyUserRole(user) {
+    const role = user?.user_metadata?.role;
+    if (role === 'viewer' || role === 'athlete') {
+        document.body.classList.add('role-viewer');
+        document.body.classList.toggle('role-athlete', role === 'athlete');
+    }
+}
+
 window.dispatchEvent(new Event('supabase-ready'));
 
 /**
@@ -39,12 +49,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // إعدادات دور القراءة فقط (Athlete) من بيانات المستخدم الموثقة.
     if (window._supabase?.auth?.getUser) {
         window._supabase.auth.getUser().then(({ data }) => {
-            const role = data.user?.user_metadata?.role;
-            if (role === 'athlete') {
-                document.body.classList.add('role-athlete');
-                const adminButtons = document.querySelectorAll('button[onclick="openRegisterModal()"]');
-                adminButtons.forEach(btn => btn.style.display = 'none');
-            }
+            applyUserRole(data.user);
         });
     }
     // تطبيق الثيم عند التحميل الأولي

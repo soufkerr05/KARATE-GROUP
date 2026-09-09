@@ -389,3 +389,19 @@ body.dark-mode .scroll-to-top:hover {
 body.role-athlete .admin-only {
     display: none !important;
 }
+
+body.role-viewer form:not(#loginForm),
+body.role-viewer button[onclick*="openRegister"],
+body.role-viewer button[onclick*="openAdd"],
+body.role-viewer button[onclick*="openEdit"],
+body.role-viewer button[onclick*="delete"],
+body.role-viewer button[onclick*="clear"],
+body.role-viewer button[onclick*="restore"],
+body.role-viewer button[onclick*="save"],
+body.role-viewer a[href="settings.html"] {
+    display: none !important;
+}
+
+body.role-viewer .admin-only {
+    display: none !important;
+}

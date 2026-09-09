@@ -17,6 +17,7 @@
         }
 
         if (isLoginPage) window.location.replace('index.html');
+        if (typeof window.applyUserRole === 'function') window.applyUserRole(data.session.user);
         window.dispatchEvent(new CustomEvent('supabase-auth-ready', { detail: data.session }));
     }
 
