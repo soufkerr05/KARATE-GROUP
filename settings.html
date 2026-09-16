@@ -23,6 +23,7 @@
     <script src="supabase-config.js"></script>
     <script src="auth-guard.js"></script>
     <script src="brand-config.js"></script>
+    <script src="navigation.js"></script>
 
     <link rel="stylesheet" href="style.css">
     <style>
@@ -46,6 +47,7 @@
                 <nav class="hidden md:flex items-center gap-1 flex-grow justify-center">
                     <a href="index.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
                     <a href="attendance.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+                    <a href="groups.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الأفواج</a>
                     <a href="payments.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الاشتراكات</a>
                     <div class="relative group">
                         <button class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors flex items-center gap-1">
@@ -88,6 +90,7 @@
         </button>
         <a href="index.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">إدارة الرياضيين</a>
         <a href="attendance.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الحضور</a>
+        <a href="groups.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الأفواج</a>
         <a href="payments.html" class="w-full text-center px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">الاشتراكات</a>
         <details class="w-full text-center group">
             <summary class="px-4 py-4 rounded-2xl font-black text-xl text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors list-none [&::-webkit-details-marker]:hidden flex items-center justify-center gap-2 cursor-pointer outline-none">
@@ -251,22 +254,16 @@
                         </div>
 
                         <div id="bulkGuardianComposer" class="hidden mt-5 rounded-xl border border-emerald-200 bg-white p-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label for="bulkGuardianGroupSelect" class="block text-sm font-bold text-slate-700 mb-2">الفوج / المجموعة</label>
-                                    <select id="bulkGuardianGroupSelect" class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50 text-slate-800 font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
-                                        <option value="">كل أولياء الأمور</option>
-                                    </select>
-                                </div>
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">عدد المستهدفين</label>
                                     <div id="bulkGuardianTargetCount" class="w-full p-3 border border-emerald-200 rounded-xl bg-emerald-50 text-emerald-700 font-black text-lg">0</div>
                                 </div>
-                            </div>
-
-                            <div class="flex flex-wrap items-center gap-2 mt-2">
-                                <button type="button" onclick="selectAllBulkGuardianRecipients()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-all shadow-sm">تحديد الكل</button>
-                                <button type="button" onclick="clearBulkGuardianRecipients()" class="bg-white hover:bg-slate-100 text-slate-700 font-bold py-2 px-4 rounded-lg border border-slate-300 transition-all">إلغاء</button>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button type="button" onclick="selectAllBulkGuardianRecipients()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-all shadow-sm">تحديد الكل</button>
+                                    <button type="button" onclick="clearBulkGuardianRecipients()" class="bg-white hover:bg-slate-100 text-slate-700 font-bold py-2 px-4 rounded-lg border border-slate-300 transition-all">إلغاء</button>
+                                    <button type="button" onclick="unselectAllBulkGuardianRecipients()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all shadow-sm">إلغاء تحديد الكل</button>
+                                </div>
                             </div>
 
                             <div id="bulkGuardianRecipientChooser" class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
@@ -511,42 +508,9 @@
             }
         }
 
-        async function loadBulkGuardianGroups() {
-            const groupSelect = document.getElementById('bulkGuardianGroupSelect');
-            if (!groupSelect || !_supabase) return;
-
-            const { data, error } = await _supabase
-                .from('athletes')
-                .select('group, groupName, guardianPhone')
-                .not('guardianPhone', 'is', null)
-                .neq('guardianPhone', '')
-                .eq('isArchived', false);
-
-            if (error) {
-                console.error('خطأ في جلب فئات أولياء الأمور:', error);
-                return;
-            }
-
-            const groups = [...new Set((data || [])
-                .map(row => String(row.group || row.groupName || '').trim())
-                .filter(Boolean))]
-                .sort((a, b) => a.localeCompare(b, 'ar'));
-
-            groupSelect.innerHTML = '<option value="">كل أولياء الأمور</option>';
-            groups.forEach(group => {
-                const option = document.createElement('option');
-                option.value = group;
-                option.textContent = group;
-                groupSelect.appendChild(option);
-            });
-
-            groupSelect.onchange = loadBulkGuardianRecipients;
-        }
-
         async function loadBulkGuardianRecipients() {
             const countBox = document.getElementById('bulkGuardianCount');
             const targetCountBox = document.getElementById('bulkGuardianTargetCount');
-            const groupSelect = document.getElementById('bulkGuardianGroupSelect');
             const recipientList = document.getElementById('bulkGuardianRecipientCheckboxList');
             const visibleCount = document.getElementById('bulkGuardianRecipientVisibleCount');
             const status = document.getElementById('bulkGuardianStatus');
@@ -554,7 +518,7 @@
 
             const { data, error } = await _supabase
                 .from('athletes')
-                .select('guardianPhone, guardianName, group, groupName')
+                .select('guardianPhone, guardianName')
                 .not('guardianPhone', 'is', null)
                 .neq('guardianPhone', '')
                 .eq('isArchived', false);
@@ -574,42 +538,31 @@
                 const phone = normalizeGuardianPhone(row.guardianPhone);
                 if (!phone) return;
 
-                const groupName = String(row.group || row.groupName || '').trim();
                 const guardianName = String(row.guardianName || '').trim();
-                const key = phone;
-                if (seen.has(key)) return;
+                if (seen.has(phone)) return;
 
-                seen.add(key);
+                seen.add(phone);
                 rows.push({
                     phone,
-                    guardianName,
-                    groupName
+                    guardianName
                 });
             });
 
-            const selectedGroup = groupSelect ? groupSelect.value.trim() : '';
-            const filteredRows = selectedGroup
-                ? rows.filter(row => row.groupName === selectedGroup)
-                : rows;
-
             const totalCount = rows.length;
-            const displayedCount = filteredRows.length;
-            const selectedPhones = filteredRows.map(row => row.phone);
-
             countBox.textContent = String(totalCount);
-            if (targetCountBox) targetCountBox.textContent = String(displayedCount);
-            if (visibleCount) visibleCount.textContent = String(displayedCount);
+            if (targetCountBox) targetCountBox.textContent = String(totalCount);
+            if (visibleCount) visibleCount.textContent = String(totalCount);
 
-            window.bulkGuardianRecipients = selectedPhones;
-            window.bulkGuardianRecipientRows = filteredRows;
+            window.bulkGuardianRecipients = rows.map(row => row.phone);
+            window.bulkGuardianRecipientRows = rows;
 
             recipientList.innerHTML = '';
-            if (!filteredRows.length) {
-                recipientList.innerHTML = '<span class="text-sm font-bold text-slate-500">لا توجد أرقام أولياء أمور لهذا الفوج</span>';
+            if (!rows.length) {
+                recipientList.innerHTML = '<span class="text-sm font-bold text-slate-500">لا توجد أرقام أولياء أمور</span>';
                 return;
             }
 
-            filteredRows
+            rows
                 .sort((a, b) => (a.guardianName || a.phone).localeCompare(b.guardianName || b.phone, 'ar'))
                 .forEach(row => {
                     const label = document.createElement('label');
@@ -621,22 +574,17 @@
                     checkbox.value = row.phone;
                     checkbox.checked = true;
 
-                    const phoneText = document.createElement('span');
-                    phoneText.className = 'dir-ltr';
-                    phoneText.textContent = row.phone;
-
                     const nameText = document.createElement('span');
                     nameText.className = 'text-slate-700';
-                    nameText.textContent = row.guardianName ? `${row.guardianName}` : 'ولي أمر';
+                    nameText.textContent = row.guardianName ? row.guardianName : 'ولي أمر';
 
-                    const groupText = document.createElement('span');
-                    groupText.className = 'text-slate-500';
-                    groupText.textContent = row.groupName ? `(${row.groupName})` : '';
+                    const phoneText = document.createElement('span');
+                    phoneText.className = 'dir-ltr text-slate-600';
+                    phoneText.textContent = row.phone;
 
                     label.appendChild(checkbox);
                     label.appendChild(nameText);
                     label.appendChild(phoneText);
-                    if (row.groupName) label.appendChild(groupText);
                     recipientList.appendChild(label);
                 });
 
@@ -673,23 +621,40 @@
         }
 
         function selectAllBulkGuardianRecipients() {
-            const groupSelect = document.getElementById('bulkGuardianGroupSelect');
-            if (groupSelect) {
-                groupSelect.value = '';
-            }
-            loadBulkGuardianRecipients();
+            const checkboxes = Array.from(document.querySelectorAll('.bulk-guardian-recipient-checkbox'));
+            checkboxes.forEach(box => { box.checked = true; });
+            const selected = checkboxes.map(box => box.value);
+            window.bulkGuardianRecipients = selected;
+            const targetCountBox = document.getElementById('bulkGuardianTargetCount');
+            const visibleCount = document.getElementById('bulkGuardianRecipientVisibleCount');
+            if (targetCountBox) targetCountBox.textContent = String(selected.length);
+            if (visibleCount) visibleCount.textContent = String(selected.length);
+            const status = document.getElementById('bulkGuardianStatus');
+            if (status) status.textContent = 'تم تحديد كل الأرقام.';
         }
 
         function clearBulkGuardianRecipients() {
-            const groupSelect = document.getElementById('bulkGuardianGroupSelect');
-            if (groupSelect) {
-                groupSelect.value = '';
-            }
+            const checkboxes = Array.from(document.querySelectorAll('.bulk-guardian-recipient-checkbox'));
+            checkboxes.forEach(box => { box.checked = false; });
             window.bulkGuardianRecipients = [];
             const targetCountBox = document.getElementById('bulkGuardianTargetCount');
+            const visibleCount = document.getElementById('bulkGuardianRecipientVisibleCount');
             if (targetCountBox) targetCountBox.textContent = '0';
+            if (visibleCount) visibleCount.textContent = '0';
             const status = document.getElementById('bulkGuardianStatus');
             if (status) status.textContent = 'تم إلغاء التحديد.';
+        }
+
+        function unselectAllBulkGuardianRecipients() {
+            const checkboxes = Array.from(document.querySelectorAll('.bulk-guardian-recipient-checkbox'));
+            checkboxes.forEach(box => { box.checked = false; });
+            window.bulkGuardianRecipients = [];
+            const targetCountBox = document.getElementById('bulkGuardianTargetCount');
+            const visibleCount = document.getElementById('bulkGuardianRecipientVisibleCount');
+            if (targetCountBox) targetCountBox.textContent = '0';
+            if (visibleCount) visibleCount.textContent = '0';
+            const status = document.getElementById('bulkGuardianStatus');
+            if (status) status.textContent = 'تم إلغاء تحديد الكل.';
         }
 
         function openBulkGuardianMessageComposer() {
@@ -763,7 +728,6 @@
             }
         }
 
-        loadBulkGuardianGroups();
         loadBulkGuardianRecipients();
     </script>
 </body>

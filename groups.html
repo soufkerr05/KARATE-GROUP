@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الأفواج - قاعة KARATE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="auth-guard.js"></script>
+    <script src="brand-config.js"></script>
+    <script src="navigation.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>body { font-family: 'Tajawal', sans-serif; }</style>
+</head>
+<body class="bg-slate-50">
+    <header class="header-wrapper sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm mb-8">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between gap-4">
+            <a href="index.html" class="text-xl font-black text-slate-800 flex items-center gap-2"><span class="text-2xl">🥋</span>KARATE</a>
+            <nav class="hidden md:flex items-center gap-1 flex-wrap justify-center">
+                <a href="index.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100">الرياضيون</a>
+                <a href="attendance.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100">الحضور</a>
+                <a href="groups.html" class="px-3 py-2 rounded-xl font-bold text-sm bg-blue-600 text-white shadow">الأفواج</a>
+                <a href="training_sessions.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100">الحصص التدريبية</a>
+                <a href="dashboard.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100">الإحصائيات</a>
+                <a href="settings.html" class="px-3 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100">الإعدادات</a>
+            </nav>
+            <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-xl border border-slate-200 text-slate-600" aria-label="فتح القائمة">☰</button>
+        </div>
+    </header>
+    <nav id="mobileMenu" class="hidden fixed inset-0 z-50 bg-white flex-col items-center justify-center gap-4 p-8 md:hidden">
+        <button onclick="toggleMobileMenu()" class="absolute top-6 left-6 text-2xl text-slate-500" aria-label="إغلاق القائمة">×</button>
+        <a href="index.html" class="font-black text-xl text-slate-700">الرياضيون</a>
+        <a href="attendance.html" class="font-black text-xl text-slate-700">الحضور</a>
+        <a href="groups.html" class="font-black text-xl text-blue-600">الأفواج</a>
+        <a href="training_sessions.html" class="font-black text-xl text-slate-700">الحصص التدريبية</a>
+        <a href="settings.html" class="font-black text-xl text-slate-700">الإعدادات</a>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 md:px-8 pb-12">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+            <div>
+                <p class="text-blue-600 font-black mb-2">تنظيم التدريب</p>
+                <h1 class="text-3xl md:text-4xl font-black text-slate-800">الأفواج المتخصصة</h1>
+                <p class="text-slate-500 mt-2">أنشئ فوجًا حسب الهدف أو الموقع، واختر الرياضيين يدويًا وعدّل التوزيع لاحقًا.</p>
+            </div>
+            <button id="newGroupButton" type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-xl shadow-md">+ فوج جديد</button>
+        </div>
+        <p id="pageStatus" class="hidden mb-6 rounded-xl p-4 text-sm font-bold" role="status"></p>
+        <section class="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm print:hidden">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="font-black text-slate-800">تصدير الأفواج</h2>
+                    <p class="mt-1 text-sm font-bold text-slate-500">حدد الأفواج المطلوبة ثم اختر الصيغة المناسبة.</p>
+                </div>
+                <span id="selectedGroupsCount" class="rounded-full bg-blue-50 px-3 py-1 text-sm font-black text-blue-700">0 فوج محدد</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="selectAllGroupsButton" type="button" class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 hover:bg-blue-100">تحديد الكل</button>
+                <button id="clearGroupsButton" type="button" class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">إلغاء الكل</button>
+                <button id="exportExcelButton" type="button" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">تصدير Excel</button>
+                <button id="exportPdfButton" type="button" class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700">تصدير PDF</button>
+            </div>
+        </section>
+        <div id="groupsLayout" class="grid grid-cols-1 lg:grid-cols-1 gap-6 items-start transition-all duration-300">
+            <section id="groupsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></section>
+            <section id="groupEditor" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-5 lg:sticky lg:top-24">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+                    <h2 id="editorTitle" class="text-xl font-black text-slate-800">فوج جديد</h2>
+                    <button id="deleteGroupButton" type="button" class="hidden text-sm font-bold text-red-600 hover:underline">حذف الفوج</button>
+                </div>
+                <form id="groupForm" class="space-y-4">
+                    <input id="groupId" type="hidden">
+                    <div><label for="groupName" class="block text-sm font-bold text-slate-700 mb-1">اسم الفوج *</label><input id="groupName" required class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50" placeholder="مثال: فوج إعداد المنافسين"></div>
+                    <div><label for="groupGoal" class="block text-sm font-bold text-slate-700 mb-1">الهدف</label><textarea id="groupGoal" rows="2" class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50" placeholder="الهدف التدريبي أو الفئة المستهدفة"></textarea></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label for="groupLocation" class="block text-sm font-bold text-slate-700 mb-1">الموقع</label><input id="groupLocation" class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50" placeholder="القاعة أو الفرع"></div>
+                        <div><label for="groupCircumstances" class="block text-sm font-bold text-slate-700 mb-1">الظروف</label><input id="groupCircumstances" class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50" placeholder="الأيام أو التوقيت"></div>
+                    </div>
+                    <div><label for="groupNotes" class="block text-sm font-bold text-slate-700 mb-1">ملاحظات</label><textarea id="groupNotes" rows="2" class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50"></textarea></div>
+                    <div class="border-t border-slate-100 pt-4"><div class="flex items-center justify-between mb-2"><label class="text-sm font-bold text-slate-700">اختيار الرياضيين</label><span id="selectedCount" class="text-xs font-black text-blue-600">0 محدد</span></div><input id="athleteSearch" class="w-full p-2.5 mb-2 border border-slate-300 rounded-xl bg-slate-50 text-sm" placeholder="بحث بالاسم..."><div id="athletesList" class="max-h-64 overflow-y-auto space-y-1"></div></div>
+                    <button id="saveGroupButton" type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl">حفظ الفوج</button>
+                </form>
+            </section>
+        </div>
+    </main>
+    <script src="groups.js"></script>
+</body>
+</html>
