@@ -1,0 +1,2987 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>نظام تدريب الكاراتيه الذكي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --color-bg:#F4F6FA;
+    --color-surface:#FFFFFF;
+    --color-primary:#1B4F91;      /* أزرق البساط */
+    --color-primary-dark:#123866;
+    --color-secondary:#C1272D;    /* أحمر البساط */
+    --color-secondary-light:#E2726B;
+    --color-text:#1B2430;
+    --color-muted:#64707D;
+    --color-border:#E3E8F0;
+    --color-gold:#E3A73C;
+    --radius-lg:22px;
+    --radius-md:14px;
+    --radius-full:999px;
+    --shadow-soft:0 10px 30px rgba(27,79,145,.12);
+    --ease:cubic-bezier(.4,.0,.2,1);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Tajawal',sans-serif;
+    background:var(--color-bg);
+    color:var(--color-text);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.brand,.nav-label,.stat-value{font-family:'Cairo',sans-serif;}
+  button{font-family:inherit;}
+  ::selection{background:var(--color-primary);color:#fff;}
+
+  /* ===== Layout ===== */
+  .app{display:flex;min-height:100vh;}
+  .sidebar{
+    width:104px;flex-shrink:0;
+    background:linear-gradient(200deg,var(--color-primary) 0%, var(--color-secondary) 100%);
+    display:flex;flex-direction:column;align-items:center;
+    padding:26px 0;gap:10px;
+    position:sticky;top:0;height:100vh;
+    z-index:40;
+  }
+  .brand{
+    width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.16);
+    display:flex;align-items:center;justify-content:center;margin-bottom:18px;
+    color:#fff;font-weight:800;font-size:20px;border:2px solid rgba(255,255,255,.35);
+  }
+  .nav-btn{
+    width:60px;display:flex;flex-direction:column;align-items:center;gap:6px;
+    padding:8px 0;background:transparent;border:none;cursor:pointer;color:rgba(255,255,255,.85);
+  }
+  .nav-circle{
+    width:52px;height:52px;border-radius:50%;
+    background:rgba(255,255,255,.14);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .25s var(--ease), background .25s var(--ease), box-shadow .25s var(--ease);
+  }
+  .nav-circle svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .25s var(--ease);}
+  .nav-btn:hover .nav-circle{background:rgba(255,255,255,.26);transform:translateY(-2px);}
+  .nav-btn.active .nav-circle{background:#fff;box-shadow:0 8px 18px rgba(0,0,0,.18);}
+  .nav-btn.active .nav-circle svg{stroke:var(--color-primary);}
+  .nav-label{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.9);}
+  .nav-btn.active .nav-label{color:#fff;}
+
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:22px 32px;background:rgba(255,255,255,.75);backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--color-border);position:sticky;top:0;z-index:30;
+    flex-wrap:wrap;gap:12px;
+  }
+  .topbar h1{margin:0;font-size:22px;color:var(--color-primary-dark);}
+  .topbar .sub{margin:2px 0 0;color:var(--color-muted);font-size:13.5px;}
+  .season-chip{
+    display:flex;align-items:center;gap:10px;background:var(--color-surface);
+    border:1px solid var(--color-border);padding:8px 16px;border-radius:var(--radius-full);
+    font-weight:700;color:var(--color-primary-dark);font-size:14px;box-shadow:var(--shadow-soft);
+  }
+  .season-dot{width:10px;height:10px;border-radius:50%;background:var(--color-secondary);}
+
+  #content{padding:30px 32px 70px;max-width:1180px;margin:0 auto;width:100%;}
+  .view{display:none;}
+  .view.active{display:block;animation:fadeSlide .45s var(--ease);}
+  @keyframes fadeSlide{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  .view-head{margin-bottom:22px;}
+  .view-head h2{margin:0 0 4px;font-size:24px;color:var(--color-primary-dark);}
+  .view-head p{margin:0;color:var(--color-muted);font-size:14.5px;}
+
+  /* ===== Cards / Grids ===== */
+  .grid{display:grid;gap:20px;}
+  .stats-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:26px;}
+  .two-col{grid-template-columns:1.3fr 1fr;}
+  @media (max-width:900px){.two-col{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--color-surface);border-radius:var(--radius-lg);
+    padding:22px;border:1px solid var(--color-border);
+    transition:transform .25s var(--ease), box-shadow .25s var(--ease);
+  }
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-soft);}
+
+  .stat-card{display:flex;align-items:center;gap:16px;}
+  .stat-icon{
+    width:52px;height:52px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+  .stat-icon svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .stat-label{color:var(--color-muted);font-size:13px;margin:0 0 4px;}
+  .stat-value{font-size:22px;margin:0;color:var(--color-text);}
+
+  .section-title{display:flex;align-items:center;justify-content:space-between;margin:0 0 14px;flex-wrap:wrap;gap:8px;}
+  .section-title h3{margin:0;font-size:17px;color:var(--color-primary-dark);}
+
+  /* ===== Progress Ring ===== */
+  .ring-wrap{display:flex;align-items:center;gap:18px;}
+  .ring-value{font-size:26px;font-weight:800;color:var(--color-primary-dark);font-family:'Cairo',sans-serif;}
+  .ring-caption{color:var(--color-muted);font-size:13px;}
+
+  /* ===== Buttons ===== */
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    border:none;cursor:pointer;border-radius:var(--radius-full);
+    padding:11px 22px;font-weight:700;font-size:14.5px;
+    transition:transform .2s var(--ease), box-shadow .2s var(--ease), opacity .2s var(--ease);
+  }
+  .btn-primary{background:linear-gradient(90deg,var(--color-primary),var(--color-secondary));color:#fff;box-shadow:0 8px 20px rgba(27,79,145,.28);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(27,79,145,.36);}
+  .btn-ghost{background:var(--color-bg);color:var(--color-primary-dark);border:1px solid var(--color-border);}
+  .btn-ghost:hover{background:#eaf0fa;}
+  .btn-sm{padding:8px 16px;font-size:13px;}
+  .btn:active{transform:translateY(0);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+  /* ===== Timeline (events) ===== */
+  .timeline{position:relative;padding-inline-start:26px;}
+  .timeline::before{content:"";position:absolute;top:4px;bottom:4px;right:9px;width:2px;background:var(--color-border);}
+  .t-item{position:relative;padding:0 0 22px 0;}
+  .t-item:last-child{padding-bottom:0;}
+  .t-dot{position:absolute;right:-26px;top:2px;width:16px;height:16px;border-radius:50%;border:3px solid var(--color-surface);box-shadow:0 0 0 2px var(--type-color,var(--color-primary));background:var(--type-color,var(--color-primary));}
+  .t-card{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px 16px;}
+  .t-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .t-title{font-weight:800;font-family:'Cairo',sans-serif;font-size:15px;}
+  .t-badge{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:var(--radius-full);color:#fff;white-space:nowrap;}
+  .t-meta{color:var(--color-muted);font-size:13px;margin-top:6px;}
+  .t-countdown{margin-top:8px;font-size:12.5px;font-weight:700;color:var(--color-secondary);}
+
+  /* ===== Groups ===== */
+  .group-card{display:flex;flex-direction:column;gap:14px;}
+  .group-top{display:flex;align-items:center;gap:14px;}
+  .group-avatar{
+    width:60px;height:60px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Cairo',sans-serif;font-weight:800;color:#173832;
+    border:5px solid var(--belt-color,#ccc);background:#fff;font-size:13px;
+  }
+  .group-name{margin:0;font-size:16.5px;font-family:'Cairo',sans-serif;}
+  .group-sub{margin:2px 0 0;color:var(--color-muted);font-size:13px;}
+  .belt-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--color-muted);}
+  .belt-swatch{width:12px;height:12px;border-radius:50%;background:var(--belt-color,#ccc);border:1px solid rgba(0,0,0,.08);}
+  .group-stats{display:flex;gap:18px;border-top:1px dashed var(--color-border);padding-top:12px;flex-wrap:wrap;}
+  .group-stats div{font-size:13px;color:var(--color-muted);}
+  .group-stats b{display:block;color:var(--color-text);font-family:'Cairo',sans-serif;font-size:15px;}
+  .plan-context{
+    background:linear-gradient(90deg, rgba(27,79,145,.07), rgba(193,39,45,.07));
+    border:1px dashed var(--color-border);border-radius:var(--radius-md);
+    padding:10px 12px;font-size:12.5px;color:var(--color-primary-dark);
+  }
+  .plan-context b{font-family:'Cairo',sans-serif;}
+
+  /* ===== Forms ===== */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:640px){.form-grid{grid-template-columns:1fr;}}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field.full{grid-column:1/-1;}
+  .field label{font-size:13px;font-weight:700;color:var(--color-primary-dark);}
+  .field input,.field select,.field textarea{
+    border:1.5px solid var(--color-border);border-radius:var(--radius-md);
+    padding:10px 12px;font-family:inherit;font-size:14px;background:#fbfcfe;color:var(--color-text);
+    transition:border-color .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{
+    outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(27,79,145,.15);
+  }
+  .field textarea{resize:vertical;min-height:70px;}
+  .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap;}
+
+  /* ===== Sessions list ===== */
+  .session-card{border-bottom:1px solid var(--color-border);padding:6px 0;}
+  .session-card:last-child{border-bottom:none;}
+  .session-entry-card.is-hidden{display:none;}
+  .sessions-layout.form-hidden .sessions-list-card{grid-column:1 / -1;}
+  .session-row{
+    display:flex;align-items:center;gap:16px;padding:10px 6px;
+  }
+  .session-date{
+    width:56px;height:56px;border-radius:16px;flex-shrink:0;
+    background:var(--color-bg);border:1px solid var(--color-border);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'Cairo',sans-serif;color:var(--color-primary-dark);
+  }
+  .session-date b{font-size:16px;line-height:1;}
+  .session-date span{font-size:10.5px;color:var(--color-muted);}
+  .session-body{flex:1;min-width:0;}
+  .session-title{font-weight:800;font-family:'Cairo',sans-serif;font-size:14.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .ai-badge{
+    display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;
+    color:#fff;background:linear-gradient(90deg,var(--color-primary),var(--color-secondary));
+    padding:2px 9px;border-radius:var(--radius-full);
+  }
+  .focus-badge {
+    font-size: 10.5px; font-weight: 700;
+    color: var(--color-muted);
+    border: 1px solid var(--color-border);
+    padding: 2px 9px; border-radius: var(--radius-full);
+  }
+  .session-group-tag{
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    color: var(--color-primary-dark);
+  }
+  .ai-badge svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2;}
+  .session-meta{color:var(--color-muted);font-size:12.5px;margin-top:3px;}
+  .stars{display:flex;gap:2px;flex-shrink:0;}
+  .stars svg{width:16px;height:16px;}
+
+  .delete-btn {
+    background: transparent; border: none; cursor: pointer;
+    padding: 4px; margin-inline-start: 8px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    transition: background .2s var(--ease);
+  }
+  .delete-btn svg {
+    width: 16px; height: 16px;
+    stroke: var(--color-muted);
+    transition: stroke .2s var(--ease);
+  }
+  .delete-btn:hover {
+    background: rgba(193, 39, 45, .1);
+  }
+  .delete-btn:hover svg {
+    stroke: var(--color-secondary);
+  }
+  details.feedback-block{margin:2px 6px 10px;}
+  details.session-details > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  details.session-details > summary::-webkit-details-marker {
+    display: none;
+  }
+  .session-details-content {
+    padding: 10px 16px 10px 72px;
+    font-size: 13.5px;
+  }
+  .session-details-content h4 { margin: 12px 0 6px; font-family: 'Cairo', sans-serif; font-size: 14px; color: var(--color-primary-dark); }
+  .session-details-content ul { padding-inline-start: 20px; margin: 0; }
+  .session-details-content p { margin: 4px 0; color: var(--color-muted); }
+  details.feedback-block summary{
+    cursor:pointer;font-size:12.5px;font-weight:700;color:var(--color-primary);
+    list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0;
+  }
+  details.feedback-block summary::-webkit-details-marker{display:none;}
+  details.feedback-block summary::before{content:"◂";display:inline-block;transition:transform .2s var(--ease);color:var(--color-secondary);}
+  details.feedback-block[open] summary::before{transform:rotate(-90deg);}
+  .feedback-item{
+    background:var(--color-bg);border-right:3px solid var(--color-secondary);
+    border-radius:10px;padding:8px 12px;font-size:13px;margin:6px 0;color:var(--color-text);
+  }
+  .feedback-item span{display:block;color:var(--color-muted);font-size:11px;margin-top:2px;}
+  .feedback-form{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  .feedback-form textarea{
+    flex:1;min-width:180px;border:1.5px solid var(--color-border);border-radius:var(--radius-md);
+    padding:8px 10px;font-family:inherit;font-size:13px;min-height:44px;resize:vertical;
+  }
+  .feedback-form textarea:focus{outline:none;border-color:var(--color-secondary);box-shadow:0 0 0 3px rgba(193,39,45,.12);}
+
+  /* ===== تعديل مضمّن (المجموعات / الأهداف) ===== */
+  details.inline-edit{margin-top:10px;}
+  details.inline-edit summary{
+    cursor:pointer;font-size:12.5px;font-weight:700;color:var(--color-primary);
+    list-style:none;display:inline-flex;align-items:center;gap:6px;padding:4px 0;
+  }
+  details.inline-edit summary::-webkit-details-marker{display:none;}
+  details.inline-edit summary::before{content:"✎";display:inline-block;font-size:12px;color:var(--color-secondary);}
+  .inline-edit-form{
+    display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+    background:var(--color-bg);border:1px dashed var(--color-border);border-radius:var(--radius-md);
+    padding:10px 12px;margin-top:8px;
+  }
+  .inline-edit-form input,.inline-edit-form select{
+    border:1.5px solid var(--color-border);border-radius:var(--radius-md);
+    padding:7px 10px;font-family:inherit;font-size:13px;background:#fff;color:var(--color-text);
+  }
+  .inline-edit-form input:focus,.inline-edit-form select:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(27,79,145,.14);}
+  .inline-edit-form input[type="number"]{width:80px;}
+
+  /* ===== Filter Pills ===== */
+  .filter-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    color: var(--color-muted);
+    border-radius: var(--radius-full);
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s var(--ease);
+  }
+  .pill:hover { background: #eaf0fa; color: var(--color-primary-dark); }
+  .pill.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+  /* ===== Search Input ===== */
+  .search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .search-wrapper input {
+    border: 1.5px solid var(--color-border); border-radius: var(--radius-full);
+    padding: 7px 16px 7px 38px; font-family: inherit; font-size: 13px;
+    background: var(--color-bg); width: 220px;
+  }
+  .search-wrapper svg { position: absolute; left: 12px; width: 16px; height: 16px; stroke: var(--color-muted); }
+
+  /* ===== تقييم حصص الذكاء الاصطناعي المعلَّقة ===== */
+  .rate-select{
+    border:1.5px solid var(--color-gold);border-radius:var(--radius-full);
+    padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;
+    color:#8a6414;background:#fff7ea;cursor:pointer;flex-shrink:0;
+  }
+  .rate-select:focus{outline:none;box-shadow:0 0 0 3px rgba(227,167,60,.25);}
+
+  /* ===== Program / AI generator ===== */
+  .stepper{display:flex;align-items:flex-start;gap:0;margin-bottom:24px;overflow-x:auto;padding-bottom:4px;}
+  .step{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;min-width:110px;position:relative;}
+  .step-circle{
+    width:42px;height:42px;border-radius:50%;background:var(--color-surface);
+    border:2.5px solid var(--color-border);display:flex;align-items:center;justify-content:center;
+    font-family:'Cairo',sans-serif;font-weight:800;color:var(--color-muted);
+    transition:all .3s var(--ease);z-index:1;
+  }
+  .step.active .step-circle{border-color:var(--color-primary);color:var(--color-primary);background:#fff;box-shadow:0 4px 14px rgba(27,79,145,.25);}
+  .step.done .step-circle{background:linear-gradient(90deg,var(--color-primary),var(--color-secondary));border-color:transparent;color:#fff;}
+  .step-label{font-size:12px;text-align:center;color:var(--color-muted);font-weight:700;max-width:120px;}
+  .step.active .step-label{color:var(--color-primary-dark);}
+  .step::after{
+    content:"";position:absolute;top:20px;right:50%;width:100%;height:2px;background:var(--color-border);z-index:0;
+  }
+  .step:first-child::after{display:none;}
+  .step.done::after{background:linear-gradient(90deg,var(--color-secondary),var(--color-primary));}
+
+  .context-preview{
+    display:flex;align-items:center;gap:14px;background:linear-gradient(90deg, rgba(27,79,145,.06), rgba(193,39,45,.06));
+    border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px 16px;margin-top:16px;
+  }
+  .context-preview .ci{
+    width:40px;height:40px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,var(--color-primary),var(--color-secondary));
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+  .context-preview .ci svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8;}
+  .context-preview b{font-family:'Cairo',sans-serif;color:var(--color-primary-dark);font-size:14px;}
+  .context-preview p{margin:2px 0 0;font-size:12.5px;color:var(--color-muted);}
+
+  #draftPanel{display:none;margin-top:22px;}
+  #draftPanel.open{display:block;animation:fadeSlide .4s var(--ease);}
+  .draft-meta{
+    display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;
+  }
+  .draft-tag{
+    font-size:12px;font-weight:700;padding:6px 14px;border-radius:var(--radius-full);
+    background:var(--color-bg);border:1px solid var(--color-border);color:var(--color-primary-dark);
+  }
+  .considered-box{
+    background:#fff7ea;border:1px dashed var(--color-gold);border-radius:var(--radius-md);
+    padding:12px 14px;margin-bottom:16px;
+  }
+  .considered-box b{color:#8a6414;font-family:'Cairo',sans-serif;font-size:13px;display:flex;align-items:center;gap:6px;}
+  .considered-box ul{margin:8px 0 0;padding-inline-start:20px;font-size:13px;color:#6b5010;}
+
+  .success-banner{
+    display:none;align-items:center;gap:10px;background:#eafaf0;border:1px solid #b7e6c8;
+    color:#166a3a;padding:12px 16px;border-radius:var(--radius-md);font-size:13.5px;font-weight:700;
+    margin-top:16px;
+  }
+  .success-banner.show{display:flex;animation:fadeSlide .35s var(--ease);}
+  .success-banner svg{width:18px;height:18px;stroke:#166a3a;fill:none;stroke-width:2;flex-shrink:0;}
+
+  /* ===== Notes ===== */
+  .note-card{border-right:4px solid var(--color-gold);}
+  .note-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .note-name{font-weight:800;font-family:'Cairo',sans-serif;font-size:14.5px;}
+  .note-date{font-size:12px;color:var(--color-muted);}
+  .note-text{font-size:14px;line-height:1.7;color:var(--color-text);}
+
+  .empty{
+    text-align:center;padding:36px 10px;color:var(--color-muted);
+  }
+  .empty svg{width:40px;height:40px;stroke:var(--color-border);margin-bottom:10px;}
+
+  /* ===== Responsive: bottom nav on mobile ===== */
+  @media (max-width:860px){
+    .app{flex-direction:column;}
+    .sidebar{
+      flex-direction: row; width: 100%; height: auto; position: fixed; bottom: 0; top: auto;
+      padding: 8px 6px;
+      justify-content: flex-start; /* محاذاة الأزرار من بداية الشريط */
+      box-shadow: 0 -6px 20px rgba(0,0,0,.12);
+      overflow-x: auto; /* إضافة التمرير الأفقي عند الحاجة */
+      gap: 8px; /* إضافة مسافة بين الأزرار */
+    }
+    .brand{display:none;}
+    .nav-label{display:none;}
+    #logoutBtn { margin-top: 0 !important; } /* إلغاء الهامش التلقائي في وضع الهاتف */
+    .nav-circle{width:46px;height:46px;}
+    .main{padding-bottom:78px;}
+    #content{padding:22px 16px 40px;}
+    .topbar{padding:18px 16px;}
+    .stepper{gap:4px;}
+    .step-label{display:none;}
+  }
+</style>
+<!-- User Management Styles -->
+<style>
+  .user-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid var(--color-border); }
+  .user-row:last-child { border-bottom: none; }
+  .user-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== الشريط الجانبي / التنقل ===== -->
+  <aside class="sidebar">
+    <div class="brand">柔</div>
+    <button class="nav-btn active" data-view="dashboard">
+      <span class="nav-circle">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg>
+      </span>
+      <span class="nav-label">الرئيسية</span>
+    </button>
+    <button class="nav-btn" data-view="groups">
+      <span class="nav-circle">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="8.5" r="2.2"/><path d="M15.5 14.2c2.5.4 4.3 2.4 4.5 5"/></svg>
+      </span>
+      <span class="nav-label">المجموعات</span>
+    </button>
+    <button class="nav-btn" data-view="events">
+      <span class="nav-circle">
+        <svg viewBox="0 0 24 24"><path d="M6 3v18"/><path d="M6 4h12l-2.5 3.5L18 11H6"/></svg>
+      </span>
+      <span class="nav-label">الأهداف</span>
+    </button>
+    <button class="nav-btn" data-view="sessions">
+      <span class="nav-circle">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M8.5 15l2 2 4.5-4.5"/></svg>
+      </span>
+      <span class="nav-label">الحصص</span>
+    </button>
+    <button class="nav-btn" data-view="program">
+      <span class="nav-circle">
+        <svg viewBox="0 0 24 24"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z"/><circle cx="19" cy="18" r="1.6"/></svg>
+      </span>
+      <span class="nav-label">الحصص الذكية</span>
+    </button>
+    <button class="nav-btn" data-view="notes">
+      <span class="nav-circle">
+        <svg viewBox="0 0 24 24"><rect x="4.5" y="3" width="15" height="18" rx="2.2"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>
+      </span>
+      <span class="nav-label">ملاحظات</span>
+    </button>
+    <button class="nav-btn" data-view="users" id="usersNavBtn" style="display: none;">
+      <span class="nav-circle">
+        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6"/><path d="M19 8v6"/></svg>
+      </span>
+      <span class="nav-label">المستخدمون</span>
+    </button>
+    <a class="nav-btn" href="/index.html" title="العودة إلى إدارة الرياضيين">
+      <span class="nav-circle">
+        <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg>
+      </span>
+      <span class="nav-label">العودة للإدارة</span>
+    </a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="topTitle">لوحة التحكم</h1>
+        <p class="sub" id="topSub">نظرة عامة على الموسم الرياضي الحالي</p>
+      </div>
+      <div class="season-chip"><span class="season-dot"></span> الموسم الرياضي 2025 – 2026</div>
+    </header>
+
+    <main id="content">
+
+      <!-- ========================= لوحة التحكم ========================= -->
+      <section id="view-dashboard" class="view active">
+        <div class="grid stats-grid">
+          <div class="card stat-card">
+            <span class="stat-icon" style="background:var(--color-primary);">
+              <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="8.5" r="2.2"/></svg>
+            </span>
+            <div>
+              <p class="stat-label">مجموعات نشطة</p>
+              <p class="stat-value" id="statGroups">—</p>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <span class="stat-icon" style="background:var(--color-secondary);">
+              <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18"/><path d="M8.5 15l2 2 4.5-4.5"/></svg>
+            </span>
+            <div>
+              <p class="stat-label">حصص هذا الشهر</p>
+              <p class="stat-value" id="statSessions">—</p>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <span class="stat-icon" style="background:var(--color-gold);">
+              <svg viewBox="0 0 24 24"><path d="M6 3v18"/><path d="M6 4h12l-2.5 3.5L18 11H6"/></svg>
+            </span>
+            <div>
+              <p class="stat-label">الهدف القادم</p>
+              <p class="stat-value" id="statNextEvent" style="font-size:15px;">—</p>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="ring-wrap" style="width:100%;">
+              <svg width="58" height="58" viewBox="0 0 58 58" style="flex-shrink:0;">
+                <circle cx="29" cy="29" r="24" fill="none" stroke="#E3E8F0" stroke-width="7"/>
+                <circle id="progressCircle" cx="29" cy="29" r="24" fill="none" stroke="var(--color-primary)" stroke-width="7" stroke-linecap="round" transform="rotate(-90 29 29)"/>
+              </svg>
+              <div>
+                <p class="ring-value" id="ringValue">0%</p>
+                <p class="ring-caption">تقدّم البرنامج الحالي</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid two-col">
+          <div class="card">
+            <div class="section-title"><h3>الأهداف القادمة</h3><span style="color:var(--color-muted);font-size:12.5px;">مرتّبة حسب التاريخ</span></div>
+            <div class="timeline" id="dashboardTimeline"></div>
+          </div>
+          <div class="card">
+            <div class="section-title"><h3>آخر الحصص المسجَّلة</h3></div>
+            <div id="dashboardSessions"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= المجموعات ========================= -->
+      <section id="view-groups" class="view">
+        <div class="view-head">
+          <h2>المجموعات</h2>
+          <p>المجموعات العمرية للفريق، حسب الخطة السنوية الرسمية، مع المرحلة والتركيز الحالي لكل مجموعة.</p>
+        </div>
+        <div class="grid stats-grid" id="groupsGrid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));"></div>
+      </section>
+
+      <!-- ========================= الأهداف والأحداث ========================= -->
+      <section id="view-events" class="view">
+        <div class="view-head">
+          <h2>الأهداف والأحداث</h2>
+          <p>سجّل حدثًا (امتحان أحزمة، بطولة، استعراض...) ليؤخذ بعين الاعتبار عند توليد الحصص التدريبية.</p>
+        </div>
+        <div class="grid two-col">
+          <div class="card">
+            <div class="section-title"><h3>إضافة هدف / حدث جديد</h3></div>
+            <form id="eventForm" class="form-grid">
+              <div class="field full">
+                <label>عنوان الحدث</label>
+                <input type="text" id="ev-title" placeholder="مثال: امتحان تدرّج الأحزمة – الفصل الأول" required />
+              </div>
+              <div class="field">
+                <label>نوع الحدث</label>
+                <select id="ev-type">
+                  <option value="beltExam">امتحان تدرّج الأحزمة</option>
+                  <option value="wilaya">بطولة ولائية</option>
+                  <option value="national">بطولة وطنية</option>
+                  <option value="exhibition">استعراض</option>
+                  <option value="internal">منافسة داخل القاعة</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>المجموعة المستهدفة</label>
+                <select id="ev-group"></select>
+              </div>
+              <div class="field">
+                <label>تاريخ الحدث</label>
+                <input type="date" id="ev-date" required />
+              </div>
+              <div class="field full">
+                <label>ملاحظات (تُؤخذ بعين الاعتبار عند توليد الحصص)</label>
+                <textarea id="ev-notes" placeholder="مثال: التركيز على الكاتا الأولى، وجود طفلين بإصابة خفيفة في الركبة..."></textarea>
+              </div>
+              <div class="field full form-actions">
+                <button type="submit" class="btn btn-primary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  حفظ الحدث
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="card">
+            <div class="section-title"><h3>كل الأهداف المسجَّلة</h3></div>
+            <div class="timeline" id="eventsTimeline"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= الحصص التدريبية ========================= -->
+      <section id="view-sessions" class="view">
+        <div class="view-head">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+            <h2>سجلّ الحصص التدريبية</h2>
+            <button type="button" id="toggleSessionFormBtn" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              إضافة حصة
+            </button>
+          </div>
+          <p>الحصص المضافة يدويًا أو المولَّدة بالذكاء الاصطناعي. بعد تطبيق أي حصة، أضف ملاحظاتك التطبيقية لتؤخذ بعين الاعتبار في الحصص القادمة.</p>
+        </div>
+        <div class="grid two-col sessions-layout form-hidden" id="sessionsLayout">
+          <div class="card session-entry-card is-hidden" id="sessionEntryCard" style="align-self: start;">
+            <div class="section-title">
+              <h3>إضافة حصة تدريبية</h3>
+              <button type="button" id="closeSessionFormBtn" class="btn btn-ghost">إغلاق</button>
+            </div>
+            <form id="sessionForm">
+              <div class="form-grid">
+                <div class="field">
+                  <label>المجموعة</label>
+                  <select id="se-group"></select>
+                </div>
+                <div class="field">
+                  <label>تاريخ الحصة</label>
+                  <input type="date" id="se-date" required />
+                </div>
+                <div class="field">
+                  <label>الهدف المرتبط (اختياري)</label>
+                  <select id="se-event"><option value="">بدون هدف محدد</option></select>
+                </div>
+                <div class="field">
+                  <label>ملاحظات إضافية</label>
+                  <input type="text" id="se-notes" placeholder="مثال: التركيز على اللياقة البدنية" />
+                </div>
+                <div class="field full">
+                  <label>محتوى الحصة (كل تمرين في سطر)</label>
+                  <textarea id="se-content" placeholder="إحماء&#10;تقنيات لكم أساسية&#10;كاتا هيان شودان"></textarea>
+                </div>
+                <div class="field">
+                  <label>المدة (دقائق)</label>
+                  <input type="number" id="se-duration" min="15" step="5" value="60" />
+                </div>
+                <div class="field">
+                  <label>مستوى التركيز</label>
+                  <select id="se-focus"><option value="منخفض">منخفض</option><option value="متوسط" selected>متوسط</option><option value="عالٍ">عالٍ</option></select>
+                </div>
+              </div>
+              <div class="context-preview" id="sessionContextPreview"></div>
+              <div class="field full form-actions">
+                <button type="submit" class="btn btn-primary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  حفظ الحصة
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="card sessions-list-card" style="align-self: start;">
+            <div class="section-title">
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <h3>الحصص المسجَّلة</h3>
+                <div class="filter-pills" id="sessionGroupFilter">
+                  <button class="pill active" data-group-id="all">الكل</button>
+                  <!-- سيتم ملء أزرار المجموعات هنا بواسطة JavaScript -->
+                </div>
+              </div>
+              <div class="search-wrapper">
+                <input type="search" id="sessionSearchInput" placeholder="ابحث في العنوان أو المحتوى..." />
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </div>
+            </div>
+            <div id="sessionsList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= الحصص الذكية (AI) ========================= -->
+      <section id="view-program" class="view">
+        <div class="view-head">
+          <h2>توليد الحصص بالذكاء الاصطناعي</h2>
+          <p>يعتمد التوليد على الخطة السنوية الرسمية (المرحلة، الفئة العمرية، والأسبوع)، مع مراعاة الأهداف المسجَّلة وملاحظاتك التطبيقية السابقة.</p>
+        </div>
+
+        <!-- خطوات العمل -->
+        <div class="stepper" id="stepper">
+          <div class="step active" data-step="1">
+            <div class="step-circle">1</div>
+            <div class="step-label">توليد المسودة الأولية</div>
+          </div>
+          <div class="step" data-step="2">
+            <div class="step-circle">2</div>
+            <div class="step-label">المراجعة والتعديل</div>
+          </div>
+          <div class="step" data-step="3">
+            <div class="step-circle">3</div>
+            <div class="step-label">اعتماد الحصة النهائية</div>
+          </div>
+          <div class="step" data-step="4">
+            <div class="step-circle">4</div>
+            <div class="step-label">ملاحظات تطبيقية بعد التنفيذ</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title"><h3>معلومات الحصة المطلوبة</h3></div>
+          <div class="form-grid">
+            <div class="field">
+              <label>المجموعة</label>
+              <select id="pg-group"></select>
+            </div>
+            <div class="field">
+              <label>تاريخ الحصة</label>
+              <input type="date" id="pg-date" />
+            </div>
+            <div class="field">
+              <label>الهدف المرتبط (اختياري)</label>
+              <select id="pg-event"><option value="">بدون هدف محدد</option></select>
+            </div>
+            <div class="field">
+              <label>ملاحظات إضافية للذكاء الاصطناعي</label>
+              <input type="text" id="pg-notes" placeholder="مثال: التركيز أكثر على اللياقة البدنية هذا الأسبوع" />
+            </div>
+          </div>
+
+          <div class="context-preview" id="planContextPreview"></div>
+
+          <div class="form-actions">
+            <button id="generateDraftBtn" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z"/></svg>
+              توليد المسودة الأولية
+            </button>
+          </div>
+
+          <!-- لوحة المراجعة والتعديل -->
+          <div id="draftPanel">
+            <div class="section-title"><h3>مراجعة المسودة وتعديلها</h3><span style="color:var(--color-muted);font-size:12.5px;">عدّل أي حقل قبل الاعتماد النهائي</span></div>
+
+            <div class="draft-meta" id="draftMeta"></div>
+            <div class="considered-box" id="consideredBox" style="display:none;">
+              <b>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a6414" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+                ملاحظات تطبيقية سابقة تم أخذها بعين الاعتبار
+              </b>
+              <ul id="consideredList"></ul>
+            </div>
+
+            <form id="draftForm" class="form-grid">
+              <div class="field full">
+                <label>عنوان الحصة</label>
+                <input type="text" id="df-title" />
+              </div>
+              <div class="field">
+                <label>المدة (بالدقائق)</label>
+                <input type="number" id="df-duration" min="15" step="5" value="60" />
+              </div>
+              <div class="field">
+                <label>مستوى التركيز</label>
+                <select id="df-focus">
+                  <option value="منخفض">منخفض</option>
+                  <option value="متوسط" selected>متوسط</option>
+                  <option value="عالٍ">عالٍ</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>التقييم المتوقّع (يُحدَّث بعد التنفيذ)</label>
+                <input type="text" value="سيُقيَّم بعد التطبيق" disabled />
+              </div>
+              <div class="field full">
+                <label>تمارين الحصة (كل تمرين في سطر منفصل)</label>
+                <textarea id="df-exercises" style="min-height:110px;"></textarea>
+              </div>
+              <div class="field full">
+                <label>ملاحظات المدرب ونقاط التركيز</label>
+                <textarea id="df-notes" style="min-height:90px;"></textarea>
+              </div>
+              <div class="field full form-actions">
+                <button type="button" id="cancelDraftBtn" class="btn btn-ghost">إلغاء</button>
+                <button type="submit" class="btn btn-primary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  اعتماد الحصة النهائية وإضافتها للسجل
+                </button>
+              </div>
+            </form>
+
+            <div class="success-banner" id="successBanner">
+              <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+              <span>تم إنشاء الحصة النهائية وإضافتها إلى سجلّ الحصص. بعد تطبيقها ميدانيًا، أضف ملاحظاتك التطبيقية من قسم «الحصص» ليتم أخذها بعين الاعتبار في الحصة القادمة.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= الملاحظات ========================= -->
+      <section id="view-notes" class="view">
+        <div class="view-head">
+          <h2>الملاحظات</h2>
+          <p>ملاحظات عامة حول مجموعة أو لاعب، تُستخدم لاحقًا عند بناء البرنامج التدريبي.</p>
+        </div>
+        <div class="grid two-col">
+          <div class="card">
+            <div class="section-title"><h3>إضافة ملاحظة</h3></div>
+            <form id="noteForm" class="form-grid">
+              <div class="field">
+                <label>المجموعة</label>
+                <select id="no-group"></select>
+              </div>
+              <div class="field">
+                <label>اسم اللاعب (اختياري)</label>
+                <input type="text" id="no-athlete" placeholder="اتركه فارغًا إذا كانت الملاحظة عامة" />
+              </div>
+              <div class="field full">
+                <label>نص الملاحظة</label>
+                <textarea id="no-text" placeholder="مثال: يحتاج إلى تقوية عضلات الرجلين قبل البطولة" required></textarea>
+              </div>
+              <div class="field full form-actions">
+                <button type="submit" class="btn btn-primary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  حفظ الملاحظة
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="card">
+            <div class="section-title"><h3>كل الملاحظات</h3></div>
+            <div id="notesList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= إدارة المستخدمين ========================= -->
+      <section id="view-users" class="view">
+        <div class="view-head">
+          <h2>إدارة المستخدمين</h2>
+          <p>إضافة أو حذف حسابات المدربين الذين يمكنهم الوصول إلى النظام.</p>
+        </div>
+        <div class="grid two-col">
+          <div class="card">
+            <div class="section-title"><h3>إضافة مدرب جديد</h3></div>
+            <form id="userForm" class="form-grid">
+              <div class="field">
+                <label>اسم المستخدم</label>
+                <input type="text" id="new-username" required autocomplete="off" />
+              </div>
+              <div class="field">
+                <label>كلمة المرور</label>
+                <input type="password" id="new-password" required autocomplete="new-password" />
+              </div>
+              <div class="field full form-actions">
+                <button type="submit" class="btn btn-primary">إضافة مدرب</button>
+              </div>
+            </form>
+          </div>
+          <div class="card">
+            <div class="section-title"><h3>قائمة المستخدمين الحاليين</h3></div>
+            <div id="usersList"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+/* ======================================================================
+  ملاحظة للمطوّر: تم تحويل هذا الملف ليعمل كموقع ويب مستقل بدون خادم.
+  البيانات الآن مضمنة مباشرة في هذا الملف، وأي تغييرات لن يتم حفظها بعد إعادة تحميل الصفحة.
+  ====================================================================== */
+ const BELT_COLORS = {
+  white:  "#EDEBE2",
+  yellow: "#F2C230",
+  orange: "#E8823C",
+  green:  "#2F9E5C",
+  blue:   "#2E74B5",
+  brown:  "#7A5230",
+  black:  "#1F1F1F"
+};
+const BELT_LABELS = {
+  white:"أبيض", yellow:"أصفر", orange:"برتقالي", green:"أخضر", blue:"أزرق", brown:"بني", black:"أسود"
+};
+const EVENT_TYPES = {
+  beltExam:  { label:"امتحان تدرّج الأحزمة", color:"var(--color-gold)" },
+  wilaya:    { label:"بطولة ولائية",          color:"var(--color-primary)" },
+  national:  { label:"بطولة وطنية",           color:"var(--color-secondary)" },
+  exhibition:{ label:"استعراض",               color:"#8E6FC7" },
+  internal:  { label:"منافسة داخل القاعة",     color:"#4CAF93" }
+};
+
+/* ==================================================================
+   الخطة السنوية الرسمية (مستخرجة من ملفات المراحل الأربع المرفوعة)
+   4 مراحل × 3 فئات عمرية × 3 كتل أسبوعية لكل فئة = هيكل السنة كاملة
+   ================================================================== */
+const GROUP_PLAN_KEY = { g1:"baraem", g2:"madares", g3:"ashbal" };
+
+const ANNUAL_PLAN = [
+  { id:"phase1", title:"مرحلة التأسيس", months:"الشهر 1 - 3",
+    goal:"بناء أساس قوي وممتع للكاراتيه، مع التركيز على المبادئ الأساسية وغرس حب الرياضة.",
+    groups:{
+      baraem:{ focus:"تنمية المهارات الحركية الأساسية كالتوازن والتنسيق، وتقديم مفاهيم الكاراتيه الأولية بطريقة مرحة.", blocks:[
+        { weeks:"1-4", title:"التعارف والألعاب الحركية", note:"البيئة التدريبية يجب أن تكون إيجابية وآمنة ليشعر الطفل بالراحة.", exercises:["ألعاب جري وقفز وتغيير اتجاه لتعزيز التوازن","تمارين تنسيق بين اليد والعين (مسك وإلقاء كرات طرية)","مقدمة بسيطة عن آداب الدوجو والتحية (Rei)"]},
+        { weeks:"5-8", title:"الوقفات الأساسية (Kihon-dachi)", note:"التركيز على متعة التعلم أكثر من الدقة المطلقة في هذه المرحلة.", exercises:["تعلم وقفة الاستعداد (Heiko-dachi)","تعلم الوقفة الأمامية (Zenkutsu-dachi) عبر لعبة «خطوة العملاق»"]},
+        { weeks:"9-12", title:"مقدمة في التقنيات الأساسية", note:"استخدام الوسائل المساعدة مثل الوسائد الإسفنجية لجعل التدريب ممتعًا.", exercises:["تعلم اللكمة المستقيمة (Choku-zuki) من وقفة الاستعداد","تعلم الدفاع العلوي (Age-uke) والدفاع الخارجي (Soto-uke)","تمارين مرونة خفيفة لإنهاء الحصة"]}
+      ]},
+      madares:{ focus:"إتقان الوقفات الأساسية، تحسين قوة الضربات الأولية، والبدء في تعلم أول كاتا.", blocks:[
+        { weeks:"1-4", title:"ترسيخ الوقفات والقوة", note:"التأكيد على أهمية التنفس الصحيح أثناء أداء الحركات.", exercises:["تمارين إحماء أكثر كثافة مع التركيز على التحمل","تصحيح وتحسين ثبات الوقفة الأمامية (Zenkutsu-dachi)","التدريب على اللكمات المستقيمة (Choku-zuki) مع حركة الوسط"]},
+        { weeks:"5-8", title:"إضافة الركلات الأساسية", note:"تقسيم الحركات المعقدة إلى خطوات بسيطة وسهلة الفهم.", exercises:["تعلم الركلة الأمامية (Mae-geri) مع التركيز على رفع الركبة أولاً","دمج اللكمات مع الوقفات في تسلسلات بسيطة"]},
+        { weeks:"9-12", title:"مقدمة في الكاتا (Taikyoku Shodan)", note:"شرح أن الكاتا هي قتال وهمي للمساعدة في استيعاب المفهوم.", exercises:["تعلم أول 8 حركات من كاتا تايكيوكو شودان","ممارسة الكاتا بشكل جماعي وببطء لتعزيز الذاكرة الحركية","تمارين لياقة بدنية لتقوية عضلات الجذع والساقين"]}
+      ]},
+      ashbal:{ focus:"تطوير القوة والسرعة، تعلم تقنيات أكثر تنوعًا، ومقدمة لمبادئ النزال الخفيف.", blocks:[
+        { weeks:"1-4", title:"القوة الانفجارية والوقفات المتقدمة", note:"البدء في شرح أهمية القوة البدنية لتنفيذ التقنيات بفعالية.", exercises:["تمارين إحماء ديناميكية تشمل القفز وتمارين الرشاقة","تعلم الوقفة الخلفية (Kokutsu-dachi) ووقفة الحصان (Kiba-dachi)","التدريب على اللكمات والركلات بقوة وسرعة على الوسائد"]},
+        { weeks:"5-8", title:"تنوّع الركلات والكاتا", note:"تشجيع الطلاب على الممارسة في المنزل لتحسين ذاكرتهم العضلية.", exercises:["تعلم الركلة الدائرية (Mawashi-geri) والركلة الجانبية (Yoko-geri)","تعلم كاتا تايكيوكو شودان كاملة مع التركيز على الدقة والإيقاع"]},
+        { weeks:"9-12", title:"مبادئ الكوميتيه (النزال)", note:"التأكيد بشكل صارم على قواعد السلامة والاحترام المتبادل.", exercises:["تعلم حركة الخطوة والانزلاق (Yori-ashi)","تدريبات على التوقيت والمسافة مع شريك بدون تلامس","مقدمة في الهجوم المضاد البسيط (دفاع ثم هجوم فوري)"]}
+      ]}
+    }
+  },
+  { id:"phase2", title:"مرحلة تطوير المهارات", months:"الشهر 4 - 6",
+    goal:"الانتقال من تعلم الحركات الفردية إلى ربطها في تسلسلات منطقية، وزيادة التنوع وتحسين التحمل.",
+    groups:{
+      baraem:{ focus:"ربط الحركات الأساسية معًا في تسلسلات بسيطة وممتعة، وتطوير ردود الفعل وزيادة المرونة.", blocks:[
+        { weeks:"13-16", title:"ربط الحركة بالدفاع", note:"استخدام قصص بسيطة مثل «تجنب النهر واحمِ رأسك من المطر».", exercises:["تمرين خطوة للخلف مع دفاع علوي (Age-uke)","ألعاب تتطلب الحركة والدفاع استجابة لإشارة (صافرة أو لون)","ربط وقفة أمامية مع لكمة مستقيمة في حركة واحدة متصلة"]},
+        { weeks:"17-20", title:"مقدمة مبسطة للكاتا", note:"تقسيم الكاتا إلى أجزاء صغيرة جدًا والاحتفال عند إتقان كل جزء.", exercises:["تعلم أول 4 حركات من كاتا تايكيوكو شودان مع التركيز على الاتجاهات","ألعاب لتقوية الذاكرة الحركية مثل «المدرب يقول»"]},
+        { weeks:"21-24", title:"تطوير ردود الفعل والمرونة", note:"الثناء المستمر على الجهد والمشاركة يعزز ثقة الطفل بنفسه.", exercises:["محاولة إكمال أول 8 حركات من الكاتا","ألعاب لمس أهداف ملونة بالأيدي والأرجل لزيادة سرعة الاستجابة","تمارين مرونة لزيادة نطاق حركة الحوض والساقين استعدادًا للركلات"]}
+      ]},
+      madares:{ focus:"زيادة تنوع التقنيات، تحسين التحمل، والبدء في التدريب على النزال الموجَّه لتعلم المسافة.", blocks:[
+        { weeks:"13-16", title:"مقدمة في الكوميتيه الموجَّه", note:"التشديد على التحكم الكامل وعدم لمس الشريك؛ الهدف تعلّم التوقيت والمسافة.", exercises:["تعلم Kihon Ippon Kumite: هجوم محدد مسبقًا ودفاع محدد مسبقًا","البدء بهجوم لكمة مستقيمة ودفاع Age-uke مع لكمة مضادة"]},
+        { weeks:"17-20", title:"تعلم الكاتا الثانية", note:"تقسيم كاتا هيان شودان إلى 3-4 أجزاء لتسهيل تعلّمها.", exercises:["مراجعة وإتقان الكاتا الأولى (Taikyoku Shodan)","تعلم كاتا هيان شودان بوقفاتها وتقنياتها الجديدة","تمارين لياقة لزيادة التحمل (جري خفيف أو قفز حبل)"]},
+        { weeks:"21-24", title:"تطبيق وتنويع المهارات", note:"البدء في إدخال المزيد من المصطلحات اليابانية وشرح معانيها.", exercises:["تطبيق Kihon Ippon Kumite بهجمات مختلفة (مثل لكمة للبطن)","ممارسة الكاتا الجديدة مع التركيز على القوة في نهاية الحركة (Kime)","التدريب مع شركاء مختلفين لتعلم التكيّف"]}
+      ]},
+      ashbal:{ focus:"تحسين التوقيت والمسافة في النزال، تعلم كاتات أكثر تقدمًا، والبدء في تطوير السرعة الانفجارية.", blocks:[
+        { weeks:"13-16", title:"الكوميتيه شبه الحر", note:"ارتداء واقيات اليد والفم إلزامي، مع التأكيد على السيطرة المطلقة (لمسة جلد كحد أقصى).", exercises:["الانتقال إلى Jiyu Ippon Kumite حيث الهجوم معروف والمهاجم حر في التوقيت","التدريب على كاتا هيان نيدان"]},
+        { weeks:"17-20", title:"السرعة والاستراتيجية", note:"تشجيع الطلاب على التفكير التكتيكي: «لماذا نجحت هذه الحركة؟».", exercises:["تمارين لزيادة السرعة الانفجارية (Plyometrics)","تعلم استراتيجيات بسيطة كالتمويه وتغيير زاوية الهجوم","تعلم كاتا هيان ساندان"]},
+        { weeks:"21-24", title:"تكامل المهارات", note:"يمكن استخدام التصوير بالفيديو لتحليل أداء الطلاب.", exercises:["مباريات كوميتيه حر قصيرة وموجَّهة تحت إشراف صارم","دمج الدفاع والهجوم المضاد السريع في تسلسل واحد","مراجعة جميع الكاتات مع التركيز على التطبيق العملي (Bunkai)"]}
+      ]}
+    }
+  },
+  { id:"phase3", title:"مرحلة صقل التقنيات", months:"الشهر 7 - 9",
+    goal:"التركيز على جودة ودقة أداء الحركات، وتعميق فهم الطلاب لتطبيقاتها وبناء ثقتهم بأنفسهم.",
+    groups:{
+      baraem:{ focus:"تحسين شكل الحركات الأساسية، تعزيز الثقة بالنفس من خلال تحقيق الأهداف، وترسيخ روح الفريق.", blocks:[
+        { weeks:"25-28", title:"تحسين الشكل والتوازن", note:"استخدام المرآة لمساعدة الأطفال على رؤية حركاتهم وتصحيحها بأنفسهم.", exercises:["مراجعة الوقفات مع التركيز على استقامة الظهر وتوزيع الوزن","ألعاب تتطلب الثبات على ساق واحدة لتقوية التوازن","تصحيح مسار اللكمات والدفاعات لضمان أدائها بشكل صحيح"]},
+        { weeks:"29-32", title:"إتقان الكاتا الأولى", note:"التركيز على التشجيع الإيجابي والثناء على الجهد المبذول لا النتيجة فقط.", exercises:["أداء كاتا تايكيوكو شودان كاملة وبإيقاع بطيء وثابت","أداء الكاتا بشكل جماعي لتعزيز التزامن والشعور بالوحدة","ألعاب جماعية لتعزيز روح الفريق (مثل شد الحبل)"]},
+        { weeks:"33-36", title:"بناء الثقة بالنفس", note:"السلامة أولوية قصوى؛ تمارين كسر الألواح اختيارية ومُدارة بالكامل من المدرب.", exercises:["تمارين ثقة بسيطة مثل الصراخ (Kiai) أو كسر ألواح إسفنجية خفيفة","إعطاء كل طفل فرصة لقيادة تمرين الإحماء"]}
+      ]},
+      madares:{ focus:"زيادة دقة الحركات، فهم التطبيق العملي للتقنيات، والبدء في استيعاب الجانب الثقافي للكاراتيه.", blocks:[
+        { weeks:"25-28", title:"الدقة في الكاتا", note:"تشجيع الأسئلة مثل «لماذا نقوم بهذه الحركة؟» لتعميق الفهم.", exercises:["التدريب على كاتا هيان شودان مع التركيز على التفاصيل الدقيقة (Chakugan)","شرح التطبيق العملي (Bunkai) لبعض الحركات في الكاتا","ممارسة Kihon Ippon Kumite مع التركيز على الهجوم المضاد الفوري"]},
+        { weeks:"29-32", title:"تطبيق الدفاعات بفعالية", note:"تدوير الشركاء بانتظام يمنع الروتين ويحسّن قدرة الطالب على التكيّف.", exercises:["تمارين كوميتيه مع شركاء بأطوال وأساليب مختلفة","التدريب على امتصاص قوة هجوم الخصم بدل صدّها بقوة","ممارسة التحرك للخروج من خط الهجوم بدل التراجع للخلف"]},
+        { weeks:"33-36", title:"تاريخ وفلسفة الكاراتيه", note:"ربط هذه المفاهيم بالسلوك داخل وخارج الدوجو يساعد في بناء شخصية الطالب.", exercises:["تخصيص 5-10 دقائق نهاية كل حصة للحديث عن تاريخ الكاراتيه أو قيم الدوجو (Dojo Kun)","مراجعة شاملة لجميع التقنيات التي تم تعلمها"]}
+      ]},
+      ashbal:{ focus:"تطوير الأسلوب الشخصي في الكاتا والكوميتيه، واستخدام التحليل لتحسين الأداء بشدة أعلى.", blocks:[
+        { weeks:"25-28", title:"تطوير الأسلوب في الكاتا", note:"إعطاء ملاحظات فردية لمساعدة كل طالب على تطوير نقاط قوته الفريدة.", exercises:["التدريب على الكاتات المتقدمة (Heian Nidan, Sandan) بالتركيز على القوة والسرعة والتعبير","تشجيع الطلاب على فهم وتفسير Bunkai بأنفسهم"]},
+        { weeks:"29-32", title:"الكوميتيه التكتيكي", note:"تعليم الروح الرياضية العالية: الفوز بتواضع والخسارة بكرامة.", exercises:["تنظيم مباريات كوميتيه تدريبية منتظمة (Jiyu Kumite)","التدريب على تكتيكات محددة مثل تسجيل النقاط أو إجبار الخصم على الخطأ","تسجيل المباريات بالفيديو ومراجعتها مع الطلاب"]},
+        { weeks:"33-36", title:"التحليل الذاتي واللياقة المتقدمة", note:"تمكين الطلاب من تحمّل مسؤولية تطورهم يعزز الانضباط الذاتي والالتزام.", exercises:["تعليم الطلاب تقييم أدائهم بأنفسهم وتحديد أهداف للتحسين","تمارين لياقة بدنية متقدمة تركز على التحمل والقوة الانفجارية والرشاقة","ممارسة جميع الكاتات بتركيز عالٍ وكأنها أداء حقيقي"]}
+      ]}
+    }
+  },
+  { id:"phase4", title:"مرحلة الإعداد للتقدم", months:"الشهر 10 - 12",
+    goal:"تجميع كل المهارات المكتسبة خلال العام، والتحضير المكثف لاختبارات الأحزمة أو البطولات، وبناء الثقة النهائية.",
+    groups:{
+      baraem:{ focus:"التحضير النفسي والبدني لاجتياز أول اختبار حزام، وضمان أن تكون التجربة إيجابية ومحفزة.", blocks:[
+        { weeks:"37-40", title:"المراجعة المكثفة", note:"الصبر هو المفتاح؛ يجب أن تكون المراجعة شاملة ولكن دون إرهاق الأطفال.", exercises:["مراجعة يومية لجميع التقنيات المطلوبة للاختبار: الوقفات، اللكمات، الدفاعات","تكرار الكاتا الأولى عدة مرات في كل حصة لترسيخها في الذاكرة","ألعاب تركّز على الانضباط مثل «التجمد» عند سماع كلمة Yame"]},
+        { weeks:"41-44", title:"محاكاة اختبار الحزام", note:"الهدف هو إزالة عامل الخوف من المجهول؛ كلما كانت التجربة مألوفة قلّ التوتر.", exercises:["تنظيم «اختبار تجريبي» يحاكي بيئة الاختبار الحقيقي","تدريب الطلاب على الاستجابة للأوامر باللغة اليابانية المستخدمة في الاختبار"]},
+        { weeks:"45-48", title:"التركيز النهائي والاحتفال", note:"التركيز على أن الاختبار احتفال بما تعلموه خلال العام، وليس مجرد امتحان.", exercises:["تمارين قصيرة لزيادة التركيز في بداية الحصة","مراجعة نهائية لكل متطلبات الاختبار","الاحتفال بنجاح جميع الطلاب وتقدمهم بعد الاختبار بغض النظر عن النتيجة"]}
+      ]},
+      madares:{ focus:"الاستعداد لاختبار الحزام التالي (البرتقالي أو الأزرق)، والذي يتطلب دقة وقوة أكبر وفهمًا أعمق للمصطلحات.", blocks:[
+        { weeks:"37-40", title:"مراجعة شاملة وتصحيح", note:"تقديم ملاحظات فردية ومحددة لكل طالب لمساعدته على تحسين نقاط ضعفه.", exercises:["مراجعة جميع الكاتات (Taikyoku Shodan, Heian Shodan) مع تصحيح الأخطاء الدقيقة","مراجعة تدريبات الكوميتيه الموجَّه (Kihon Ippon Kumite) لضمان الدقة والتحكم","زيادة شدة تمارين اللياقة البدنية لتحسين التحمل"]},
+        { weeks:"41-44", title:"التحضير الذهني والبدني", note:"تعليم الطلاب كيفية التعامل مع التوتر والقلق قبل الاختبار وأهمية التنفس العميق.", exercises:["تنظيم اختبارات تجريبية تتضمن جميع عناصر الاختبار الفعلي","تمارين ذهنية بسيطة كالتخيّل (Visualisation) لأداء الكاتا بشكل مثالي","مراجعة المصطلحات اليابانية المطلوبة للاختبار وشرح معانيها"]},
+        { weeks:"45-48", title:"الأداء تحت الضغط", note:"تشجيع الطلاب على دعم بعضهم البعض لخلق بيئة جماعية إيجابية.", exercises:["التدريب على أداء الكاتا فرديًا أمام الزملاء لمحاكاة ضغط الاختبار","مراجعة نهائية مكثفة في الأسبوع الأخير قبل الاختبار","مناقشة الأداء بعد الاختبار ووضع أهداف للمرحلة التالية"]}
+      ]},
+      ashbal:{ focus:"التحضير للمشاركة في البطولات التنافسية أو اختبارات الأحزمة المتقدمة بتدريب تكتيكي ولياقة عالية الكثافة.", blocks:[
+        { weeks:"37-40", title:"التدريب المتخصص للمنافسات", note:"إذا كان الهدف بطولة، يجب دراسة قواعدها وتكييف التدريب ليناسبها.", exercises:["تدريب مكثف على الكاتا المختارة للمنافسة مع التركيز على السرعة والقوة والتعبير","تدريبات كوميتيه تركّز على التكتيكات المتقدمة (تسجيل النقاط، إدارة وقت المباراة)","تمارين لياقة بدنية عالية الكثافة (HIIT) لرفع مستوى الأداء"]},
+        { weeks:"41-44", title:"وضع الخطط التكتيكية", note:"تعليم أهمية التخطيط المسبق مع القدرة على التكيّف وتغيير الخطة أثناء الأداء.", exercises:["تحليل المنافسين المحتملين (إن أمكن) ووضع خطط لعب","ممارسة سيناريوهات مختلفة في الكوميتيه (متقدم بنقطة / متأخر بنقطة)","التدريب على التحمل النفسي والقدرة على الحفاظ على التركيز طوال المباراة"]},
+        { weeks:"45-48", title:"ذروة الأداء والجانب الروحاني", note:"تذكير الطلاب بأن الهدف الأسمى ليس الفوز، بل تقديم أفضل ما لديهم وتجسيد روح الكاراتيه.", exercises:["تقليل شدة التدريب في الأسبوع الأخير لتجنب الإرهاق والسماح بالتعافي (Tapering)","التركيز على الجانب النفسي: بناء الثقة والتفكير الإيجابي والروح القتالية (Zanshin)","مراجعة قيم الكاراتيه الأساسية وكيفية تجسيدها في المنافسة أو الاختبار"]}
+      ]}
+    }
+  }
+];
+
+// ---- حالة التطبيق (البيانات مضمنة مباشرة هنا) ----
+const state = {
+  seasonStart: "2025-09-01", // بداية الموسم الرياضي المعتمدة لحساب المرحلة والأسبوع الحالي
+  groups: [
+    { id:"g1", name:"البراعم", age_range:"5 – 7 سنوات", belt:"white", athletes_count:14 },
+    { id:"g2", name:"المدارس", age_range:"8 – 10 سنوات", belt:"yellow", athletes_count:18 },
+    { id:"g3", name:"الأشبال", age_range:"11 – 13 سنة", belt:"green", athletes_count:12 }
+  ],
+  events: [
+    { id:"e1", group_id:"g2", title:"امتحان تدرّج الأحزمة – الفصل الأول", type:"beltExam", date:addDays(18), notes:"التركيز على كاتا هيان شودان وحركات القدم." },
+    { id:"e2", group_id:"g3", title:"البطولة الولائية للكاراتيه", type:"wilaya", date:addDays(34), notes:"مجموعة الأشبال فقط، التركيز على الكوميتيه." },
+    { id:"e3", group_id:"g1", title:"استعراض نهاية الفصل", type:"exhibition", date:addDays(9), notes:"حركات بسيطة وجماعية للأطفال الصغار." }
+  ],
+  sessions: [
+    { id:"s1", group_id:"g2", date:addDays(-2), duration:60, rating:4, content:"إحماء، تقنيات لكم أساسية، كاتا هيان شودان", title:"", ai_generated:false, notes_full:"" },
+    { id:"s2", group_id:"g3", date:addDays(-4), duration:75, rating:5, content:"لياقة بدنية، كوميتيه تحت إشراف، مراجعة القواعد", title:"", ai_generated:false, notes_full:"" },
+    { id:"s3", group_id:"g1", date:addDays(-6), duration:45, rating:3, content:"ألعاب حركية، انضباط أساسي، تحية الدوجو", title:"", ai_generated:false, notes_full:"" }
+  ],
+  users: [
+    { id: 1, username: 'admin', password: 'password', role: 'admin' },
+    { id: 2, username: 'soufiane', password: 'Ayhem', role: 'coach' }
+  ],
+  notes: [
+    { id:"n1", groupId:"g3", athlete:"", text:"المجموعة بحاجة إلى تقوية عضلات الرجلين قبل البطولة الولائية.", date:addDays(-3) },
+    { id:"n2", groupId:"g2", athlete:"ياسين ب.", text:"تحسّن ملحوظ في دقة الحركات، يمكن ترشيحه لتمثيل المجموعة.", date:addDays(-1) }
+  ],
+  feedback: [], // { id, sessionId, groupId, text, date } — ملاحظات تطبيقية بعد تنفيذ الحصص
+  draft: null   // الحصة قيد المراجعة حاليًا (الخطوة 2)
+};
+
+function normalizeSession(session){
+  return {
+    ...session,
+    group_id: session.group_id ?? session.groupId,
+    ai_generated: session.ai_generated ?? session.aiGenerated ?? false,
+    notes_full: session.notes_full ?? session.notesFull ?? "",
+    rating: session.rating ?? null
+  };
+}
+
+const storedSmartSessions = JSON.parse(localStorage.getItem("karateSmartSessions") || "[]");
+state.sessions.push(...storedSmartSessions.map(normalizeSession));
+
+function persistSmartSessions(){
+  localStorage.setItem(
+    "karateSmartSessions",
+    JSON.stringify(state.sessions.filter(session => session.ai_generated))
+  );
+}
+
+function addDays(n){
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+}
+function fmtDate(iso){
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("ar-DZ", { day:"2-digit", month:"long", year:"numeric" });
+}
+function daysUntil(iso){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(iso + "T00:00:00");
+  return Math.round((target - today) / 86400000);
+}
+function normalizeGroup(g){
+  return {
+    ...g,
+    id: g.id,
+    name: g.name,
+    age_range: g.age_range ?? g.ageRange,
+    athletes_count: g.athletes_count ?? g.athletesCount ?? 0,
+    belt: g.belt
+  };
+}
+function normalizeEvent(e){
+  return {
+    ...e,
+    id: e.id,
+    group_id: e.group_id ?? e.groupId,
+    title: e.title,
+    type: e.type,
+    date: e.date,
+    notes: e.notes || ""
+  };
+}
+function groupName(id){
+  const g = state.groups.find(g => g.id === id || g.group_id === id); 
+  return g ? (g.name || "—") : "—";
+}
+function uid(prefix){ return prefix + "_" + Math.random().toString(36).slice(2,9); }
+
+async function readJsonResponse(response) {
+  const body = await response.text();
+  if (!body.trim()) {
+    throw new Error("الخادم أعاد استجابة فارغة. أعد تشغيل الخادم ثم حاول مجددًا.");
+  }
+  try {
+    return JSON.parse(body);
+  } catch (error) {
+    throw new Error("استجابة الخادم غير صالحة. أعد تشغيل الخادم ثم حاول مجددًا.");
+  }
+}
+
+/* ================== منطق الخطة السنوية ================== */
+// TODO (AI): هذه الدالة تحسب "أين نحن الآن" في الخطة السنوية بناءً على التاريخ.
+// عند الربط بذكاء اصطناعي حقيقي، تُرسَل هذه المعلومات + الملاحظات كسياق (context) للنموذج.
+function getPlanContext(dateISO, groupId){
+  const start = new Date(state.seasonStart + "T00:00:00");
+  const d = new Date((dateISO || new Date().toISOString().slice(0,10)) + "T00:00:00");
+  let diffDays = Math.round((d - start) / 86400000);
+  let week = Math.floor(diffDays / 7) + 1;
+  if (week < 1) week = 1;
+  if (week > 48) week = 48;
+  const phaseIndex = Math.min(3, Math.floor((week - 1) / 12));
+  const weekInPhase = week - phaseIndex * 12;
+  const blockIndex = Math.min(2, Math.floor((weekInPhase - 1) / 4));
+  const phase = ANNUAL_PLAN[phaseIndex];
+  const groupKey = GROUP_PLAN_KEY[groupId]; // Note: property names are now snake_case
+  const groupPlan = groupKey ? phase.groups[groupKey] : null;
+  const block = groupPlan ? groupPlan.blocks[blockIndex] : null;
+  return { week, phase, groupPlan, block };
+}
+function getRecentFeedback(groupId, n){
+  return state.feedback.filter(f => f.groupId === groupId)
+    .sort((a,b)=> new Date(b.date) - new Date(a.date)).slice(0, n || 3);
+}
+
+/* ================== التنقل بين الأقسام ================== */
+const viewTitles = {
+  dashboard:["لوحة التحكم","نظرة عامة على الموسم الرياضي الحالي"],
+  groups:["المجموعات","إدارة المجموعات العمرية للفريق"],
+  events:["الأهداف والأحداث","الأحداث التي يُبنى عليها البرنامج التدريبي"],
+  sessions:["الحصص التدريبية","سجلّ الحصص المقدَّمة وتقييمها"],
+  program:["الحصص الذكية","توليد حصص تدريبية بالذكاء الاصطناعي اعتمادًا على الخطة السنوية"],
+  notes:["الملاحظات","ملاحظات المدرّب حول المجموعات واللاعبين"],
+  users:["إدارة المستخدمين", "إضافة وحذف حسابات المدربين"]
+};
+document.querySelectorAll(".nav-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    btn.classList.add("active");
+    const view = btn.dataset.view;
+    document.getElementById("view-"+view).classList.add("active");
+    document.getElementById("topTitle").textContent = viewTitles[view][0];
+    document.getElementById("topSub").textContent = viewTitles[view][1];
+    window.scrollTo({top:0, behavior:"smooth"});
+    if (view === 'users') renderUsers();
+    if (view === 'dashboard') renderDashboard(); // إعادة تحميل بيانات لوحة التحكم عند العودة إليها
+  });
+});
+
+/* ================== ملء قوائم اختيار المجموعات ================== */
+function fillGroupSelects(){
+  const selects = ["ev-group","se-group","pg-group","no-group"];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = state.groups.map(g => {
+      const norm = normalizeGroup(g);
+      return `<option value="${norm.id}">${norm.name} (${norm.age_range || "—"})</option>`;
+    }).join("");
+  });
+}
+function fillEventSelectForGroup(){
+  const groupId = document.getElementById("pg-group")?.value || "";
+  const pgSel = document.getElementById("pg-event");
+  if (pgSel) {
+    const groupEvents = state.events
+      .map(normalizeEvent)
+      .filter(e => (e.group_id || "") === groupId)
+      .sort((a,b)=> new Date(a.date)-new Date(b.date));
+    pgSel.innerHTML = `<option value="">بدون هدف محدد</option>` + groupEvents.map(e=>`<option value="${e.id}">${e.title} — ${fmtDate(e.date)}</option>`).join("");
+  }
+
+  const sessionSel = document.getElementById("se-event");
+  if (sessionSel) {
+    const groupEvents = state.events
+      .map(normalizeEvent)
+      .filter(e => (e.group_id || "") === groupId)
+      .sort((a,b)=> new Date(a.date)-new Date(b.date));
+    sessionSel.innerHTML = `<option value="">بدون هدف محدد</option>` + groupEvents.map(e=>`<option value="${e.id}">${e.title} — ${fmtDate(e.date)}</option>`).join("");
+  }
+}
+
+/* ================== لوحة التحكم ================== */
+function renderDashboard(){
+  // تحديث رسالة الترحيب في الشريط العلوي
+  if (state.user && state.user.username) {
+    document.getElementById("topTitle").textContent = `مرحبًا، ${state.user.username}`;
+    document.getElementById("topSub").textContent = "نظرة عامة على الموسم الرياضي الحالي";
+  }
+
+  document.getElementById("statGroups").textContent = state.groups.length;
+
+  const thisMonth = new Date().getMonth();
+  const sessionsThisMonth = state.sessions.filter(s => new Date(s.date).getMonth() === thisMonth).length;
+  document.getElementById("statSessions").textContent = sessionsThisMonth;
+
+  const upcoming = [...state.events].filter(e=>daysUntil(e.date)>=0).sort((a,b)=> new Date(a.date)-new Date(b.date));
+  document.getElementById("statNextEvent").textContent = upcoming[0] ? upcoming[0].title : "لا يوجد";
+
+  const pct = upcoming[0] ? Math.min(100, Math.max(6, 100 - daysUntil(upcoming[0].date))) : 40;
+  const circle = document.getElementById("progressCircle");
+  const r = 24, c = 2*Math.PI*r;
+  circle.style.strokeDasharray = c;
+  circle.style.strokeDashoffset = c;
+  circle.style.transition = "stroke-dashoffset 1s var(--ease)";
+  requestAnimationFrame(()=>{ circle.style.strokeDashoffset = c - (pct/100)*c; });
+  document.getElementById("ringValue").textContent = pct + "%";
+
+  const timeline = document.getElementById("dashboardTimeline");
+  timeline.innerHTML = upcoming.length ? upcoming.slice(0,4).map(eventTimelineItem).join("") : emptyState("لا توجد أهداف قادمة حاليًا");
+
+  const recentSessions = [...state.sessions].sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,4); // Note: property names are now snake_case
+  document.getElementById("dashboardSessions").innerHTML = recentSessions.length ? recentSessions.map(s=>sessionRow(s,false)).join("") : emptyState("لا توجد حصص مسجَّلة بعد");
+}
+
+function eventTimelineItem(e){
+  const type = EVENT_TYPES[e.type];
+  const d = daysUntil(e.date);
+  const countdown = d < 0 ? "انتهى" : d === 0 ? "اليوم" : `بعد ${d} يوم`;
+  return `
+    <div class="t-item" style="--type-color:${type.color}">
+      <span class="t-dot"></span>
+      <div class="t-card">
+        <div class="t-top">
+          <span class="t-title">${e.title}</span>
+          <span class="t-badge" style="background:${type.color}">${type.label}</span>
+        </div>
+        <div class="t-meta">${groupName(e.group_id)} · ${fmtDate(e.date)}</div>
+        <div class="t-countdown">${countdown}</div>
+      </div>
+    </div>`;
+}
+
+function eventTimelineItemEditable(e){
+  const type = EVENT_TYPES[e.type];
+  const d = daysUntil(e.date);
+  const countdown = d < 0 ? "انتهى" : d === 0 ? "اليوم" : `بعد ${d} يوم`;
+  const typeOptions = Object.keys(EVENT_TYPES).map(k=>`<option value="${k}" ${k===e.type?"selected":""}>${EVENT_TYPES[k].label}</option>`).join("");
+  return `
+    <div class="t-item" style="--type-color:${type.color}">
+      <span class="t-dot"></span>
+      <div class="t-card">
+        <div class="t-top">
+          <span class="t-title">${e.title}</span>
+          <span class="t-badge" style="background:${type.color}">${type.label}</span>
+        </div>
+        <div class="t-meta">${groupName(e.group_id)} · ${fmtDate(e.date)}</div>
+        <div class="t-countdown">${countdown}</div>
+        <details class="inline-edit">
+          <summary>تعديل التاريخ أو النوع</summary>
+          <form class="inline-edit-form event-edit-form" data-event="${e.id}">
+            <label style="font-size:12.5px;font-weight:700;color:var(--color-primary-dark);">النوع</label>
+            <select>${typeOptions}</select>
+            <label style="font-size:12.5px;font-weight:700;color:var(--color-primary-dark);">التاريخ</label>
+            <input type="date" value="${e.date}" required />
+            <button class="btn btn-primary btn-sm" type="submit">حفظ</button>
+          </form>
+        </details>
+      </div>
+    </div>`;
+}
+
+function sessionRow(s, withFeedback){
+  const groupId = s.group_id ?? s.groupId;
+  const d = new Date(s.date + "T00:00:00");
+  const day = d.toLocaleDateString("ar-DZ",{day:"2-digit"});
+  const month = d.toLocaleDateString("ar-DZ",{month:"short"});  
+  const titleText = s.title || "حصة تدريبية";
+  const aiBadge = (s.ai_generated || s.aiGenerated) ? `<span class="ai-badge"><svg viewBox="0 0 24 24"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z"/></svg>ذكاء اصطناعي</span>` : "";
+  const focusBadge = s.focus_level ? `<span class="focus-badge">تركيز ${s.focus_level}</span>` : "";
+  let ratingDisplay;
+  if(s.rating > 0){
+    ratingDisplay = starRow(s.rating);
+  } else if(withFeedback){
+    ratingDisplay = `
+      <select class="rate-select" data-session="${s.id}">
+        <option value="">بانتظار التقييم</option>
+        <option value="5">ممتاز — 5</option>
+        <option value="4">جيد جدًا — 4</option>
+        <option value="3">جيد — 3</option>
+        <option value="2">مقبول — 2</option>
+        <option value="1">ضعيف — 1</option>
+      </select>`;
+  } else {
+    ratingDisplay = `<span style="font-size:11.5px;color:var(--color-muted);font-weight:700;">بانتظار التقييم</span>`;
+  }
+  const deleteButton = withFeedback ? `
+    <button class="delete-btn" data-session-id="${s.id}" title="حذف الحصة">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+    </button>
+  ` : "";
+
+  // بناء قائمة التمارين
+  const exercisesList = s.content ? `<ul>${s.content.split('·').map(ex => `<li>${ex.trim()}</li>`).join('')}</ul>` : '<p>غير محدد</p>';
+  const coachNotes = s.notes_full ? `<h4>ملاحظات المدرب</h4><p>${s.notes_full}</p>` : '';
+
+  const summaryRow = `
+    <summary class="session-row">
+        <div class="session-date"><b>${day}</b><span>${month}</span></div>
+        <div class="session-body">
+            <div class="session-title">
+            <span>${titleText}</span>
+            <span class="session-group-tag">${groupName(groupId)}</span>
+            </div>
+            <div class="session-meta">${s.duration} دقيقة</div>
+        </div>
+        ${ratingDisplay}
+        ${deleteButton}
+    </summary>`;
+
+  const detailsContent = `
+    <div class="session-details-content">
+        <h4>تفاصيل الحصة</h4>
+        <p>المجموعة: ${groupName(groupId)}</p>
+        ${focusBadge}
+        ${aiBadge}
+        <h4>تمارين الحصة</h4>
+        ${exercisesList}
+        ${coachNotes}
+    </div>`;
+
+  // إذا كانت الصفحة هي لوحة التحكم، نعرض الصف فقط بدون تفاصيل
+  if(!withFeedback) {
+      return `<div class="session-card">${summaryRow.replace(/<summary/g, '<div').replace(/<\/summary>/g, '</div>')}</div>`;
+  }
+
+  const fbList = state.feedback.filter(f=>f.sessionId===s.id); // Note: property names are now snake_case
+  const fbHtml = fbList.length ? fbList.map(f=>`<div class="feedback-item">${f.text}<span>${fmtDate(f.date)}</span></div>`).join("") : `<p style="font-size:12.5px;color:var(--color-muted);margin:6px 0;">لا توجد ملاحظات تطبيقية بعد لهذه الحصة.</p>`;
+  return `
+    <div class="session-card">
+      <details class="session-details">
+        ${summaryRow}
+        ${detailsContent}
+      </details>
+      <details class="feedback-block">
+        <summary>ملاحظات تطبيقية (${fbList.length})</summary>
+        ${fbHtml}
+        <form class="feedback-form" data-session="${s.id}" data-group="${groupId}">
+          <textarea placeholder="ما الذي نجح؟ وما الذي يجب التركيز عليه في الحصة القادمة؟" required></textarea>
+          <button class="btn btn-ghost btn-sm" type="submit">حفظ الملاحظة</button>
+        </form>
+      </details>
+    </div>`;
+}
+function starRow(rating){
+  let stars = "";
+  for(let i=1;i<=5;i++){
+    stars += `<svg viewBox="0 0 24 24" fill="${i<=rating ? 'var(--color-gold)':'none'}" stroke="var(--color-gold)" stroke-width="1.6"><path d="M12 2l2.9 6 6.6.9-4.8 4.6 1.1 6.6L12 17l-5.8 3.1 1.1-6.6-4.8-4.6 6.6-.9L12 2z"/></svg>`;
+  }
+  return `<div class="stars">${stars}</div>`;
+}
+function emptyState(msg){
+  return `<div class="empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M8 15c1.2 1.2 2.6 1.8 4 1.8s2.8-.6 4-1.8"/></svg>
+    <div>${msg}</div>
+  </div>`;
+}
+
+/* ================== المجموعات ================== */
+function renderGroups(){
+  const grid = document.getElementById("groupsGrid");
+  const todayISO = new Date().toISOString().slice(0,10);
+
+  grid.innerHTML = state.groups.map(g=>{
+    const beltColor = BELT_COLORS[g.belt];
+    const sessionsCount = state.sessions.filter(s=>s.group_id===g.id).length;
+    const nextEvent = state.events.filter(e=>e.group_id===g.id && daysUntil(e.date)>=0)
+      .sort((a,b)=> new Date(a.date)-new Date(b.date))[0];
+    const ctx = getPlanContext(todayISO, g.id);
+    return `
+      <div class="card group-card">
+        <div class="group-top">
+          <div class="group-avatar" style="--belt-color:${beltColor}">${g.athletes_count}</div>
+          <div>
+            <p class="group-name">${g.name}</p>
+            <p class="group-sub">${g.age_range}</p>
+            <span class="belt-chip"><span class="belt-swatch" style="--belt-color:${beltColor}"></span>الحزام السائد: ${BELT_LABELS[g.belt]}</span>
+          </div>
+        </div>
+        <div class="group-stats">
+          <div>عدد الأطفال<b>${g.athletes_count}</b></div>
+          <div>حصص مسجَّلة<b>${sessionsCount}</b></div>
+          <div>الهدف القادم<b style="font-size:12.5px;">${nextEvent ? nextEvent.title : "لا يوجد"}</b></div>
+        </div>
+        <div class="plan-context">
+          <b>المرحلة الحالية (الخطة السنوية):</b> ${ctx.phase.title} — ${ctx.block ? ctx.block.title : ""} (الأسبوع ${ctx.week})
+        </div>
+        <details class="inline-edit">
+          <summary>تعديل عدد الرياضيين</summary>
+          <form class="inline-edit-form athletes-form" data-group="${g.id}">
+            <label style="font-size:12.5px;font-weight:700;">عدد الرياضيين</label>
+            <input type="number" min="0" step="1" value="${g.athletes_count}" required />
+            <button class="btn btn-primary btn-sm" type="submit">حفظ</button>
+          </form>
+        </details>
+      </div>`;
+  }).join("");
+}
+document.getElementById("groupsGrid").addEventListener("submit", function(e){
+  if(!e.target.classList.contains("athletes-form")) return;
+  e.preventDefault();
+  const groupId = e.target.dataset.group;
+  const val = Number(e.target.querySelector("input[type=number]").value);
+  if(isNaN(val) || val < 0) return;
+  const group = state.groups.find(g => g.id === groupId);
+  if (group) group.athletes_count = val;
+  renderGroups();
+});
+
+/* ================== الأهداف والأحداث ================== */
+function renderEvents(){
+  const timeline = document.getElementById("eventsTimeline");
+  const sorted = [...state.events].sort((a,b)=> new Date(a.date)-new Date(b.date));
+  timeline.innerHTML = sorted.length ? sorted.map(eventTimelineItemEditable).join("") : emptyState("لم تُسجَّل أي أهداف بعد");
+}
+document.getElementById("eventsTimeline").addEventListener("submit", async function(e){
+  if(!e.target.classList.contains("event-edit-form")) return;
+  e.preventDefault();
+  const evId = e.target.dataset.event;
+  const newType = e.target.querySelector("select").value;
+  const newDate = e.target.querySelector("input[type=date]").value;
+  const ev = state.events.find(x=>x.id===evId);
+  if(!ev || !newDate) return;
+  try {
+    const response = await fetch(`/api/events/${encodeURIComponent(evId)}`, {
+      method: "PUT", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: newType, date: newDate })
+    });
+    if (!response.ok) throw new Error("Could not save the event update.");
+    ev.type = newType;
+    ev.date = newDate;
+  } catch (error) {
+    console.error("Failed to update event:", error);
+    alert("تعذر حفظ تعديل الهدف. يرجى المحاولة مجددًا.");
+    return;
+  }
+  renderEvents();
+  renderDashboard();
+  renderGroups();
+  fillEventSelectForGroup();
+});
+
+document.getElementById("eventForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  const groupId = document.getElementById("ev-group").value;
+  const newEvent = {
+    id: uid("e"),
+    group_id: groupId,
+    groupId: groupId,
+    title: document.getElementById("ev-title").value.trim(),
+    type: document.getElementById("ev-type").value,
+    date: document.getElementById("ev-date").value,
+    notes: document.getElementById("ev-notes").value.trim()
+  };
+  if(!newEvent.title || !newEvent.date) return;
+  try {
+    const response = await fetch("/api/events", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newEvent)
+    });
+    if (!response.ok) throw new Error("Could not save the event.");
+    state.events.push(normalizeEvent((await readJsonResponse(response)).data));
+  } catch (error) {
+    console.error("Failed to save event:", error);
+    alert("تعذر حفظ الهدف. يرجى المحاولة مجددًا.");
+    return;
+  }
+  this.reset();
+  renderEvents();
+  renderDashboard();
+  renderGroups();
+  fillEventSelectForGroup();
+});
+
+/* ================== الحصص التدريبية ================== */
+function renderSessions(){
+  const list = document.getElementById("sessionsList");
+  const searchTerm = document.getElementById("sessionSearchInput").value.toLowerCase();
+  const activeFilter = document.querySelector('#sessionGroupFilter .pill.active')?.dataset.groupId || 'all';
+
+  const filteredByGroup = state.sessions.filter(session => {
+    if (activeFilter === 'all') return true;
+    return (session.group_id ?? session.groupId) === activeFilter;
+  });
+
+  const filteredBySearch = filteredByGroup.filter(session => {
+    if (!searchTerm) return true;
+    const title = (session.title || "").toLowerCase();
+    const content = (session.content || "").toLowerCase();
+    return title.includes(searchTerm) || content.includes(searchTerm);
+  });
+
+  list.innerHTML = filteredBySearch.length ? filteredBySearch.map(s=>sessionRow(s,true)).join("") : emptyState("لم يتم العثور على حصص مطابقة.");
+}
+document.getElementById("sessionSearchInput").addEventListener("input", renderSessions);
+
+const sessionEntryCard = document.getElementById("sessionEntryCard");
+const sessionsLayout = document.getElementById("sessionsLayout");
+const toggleSessionFormBtn = document.getElementById("toggleSessionFormBtn");
+const closeSessionFormBtn = document.getElementById("closeSessionFormBtn");
+
+function hideSessionForm(){
+  sessionEntryCard.classList.add("is-hidden");
+  sessionsLayout.classList.add("form-hidden");
+}
+
+toggleSessionFormBtn.addEventListener("click", function(){
+  sessionEntryCard.classList.remove("is-hidden");
+  sessionsLayout.classList.remove("form-hidden");
+  sessionEntryCard.scrollIntoView({behavior:"smooth", block:"start"});
+});
+
+closeSessionFormBtn.addEventListener("click", hideSessionForm);
+
+document.getElementById("sessionForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const newSession = {
+    id: uid("s"),
+    group_id: document.getElementById("se-group").value,
+    date: document.getElementById("se-date").value,
+    duration: Number(document.getElementById("se-duration").value) || 60,
+    focus_level: document.getElementById("se-focus").value,
+    rating: null, // التقييم يتم لاحقًا
+    content: document.getElementById("se-content").value.split("\n").map(x=>x.trim()).filter(Boolean).join(" · "),
+    title:"", ai_generated:false, notes_full: document.getElementById("se-notes").value.trim()
+  };
+  if(!newSession.date) return;
+  state.sessions.push(newSession);
+  this.reset();
+  document.getElementById("se-duration").value = 60;
+  hideSessionForm();
+  renderSessions();
+  renderDashboard();
+  renderGroups();
+});
+
+// تقييم الحصص الذكية بعد تطبيقها (كانت تظهر بحالة "بانتظار التقييم")
+document.getElementById("sessionsList").addEventListener("change", function(e){
+  if(!e.target.classList.contains("rate-select")) return;
+  const val = Number(e.target.value);
+  if(!val) return;
+  const sessionId = e.target.dataset.session;
+  const session = state.sessions.find(s => s.id === sessionId);
+  if (session) {
+    session.rating = val;
+    persistSmartSessions();
+  }
+  renderSessions();
+  renderDashboard();
+});
+
+// حفظ الملاحظات التطبيقية بعد تنفيذ الحصة (يُستخدم في توليد الحصة القادمة لنفس المجموعة)
+document.getElementById("sessionsList").addEventListener("submit", function(e){
+  if(!e.target.classList.contains("feedback-form")) return;
+  e.preventDefault();
+  const form = e.target;
+  const text = form.querySelector("textarea").value.trim();
+  if(!text) return;
+  state.feedback.push({
+    id: uid("f"),
+    sessionId: form.dataset.session,
+    group_id: form.dataset.group,
+    text,
+    date: new Date().toISOString().slice(0,10)
+  });
+  renderSessions();
+});
+
+// حذف حصة تدريبية
+document.getElementById("sessionsList").addEventListener("click", function(e){
+  const deleteBtn = e.target.closest(".delete-btn");
+  if (!deleteBtn) return;
+
+  const sessionId = deleteBtn.dataset.sessionId;
+  if (!sessionId) return;
+
+  if (confirm("هل أنت متأكد من رغبتك في حذف هذه الحصة نهائيًا؟")) {
+    state.sessions = state.sessions.filter(s => s.id !== sessionId);
+    persistSmartSessions();
+    renderSessions();
+    renderDashboard();
+  }
+});
+/* ================== الحصص الذكية (توليد بالذكاء الاصطناعي على مرحلتين) ================== */
+function setStep(n){
+  document.querySelectorAll("#stepper .step").forEach(el=>{
+    const s = Number(el.dataset.step);
+    el.classList.remove("active","done");
+    if(s < n) el.classList.add("done");
+    if(s === n) el.classList.add("active");
+  });
+}
+
+function updateContextPreview(){
+  const groupId = document.getElementById("pg-group").value;
+  const date = document.getElementById("pg-date").value || new Date().toISOString().slice(0,10);
+  const ctx = getPlanContext(date, groupId);
+  const el = document.getElementById("planContextPreview");
+  el.innerHTML = `
+    <span class="ci"><svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h9l5 5v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 4v5h5"/></svg></span>
+    <div>
+      <b>${ctx.phase.title} (${ctx.phase.months}) — الأسبوع ${ctx.week} من الموسم</b>
+      <p>${ctx.block ? ctx.block.title + " — " + ctx.block.note : "لا توجد بيانات لهذه الفئة ضمن الخطة"}</p>
+    </div>`;
+  fillEventSelectForGroup();
+}
+document.getElementById("pg-group").addEventListener("change", updateContextPreview);
+document.getElementById("pg-date").addEventListener("change", updateContextPreview);
+
+function buildSmartDraftContext(groupId, date, extraNotes, eventId){
+  const ctx = getPlanContext(date, groupId);
+  const relatedEvent = state.events.map(normalizeEvent).find(ev => ev.id === eventId) || null;
+  const feedbackList = getRecentFeedback(groupId, 3);
+  const previousSessions = state.sessions
+    .filter(s => (s.group_id || s.groupId) === groupId)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 3);
+  const recentNotes = state.notes
+    .filter(n => n.groupId === groupId)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 3);
+
+  const eventTypeBoost = {
+    beltExam: [
+      "تمارين مراجعة للكاتا الأساسية مع ضبط التوقيت والزوايا.",
+      "تكرار الحركات المطلوبة في الاختبار مع تركيز على الاستقرار والهدوء.",
+      "تمارين ردود فعل بسيطة تحاكي ظروف الامتحان الحقيقي."
+    ],
+    wilaya: [
+      "تمارين تنافسية قصيرة تحت إشراف مدرب، مع تركيز على التوقيت والمسافة.",
+      "مراجعة لكوميتيه القاعة مع تقليل الأخطاء التقنية الأساسية.",
+      "تمارين تنسيق واستراتيجية داخل المباراة لتقليل التشتت."
+    ],
+    national: [
+      "تمارين عالية الدقة تحت ضغط زمني معتدل لمواجهة المنافسات الكبرى.",
+      "تركيز على الاستمرار والهدوء أثناء التنفيذ في ظروف المنافسة.",
+      "مراجعة لأساسيات الأداء مع تحضير نفسي وتركيز على الكاتا."
+    ],
+    exhibition: [
+      "تمارين تنسيق ومزامنة للعرض الجماعي مع التحكم في الإيقاع.",
+      "مراجعة الحركات الهادئة والمرحة مع التوازن بين القوة والأناقة.",
+      "تدريب على الظهور الثابت والهدوء أمام الجمهور."
+    ],
+    internal: [
+      "تمارين كوميتيه داخل القاعة مع تنويع الهجمات والدفاعات.",
+      "إعادة بناء التوقيت الصحيح وقوة التنفيذ في ظروف التدريب الداخلي.",
+      "مراجعة مستويات الضغط وملاءمة المسافة مع الشريك."
+    ]
+  };
+
+  const baseExercises = ctx.block ? [...ctx.block.exercises] : [];
+  const tailoredExercises = [...baseExercises];
+
+  if (relatedEvent?.type && eventTypeBoost[relatedEvent.type]) {
+    eventTypeBoost[relatedEvent.type].forEach(item => {
+      if (!tailoredExercises.includes(item)) tailoredExercises.push(item);
+    });
+  }
+
+  const summaryText = previousSessions.map(s => (s.content || s.title || 'حصة سابقة').trim()).join(' • ');
+  const notesText = recentNotes.map(n => n.text).filter(Boolean).join(' • ');
+
+  if (summaryText.toLowerCase().includes('لياقة') || summaryText.toLowerCase().includes('بدني')) {
+    tailoredExercises.push('تمارين تنفسية وبطء في التنفيذ لتعزيز الاستمرار في الحصة دون الإرهاق.');
+  }
+  if (summaryText.toLowerCase().includes('كوميتيه') || summaryText.toLowerCase().includes('مباراة')) {
+    tailoredExercises.push('مراجعة المسافة والتوقيت بين الهجوم والدفاع في تمرين قصير وموجه.');
+  }
+  if (summaryText.toLowerCase().includes('كاتا') || summaryText.toLowerCase().includes('حركات')) {
+    tailoredExercises.push('دمج الحركات الأساسية في تمرين متتالي مع تصحيح زاوية الأداء والتوازن.');
+  }
+  if (notesText.toLowerCase().includes('ركبة') || notesText.toLowerCase().includes('قدم') || notesText.toLowerCase().includes('عضلات')) {
+    tailoredExercises.push('تمارين تقوية وتوازن خاص لعضلات الرجلين والركبتين قبل الأداء الرئيسي.');
+  }
+  if (notesText.toLowerCase().includes('تشتت') || notesText.toLowerCase().includes('تركيز') || notesText.toLowerCase().includes('انضباط')) {
+    tailoredExercises.push('تمارين تركيز قصيرة تبني الانضباط وتخفف التشتت خلال تنفيذ الحركات.');
+  }
+
+  const dedupedExercises = [...new Set(tailoredExercises.map(item => item.trim()).filter(Boolean))];
+
+  const relatedText = relatedEvent
+    ? `الهدف المرتبط: ${relatedEvent.title} — ${fmtDate(relatedEvent.date)} (${relatedEvent.type || 'event'})`
+    : 'لا يوجد هدف مرتبط في هذا التاريخ';
+
+  const previousSessionsText = previousSessions.length
+    ? previousSessions.map(s => `${s.title || 'حصة تدريبية'} (${fmtDate(s.date)}) — ${s.content || 'بدون محتوى تفصيلي'}`).join('\n')
+    : 'لا توجد حصص سابقة مسجلة لهذه المجموعة.';
+
+  const notesSummaryText = recentNotes.length
+    ? recentNotes.map(n => `${n.athlete ? n.athlete + ' — ' : ''}${n.text}`).join('\n')
+    : 'لا توجد ملاحظات إضافية لهذه المجموعة.';
+
+  const feedbackSummary = feedbackList.length
+    ? feedbackList.map(f => `- ${f.text}`).join('\n')
+    : 'لا توجد ملاحظات تطبيقية سابقة.';
+
+  const goalLine = relatedEvent
+    ? `الهدف الرئيسي للحصة: ${relatedEvent.title} بتاريخ ${fmtDate(relatedEvent.date)} (${EVENT_TYPES[relatedEvent.type]?.label || relatedEvent.type || 'هدف عام'}).`
+    : 'لا يوجد هدف مرتبط في هذا التاريخ، لذلك سيتم بناء الحصة على الخطة السنوية والمستوى الحالي للمجموعة.';
+
+  const phaseLine = `مرحلة التدريب الحالية: ${ctx.phase.title} (${ctx.phase.months}) — الأسبوع ${ctx.week}.`;
+  const planLine = `محور الحصة لهذا الأسبوع: ${ctx.block ? ctx.block.title : 'التطوير المستمر للمهارات الأساسية'} — ${ctx.block ? ctx.block.note : 'التركيز على دقة الأداء والاستمرار في التنفيذ.'}`;
+
+  const previousSummary = previousSessions.length
+    ? `في الحصص الأخيرة تمت ملاحظة التركيز على: ${previousSessions.map(s => s.content || 'أداء فني متوازن').slice(0, 2).join(' • ')}`
+    : 'لا توجد حصص سابقة مسجلة لهذه المجموعة، لذلك تُبنى الحصة على الخطة السنوية فقط.';
+
+  const notesLine = recentNotes.length
+    ? `ملاحظات المجموعة: ${recentNotes.map(n => n.text).join(' • ')}`
+    : 'لا توجد ملاحظات إضافية للمجموعة في آخر أيام التدريب.';
+
+  const feedbackLine = feedbackList.length
+    ? `الملاحظات التطبيقية السابقة: ${feedbackList.map(f => f.text).join(' • ')}`
+    : 'لا توجد ملاحظات تطبيقية سابقة لاحتسابها في الخطة الحالية.';
+
+  const coachLine = extraNotes
+    ? `ملاحظات المدرب لهذا التاريخ: ${extraNotes}.`
+    : 'لا توجد ملاحظات إضافية من المدرب لهذا التاريخ.';
+
+  const coachNote = [
+    phaseLine,
+    goalLine,
+    planLine,
+    previousSummary,
+    notesLine,
+    feedbackLine,
+    coachLine,
+    'التوجيه التدريبي: إعطاء الأولوية للتنفيذ الدقيق، التحكم في التوقيت، واستقرار الأداء داخل إطار الخطة الحالية، مع ربط الحصة بالهدف المحدد ومراجعة نقاط القوة والضعف من الحصص السابقة.'
+  ].join('\n\n');
+
+  return {
+    group_id: groupId,
+    date,
+    phaseTitle: ctx.phase.title,
+    blockTitle: ctx.block ? ctx.block.title : 'بدون تصنيف',
+    weekLabel: ctx.block ? ctx.block.weeks : '-',
+    weekNumber: ctx.week,
+    exercises: dedupedExercises,
+    coachNote,
+    considered: feedbackList,
+    relatedEvent
+  };
+}
+
+document.getElementById("generateDraftBtn").addEventListener("click", function(){
+  const groupId = document.getElementById("pg-group").value;
+  const date = document.getElementById("pg-date").value || new Date().toISOString().slice(0,10);
+  const extraNotes = document.getElementById("pg-notes").value.trim();
+  const eventId = document.getElementById("pg-event").value;
+
+  state.draft = buildSmartDraftContext(groupId, date, extraNotes, eventId);
+
+  document.getElementById("df-title").value = state.draft.relatedEvent
+    ? `${state.draft.relatedEvent.title} — ${state.draft.blockTitle}`
+    : state.draft.blockTitle;
+  document.getElementById("df-duration").value = state.draft.relatedEvent ? 75 : 60;
+  document.getElementById("df-exercises").value = state.draft.exercises.join("\n");
+  document.getElementById("df-focus").value = state.draft.relatedEvent?.type === 'beltExam' ? 'عالية' : 'متوسط';
+  document.getElementById("df-notes").value = state.draft.coachNote;
+
+  document.getElementById("draftMeta").innerHTML = `
+    <span class="draft-tag">${groupName(groupId)}</span>
+    <span class="draft-tag">${state.draft.phaseTitle} (${state.draft.weekNumber})</span>
+    <span class="draft-tag">الأسبوع ${state.draft.weekNumber} · نطاق الخطة: ${state.draft.weekLabel}</span>
+    ${state.draft.relatedEvent ? `<span class="draft-tag">الهدف: ${state.draft.relatedEvent.title}</span>` : ""}
+    ${state.draft.relatedEvent ? `<span class="draft-tag">تاريخ الهدف: ${fmtDate(state.draft.relatedEvent.date)}</span>` : ""}`;
+
+  const considerBox = document.getElementById("consideredBox");
+  const feedbackList = state.draft.considered;
+  if(feedbackList.length){
+    considerBox.style.display = "block";
+    document.getElementById("consideredList").innerHTML = feedbackList.map(f=>`<li>${f.text} <span style="color:#a08540;">(من حصة ${fmtDate(f.date)})</span></li>`).join("");
+  } else {
+    considerBox.style.display = "none";
+  }
+
+  document.getElementById("successBanner").classList.remove("show");
+  document.getElementById("draftPanel").classList.add("open");
+  setStep(2);
+  document.getElementById("draftPanel").scrollIntoView({behavior:"smooth", block:"nearest"});
+});
+
+document.getElementById("cancelDraftBtn").addEventListener("click", function(){
+  state.draft = null;
+  document.getElementById("draftPanel").classList.remove("open");
+  setStep(1);
+});
+
+document.getElementById("draftForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  if(!state.draft) return;
+  const finalSession = {
+    id: uid("s"),
+    group_id: state.draft.group_id,
+    date: state.draft.date,
+    duration: Number(document.getElementById("df-duration").value) || 60,
+    focus_level: document.getElementById("df-focus").value,
+    rating: null,
+    title: document.getElementById("df-title").value.trim() || state.draft.blockTitle,
+    content: document.getElementById("df-exercises").value.split("\n").map(x=>x.trim()).filter(Boolean).join(" · "),
+    notes_full: document.getElementById("df-notes").value.trim(),
+    ai_generated: true
+  };
+  state.sessions.push(finalSession);
+  persistSmartSessions();
+  state.draft = null;
+  renderSessions();
+  document.getElementById("successBanner").classList.add("show");
+  setStep(4);
+  renderDashboard();
+  renderGroups();
+
+  setTimeout(()=>{
+    document.getElementById("draftPanel").classList.remove("open");
+    setStep(1);
+  }, 3200);
+});
+
+/* ================== الملاحظات ================== */
+function renderNotes(){
+  const list = document.getElementById("notesList");
+  const sorted = [...state.notes].sort((a,b)=> new Date(b.date)-new Date(a.date));
+  list.innerHTML = sorted.length ? sorted.map(n=>`
+    <div class="card note-card" style="margin-bottom:12px;">
+      <div class="note-head"> 
+        <span class="note-name">${n.athlete ? n.athlete : groupName(n.groupId)}${n.athlete ? " · "+groupName(n.groupId) : ""}</span>
+        <span class="note-date">${fmtDate(n.date)}</span>
+      </div>
+      <div class="note-text">${n.text}</div>
+    </div>
+  `).join("") : emptyState("لا توجد ملاحظات بعد");
+}
+
+document.getElementById("noteForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const newNote = {
+    id: uid("n"),
+    groupId: document.getElementById("no-group").value,
+    athlete: document.getElementById("no-athlete").value.trim(),
+    text: document.getElementById("no-text").value.trim(),
+    date: new Date().toISOString().slice(0,10)
+  };
+  if(!newNote.text) return;
+  state.notes.push(newNote);
+  this.reset();
+  renderNotes();
+});
+
+/* ================== إدارة المستخدمين ================== */
+async function renderUsers() {
+  // هذه الدالة ستكون فارغة الآن لأننا لا نتعامل مع خادم
+  const listEl = document.getElementById('usersList');
+  try {
+    listEl.innerHTML = state.users.filter(u => u.role !== 'admin').map(user => `
+      <div class="user-row">
+        <div class="user-info">
+          <b style="font-family: 'Cairo', sans-serif;">${user.username}</b>
+          <span class="session-group-tag" style="font-size: 10.5px;">${user.role === 'admin' ? 'مدير' : 'مدرب'}</span>
+        </div>
+        <div class="user-actions" style="display: flex; gap: 4px;">
+          <button class="delete-btn change-pass-btn" data-user-id="${user.id}" title="تغيير كلمة المرور"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l-3-3-3 3h2v3H3v-3Z"/><path d="M22 6v3c0 .6-.4 1-1 1h-4v-3h-3v-3h-2l3-3 3 3h-2v3h3v-3Z"/><path d="M12.5 8.5L3 18"/><path d="M21 6l-9.5 9.5"/></svg></button>
+          ${user.role !== 'admin' ? `<button class="delete-btn" data-user-id="${user.id}" title="حذف المستخدم"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    listEl.innerHTML = emptyState(error.message);
+  }
+}
+
+/* ================== التهيئة الأولية ================== */
+function initDefaults(){
+  document.getElementById("ev-date").value = addDays(7);
+  document.getElementById("se-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("pg-date").value = new Date().toISOString().slice(0,10);
+}
+/* ================== المصادقة وتسجيل الدخول ================== */
+const appView = document.querySelector('.app');
+const usersNavBtn = document.getElementById('usersNavBtn');
+
+async function checkAuth() {
+  state.user = null;
+  appView.style.opacity = '1';
+  usersNavBtn.style.display = 'none';
+  renderAll();
+}
+
+async function loadEvents(){
+  try {
+    const response = await fetch('/api/events', { credentials: 'include' });
+    if (!response.ok) throw new Error('فشل تحميل الأهداف');
+    state.events = (await readJsonResponse(response)).map(normalizeEvent);
+  } catch (error) {
+    console.error('فشل جلب الأهداف:', error);
+  }
+}
+
+function updateSessionContextPreview(){
+  const groupId = document.getElementById("se-group")?.value || "";
+  const date = document.getElementById("se-date")?.value || new Date().toISOString().slice(0,10);
+  const ctx = getPlanContext(date, groupId);
+  const eventId = document.getElementById("se-event")?.value || "";
+  const relatedEvent = state.events.map(normalizeEvent).find(ev => ev.id === eventId);
+  const el = document.getElementById("sessionContextPreview");
+  if (!el) return;
+
+  el.innerHTML = `
+    <span class="ci"><svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h9l5 5v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 4v5h5"/></svg></span>
+    <div>
+      <b>${ctx.phase.title} (${ctx.phase.months}) — الأسبوع ${ctx.week} من الموسم</b>
+      <p>${ctx.block ? ctx.block.title + " — " + ctx.block.note : "لا توجد بيانات لهذه الفئة ضمن الخطة"}</p>
+      <small>${relatedEvent ? "الهدف المرتبط: " + relatedEvent.title + " — " + fmtDate(relatedEvent.date) : "لا يوجد هدف محدد"}</small>
+    </div>`;
+}
+
+async function renderAll(){
+  fillGroupSelects();
+  initDefaults();
+  await loadEvents();
+  renderGroups();
+  renderSessions();
+  renderDashboard();
+  renderEvents();
+  renderNotes();
+  updateContextPreview();
+  updateSessionContextPreview();
+  setupGroupFilter();
+}
+
+function setupGroupFilter() {
+  const filterContainer = document.getElementById('sessionGroupFilter');
+  // إضافة الأزرار الديناميكية للمجموعات
+  state.groups.forEach(group => {
+    const button = document.createElement('button');
+    button.className = 'pill';
+    button.dataset.groupId = group.id;
+    button.textContent = group.name;
+    filterContainer.appendChild(button);
+  });
+
+  // إضافة مستمع حدث واحد للحاوية بأكملها (Event Delegation)
+  filterContainer.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+      filterContainer.querySelector('.active').classList.remove('active');
+      e.target.classList.add('active');
+      renderSessions();
+    }
+  });
+}
+
+document.getElementById("se-group").addEventListener("change", function(){
+  fillEventSelectForGroup();
+  updateSessionContextPreview();
+});
+document.getElementById("se-date").addEventListener("change", updateSessionContextPreview);
+document.getElementById("se-event").addEventListener("change", updateSessionContextPreview);
+
+
+// دالة مركزية للتعامل مع أخطاء API وعرضها للمستخدم (مبسطة الآن)
+function handleApiError(error, errorElement) {
+    const message = error.message || 'حدث خطأ غير متوقع.';
+    console.error('API Error:', error);
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    } else {
+        alert(message);
+    }
+}
+
+// بدء التطبيق بالتحقق من حالة تسجيل الدخول
+checkAuth();
+</script>
+<!--
+<script>
+/* ======================================================================
+   ملاحظة للمطوّر: هذا الملف يمثّل الواجهة الأمامية فقط.
+   البيانات أدناه وهمية (Mock Data) وتحاكي شكل مستندات Firestore،
+   لتسهيل الربط لاحقًا بقاعدة بيانات Firebase الحقيقية. مكان توليد
+   الحصص بالذكاء الاصطناعي (generateDraftFromPlan) مُعلَّم بوضوح، وهو
+   المكان الذي يجب استبداله لاحقًا باستدعاء نموذج ذكاء اصطناعي حقيقي
+   (مثال: Claude API) يأخذ الخطة السنوية والملاحظات كسياق (context).
+
+   import { collection, getDocs, addDoc } from "firebase/firestore";
+   const groupsSnap = await getDocs(collection(db, "groups"));
+   state.groups = groupsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+   ====================================================================== */
+
+const BELT_COLORS = {
+  white:  "#EDEBE2",
+  yellow: "#F2C230",
+  orange: "#E8823C",
+  green:  "#2F9E5C",
+  blue:   "#2E74B5",
+  brown:  "#7A5230",
+  black:  "#1F1F1F"
+};
+const BELT_LABELS = {
+  white:"أبيض", yellow:"أصفر", orange:"برتقالي", green:"أخضر", blue:"أزرق", brown:"بني", black:"أسود"
+};
+const EVENT_TYPES = {
+  beltExam:  { label:"امتحان تدرّج الأحزمة", color:"var(--color-gold)" },
+  wilaya:    { label:"بطولة ولائية",          color:"var(--color-primary)" },
+  national:  { label:"بطولة وطنية",           color:"var(--color-secondary)" },
+  exhibition:{ label:"استعراض",               color:"#8E6FC7" },
+  internal:  { label:"منافسة داخل القاعة",     color:"#4CAF93" }
+};
+
+/* ==================================================================
+   الخطة السنوية الرسمية (مستخرجة من ملفات المراحل الأربع المرفوعة)
+   4 مراحل × 3 فئات عمرية × 3 كتل أسبوعية لكل فئة = هيكل السنة كاملة
+   ================================================================== */
+const GROUP_PLAN_KEY = { g1:"baraem", g2:"madares", g3:"ashbal" };
+
+const ANNUAL_PLAN = [
+  { id:"phase1", title:"مرحلة التأسيس", months:"الشهر 1 - 3",
+    goal:"بناء أساس قوي وممتع للكاراتيه، مع التركيز على المبادئ الأساسية وغرس حب الرياضة.",
+    groups:{
+      baraem:{ focus:"تنمية المهارات الحركية الأساسية كالتوازن والتنسيق، وتقديم مفاهيم الكاراتيه الأولية بطريقة مرحة.", blocks:[
+        { weeks:"1-4", title:"التعارف والألعاب الحركية", note:"البيئة التدريبية يجب أن تكون إيجابية وآمنة ليشعر الطفل بالراحة.", exercises:["ألعاب جري وقفز وتغيير اتجاه لتعزيز التوازن","تمارين تنسيق بين اليد والعين (مسك وإلقاء كرات طرية)","مقدمة بسيطة عن آداب الدوجو والتحية (Rei)"]},
+        { weeks:"5-8", title:"الوقفات الأساسية (Kihon-dachi)", note:"التركيز على متعة التعلم أكثر من الدقة المطلقة في هذه المرحلة.", exercises:["تعلم وقفة الاستعداد (Heiko-dachi)","تعلم الوقفة الأمامية (Zenkutsu-dachi) عبر لعبة «خطوة العملاق»"]},
+        { weeks:"9-12", title:"مقدمة في التقنيات الأساسية", note:"استخدام الوسائل المساعدة مثل الوسائد الإسفنجية لجعل التدريب ممتعًا.", exercises:["تعلم اللكمة المستقيمة (Choku-zuki) من وقفة الاستعداد","تعلم الدفاع العلوي (Age-uke) والدفاع الخارجي (Soto-uke)","تمارين مرونة خفيفة لإنهاء الحصة"]}
+      ]},
+      madares:{ focus:"إتقان الوقفات الأساسية، تحسين قوة الضربات الأولية، والبدء في تعلم أول كاتا.", blocks:[
+        { weeks:"1-4", title:"ترسيخ الوقفات والقوة", note:"التأكيد على أهمية التنفس الصحيح أثناء أداء الحركات.", exercises:["تمارين إحماء أكثر كثافة مع التركيز على التحمل","تصحيح وتحسين ثبات الوقفة الأمامية (Zenkutsu-dachi)","التدريب على اللكمات المستقيمة (Choku-zuki) مع حركة الوسط"]},
+        { weeks:"5-8", title:"إضافة الركلات الأساسية", note:"تقسيم الحركات المعقدة إلى خطوات بسيطة وسهلة الفهم.", exercises:["تعلم الركلة الأمامية (Mae-geri) مع التركيز على رفع الركبة أولاً","دمج اللكمات مع الوقفات في تسلسلات بسيطة"]},
+        { weeks:"9-12", title:"مقدمة في الكاتا (Taikyoku Shodan)", note:"شرح أن الكاتا هي قتال وهمي للمساعدة في استيعاب المفهوم.", exercises:["تعلم أول 8 حركات من كاتا تايكيوكو شودان","ممارسة الكاتا بشكل جماعي وببطء لتعزيز الذاكرة الحركية","تمارين لياقة بدنية لتقوية عضلات الجذع والساقين"]}
+      ]},
+      ashbal:{ focus:"تطوير القوة والسرعة، تعلم تقنيات أكثر تنوعًا، ومقدمة لمبادئ النزال الخفيف.", blocks:[
+        { weeks:"1-4", title:"القوة الانفجارية والوقفات المتقدمة", note:"البدء في شرح أهمية القوة البدنية لتنفيذ التقنيات بفعالية.", exercises:["تمارين إحماء ديناميكية تشمل القفز وتمارين الرشاقة","تعلم الوقفة الخلفية (Kokutsu-dachi) ووقفة الحصان (Kiba-dachi)","التدريب على اللكمات والركلات بقوة وسرعة على الوسائد"]},
+        { weeks:"5-8", title:"تنوّع الركلات والكاتا", note:"تشجيع الطلاب على الممارسة في المنزل لتحسين ذاكرتهم العضلية.", exercises:["تعلم الركلة الدائرية (Mawashi-geri) والركلة الجانبية (Yoko-geri)","تعلم كاتا تايكيوكو شودان كاملة مع التركيز على الدقة والإيقاع"]},
+        { weeks:"9-12", title:"مبادئ الكوميتيه (النزال)", note:"التأكيد بشكل صارم على قواعد السلامة والاحترام المتبادل.", exercises:["تعلم حركة الخطوة والانزلاق (Yori-ashi)","تدريبات على التوقيت والمسافة مع شريك بدون تلامس","مقدمة في الهجوم المضاد البسيط (دفاع ثم هجوم فوري)"]}
+      ]}
+    }
+  },
+  { id:"phase2", title:"مرحلة تطوير المهارات", months:"الشهر 4 - 6",
+    goal:"الانتقال من تعلم الحركات الفردية إلى ربطها في تسلسلات منطقية، وزيادة التنوع وتحسين التحمل.",
+    groups:{
+      baraem:{ focus:"ربط الحركات الأساسية معًا في تسلسلات بسيطة وممتعة، وتطوير ردود الفعل وزيادة المرونة.", blocks:[
+        { weeks:"13-16", title:"ربط الحركة بالدفاع", note:"استخدام قصص بسيطة مثل «تجنب النهر واحمِ رأسك من المطر».", exercises:["تمرين خطوة للخلف مع دفاع علوي (Age-uke)","ألعاب تتطلب الحركة والدفاع استجابة لإشارة (صافرة أو لون)","ربط وقفة أمامية مع لكمة مستقيمة في حركة واحدة متصلة"]},
+        { weeks:"17-20", title:"مقدمة مبسطة للكاتا", note:"تقسيم الكاتا إلى أجزاء صغيرة جدًا والاحتفال عند إتقان كل جزء.", exercises:["تعلم أول 4 حركات من كاتا تايكيوكو شودان مع التركيز على الاتجاهات","ألعاب لتقوية الذاكرة الحركية مثل «المدرب يقول»"]},
+        { weeks:"21-24", title:"تطوير ردود الفعل والمرونة", note:"الثناء المستمر على الجهد والمشاركة يعزز ثقة الطفل بنفسه.", exercises:["محاولة إكمال أول 8 حركات من الكاتا","ألعاب لمس أهداف ملونة بالأيدي والأرجل لزيادة سرعة الاستجابة","تمارين مرونة لزيادة نطاق حركة الحوض والساقين استعدادًا للركلات"]}
+      ]},
+      madares:{ focus:"زيادة تنوع التقنيات، تحسين التحمل، والبدء في التدريب على النزال الموجَّه لتعلم المسافة.", blocks:[
+        { weeks:"13-16", title:"مقدمة في الكوميتيه الموجَّه", note:"التشديد على التحكم الكامل وعدم لمس الشريك؛ الهدف تعلّم التوقيت والمسافة.", exercises:["تعلم Kihon Ippon Kumite: هجوم محدد مسبقًا ودفاع محدد مسبقًا","البدء بهجوم لكمة مستقيمة ودفاع Age-uke مع لكمة مضادة"]},
+        { weeks:"17-20", title:"تعلم الكاتا الثانية", note:"تقسيم كاتا هيان شودان إلى 3-4 أجزاء لتسهيل تعلّمها.", exercises:["مراجعة وإتقان الكاتا الأولى (Taikyoku Shodan)","تعلم كاتا هيان شودان بوقفاتها وتقنياتها الجديدة","تمارين لياقة لزيادة التحمل (جري خفيف أو قفز حبل)"]},
+        { weeks:"21-24", title:"تطبيق وتنويع المهارات", note:"البدء في إدخال المزيد من المصطلحات اليابانية وشرح معانيها.", exercises:["تطبيق Kihon Ippon Kumite بهجمات مختلفة (مثل لكمة للبطن)","ممارسة الكاتا الجديدة مع التركيز على القوة في نهاية الحركة (Kime)","التدريب مع شركاء مختلفين لتعلم التكيّف"]}
+      ]},
+      ashbal:{ focus:"تحسين التوقيت والمسافة في النزال، تعلم كاتات أكثر تقدمًا، والبدء في تطوير السرعة الانفجارية.", blocks:[
+        { weeks:"13-16", title:"الكوميتيه شبه الحر", note:"ارتداء واقيات اليد والفم إلزامي، مع التأكيد على السيطرة المطلقة (لمسة جلد كحد أقصى).", exercises:["الانتقال إلى Jiyu Ippon Kumite حيث الهجوم معروف والمهاجم حر في التوقيت","التدريب على كاتا هيان نيدان"]},
+        { weeks:"17-20", title:"السرعة والاستراتيجية", note:"تشجيع الطلاب على التفكير التكتيكي: «لماذا نجحت هذه الحركة؟».", exercises:["تمارين لزيادة السرعة الانفجارية (Plyometrics)","تعلم استراتيجيات بسيطة كالتمويه وتغيير زاوية الهجوم","تعلم كاتا هيان ساندان"]},
+        { weeks:"21-24", title:"تكامل المهارات", note:"يمكن استخدام التصوير بالفيديو لتحليل أداء الطلاب.", exercises:["مباريات كوميتيه حر قصيرة وموجَّهة تحت إشراف صارم","دمج الدفاع والهجوم المضاد السريع في تسلسل واحد","مراجعة جميع الكاتات مع التركيز على التطبيق العملي (Bunkai)"]}
+      ]}
+    }
+  },
+  { id:"phase3", title:"مرحلة صقل التقنيات", months:"الشهر 7 - 9",
+    goal:"التركيز على جودة ودقة أداء الحركات، وتعميق فهم الطلاب لتطبيقاتها وبناء ثقتهم بأنفسهم.",
+    groups:{
+      baraem:{ focus:"تحسين شكل الحركات الأساسية، تعزيز الثقة بالنفس من خلال تحقيق الأهداف، وترسيخ روح الفريق.", blocks:[
+        { weeks:"25-28", title:"تحسين الشكل والتوازن", note:"استخدام المرآة لمساعدة الأطفال على رؤية حركاتهم وتصحيحها بأنفسهم.", exercises:["مراجعة الوقفات مع التركيز على استقامة الظهر وتوزيع الوزن","ألعاب تتطلب الثبات على ساق واحدة لتقوية التوازن","تصحيح مسار اللكمات والدفاعات لضمان أدائها بشكل صحيح"]},
+        { weeks:"29-32", title:"إتقان الكاتا الأولى", note:"التركيز على التشجيع الإيجابي والثناء على الجهد المبذول لا النتيجة فقط.", exercises:["أداء كاتا تايكيوكو شودان كاملة وبإيقاع بطيء وثابت","أداء الكاتا بشكل جماعي لتعزيز التزامن والشعور بالوحدة","ألعاب جماعية لتعزيز روح الفريق (مثل شد الحبل)"]},
+        { weeks:"33-36", title:"بناء الثقة بالنفس", note:"السلامة أولوية قصوى؛ تمارين كسر الألواح اختيارية ومُدارة بالكامل من المدرب.", exercises:["تمارين ثقة بسيطة مثل الصراخ (Kiai) أو كسر ألواح إسفنجية خفيفة","إعطاء كل طفل فرصة لقيادة تمرين الإحماء"]}
+      ]},
+      madares:{ focus:"زيادة دقة الحركات، فهم التطبيق العملي للتقنيات، والبدء في استيعاب الجانب الثقافي للكاراتيه.", blocks:[
+        { weeks:"25-28", title:"الدقة في الكاتا", note:"تشجيع الأسئلة مثل «لماذا نقوم بهذه الحركة؟» لتعميق الفهم.", exercises:["التدريب على كاتا هيان شودان مع التركيز على التفاصيل الدقيقة (Chakugan)","شرح التطبيق العملي (Bunkai) لبعض الحركات في الكاتا","ممارسة Kihon Ippon Kumite مع التركيز على الهجوم المضاد الفوري"]},
+        { weeks:"29-32", title:"تطبيق الدفاعات بفعالية", note:"تدوير الشركاء بانتظام يمنع الروتين ويحسّن قدرة الطالب على التكيّف.", exercises:["تمارين كوميتيه مع شركاء بأطوال وأساليب مختلفة","التدريب على امتصاص قوة هجوم الخصم بدل صدّها بقوة","ممارسة التحرك للخروج من خط الهجوم بدل التراجع للخلف"]},
+        { weeks:"33-36", title:"تاريخ وفلسفة الكاراتيه", note:"ربط هذه المفاهيم بالسلوك داخل وخارج الدوجو يساعد في بناء شخصية الطالب.", exercises:["تخصيص 5-10 دقائق نهاية كل حصة للحديث عن تاريخ الكاراتيه أو قيم الدوجو (Dojo Kun)","مراجعة شاملة لجميع التقنيات التي تم تعلمها"]}
+      ]},
+      ashbal:{ focus:"تطوير الأسلوب الشخصي في الكاتا والكوميتيه، واستخدام التحليل لتحسين الأداء بشدة أعلى.", blocks:[
+        { weeks:"25-28", title:"تطوير الأسلوب في الكاتا", note:"إعطاء ملاحظات فردية لمساعدة كل طالب على تطوير نقاط قوته الفريدة.", exercises:["التدريب على الكاتات المتقدمة (Heian Nidan, Sandan) بالتركيز على القوة والسرعة والتعبير","تشجيع الطلاب على فهم وتفسير Bunkai بأنفسهم"]},
+        { weeks:"29-32", title:"الكوميتيه التكتيكي", note:"تعليم الروح الرياضية العالية: الفوز بتواضع والخسارة بكرامة.", exercises:["تنظيم مباريات كوميتيه تدريبية منتظمة (Jiyu Kumite)","التدريب على تكتيكات محددة مثل تسجيل النقاط أو إجبار الخصم على الخطأ","تسجيل المباريات بالفيديو ومراجعتها مع الطلاب"]},
+        { weeks:"33-36", title:"التحليل الذاتي واللياقة المتقدمة", note:"تمكين الطلاب من تحمّل مسؤولية تطورهم يعزز الانضباط الذاتي والالتزام.", exercises:["تعليم الطلاب تقييم أدائهم بأنفسهم وتحديد أهداف للتحسين","تمارين لياقة بدنية متقدمة تركز على التحمل والقوة الانفجارية والرشاقة","ممارسة جميع الكاتات بتركيز عالٍ وكأنها أداء حقيقي"]}
+      ]}
+    }
+  },
+  { id:"phase4", title:"مرحلة الإعداد للتقدم", months:"الشهر 10 - 12",
+    goal:"تجميع كل المهارات المكتسبة خلال العام، والتحضير المكثف لاختبارات الأحزمة أو البطولات، وبناء الثقة النهائية.",
+    groups:{
+      baraem:{ focus:"التحضير النفسي والبدني لاجتياز أول اختبار حزام، وضمان أن تكون التجربة إيجابية ومحفزة.", blocks:[
+        { weeks:"37-40", title:"المراجعة المكثفة", note:"الصبر هو المفتاح؛ يجب أن تكون المراجعة شاملة ولكن دون إرهاق الأطفال.", exercises:["مراجعة يومية لجميع التقنيات المطلوبة للاختبار: الوقفات، اللكمات، الدفاعات","تكرار الكاتا الأولى عدة مرات في كل حصة لترسيخها في الذاكرة","ألعاب تركّز على الانضباط مثل «التجمد» عند سماع كلمة Yame"]},
+        { weeks:"41-44", title:"محاكاة اختبار الحزام", note:"الهدف هو إزالة عامل الخوف من المجهول؛ كلما كانت التجربة مألوفة قلّ التوتر.", exercises:["تنظيم «اختبار تجريبي» يحاكي بيئة الاختبار الحقيقي","تدريب الطلاب على الاستجابة للأوامر باللغة اليابانية المستخدمة في الاختبار"]},
+        { weeks:"45-48", title:"التركيز النهائي والاحتفال", note:"التركيز على أن الاختبار احتفال بما تعلموه خلال العام، وليس مجرد امتحان.", exercises:["تمارين قصيرة لزيادة التركيز في بداية الحصة","مراجعة نهائية لكل متطلبات الاختبار","الاحتفال بنجاح جميع الطلاب وتقدمهم بعد الاختبار بغض النظر عن النتيجة"]}
+      ]},
+      madares:{ focus:"الاستعداد لاختبار الحزام التالي (البرتقالي أو الأزرق)، والذي يتطلب دقة وقوة أكبر وفهمًا أعمق للمصطلحات.", blocks:[
+        { weeks:"37-40", title:"مراجعة شاملة وتصحيح", note:"تقديم ملاحظات فردية ومحددة لكل طالب لمساعدته على تحسين نقاط ضعفه.", exercises:["مراجعة جميع الكاتات (Taikyoku Shodan, Heian Shodan) مع تصحيح الأخطاء الدقيقة","مراجعة تدريبات الكوميتيه الموجَّه (Kihon Ippon Kumite) لضمان الدقة والتحكم","زيادة شدة تمارين اللياقة البدنية لتحسين التحمل"]},
+        { weeks:"41-44", title:"التحضير الذهني والبدني", note:"تعليم الطلاب كيفية التعامل مع التوتر والقلق قبل الاختبار وأهمية التنفس العميق.", exercises:["تنظيم اختبارات تجريبية تتضمن جميع عناصر الاختبار الفعلي","تمارين ذهنية بسيطة كالتخيّل (Visualisation) لأداء الكاتا بشكل مثالي","مراجعة المصطلحات اليابانية المطلوبة للاختبار وشرح معانيها"]},
+        { weeks:"45-48", title:"الأداء تحت الضغط", note:"تشجيع الطلاب على دعم بعضهم البعض لخلق بيئة جماعية إيجابية.", exercises:["التدريب على أداء الكاتا فرديًا أمام الزملاء لمحاكاة ضغط الاختبار","مراجعة نهائية مكثفة في الأسبوع الأخير قبل الاختبار","مناقشة الأداء بعد الاختبار ووضع أهداف للمرحلة التالية"]}
+      ]},
+      ashbal:{ focus:"التحضير للمشاركة في البطولات التنافسية أو اختبارات الأحزمة المتقدمة بتدريب تكتيكي ولياقة عالية الكثافة.", blocks:[
+        { weeks:"37-40", title:"التدريب المتخصص للمنافسات", note:"إذا كان الهدف بطولة، يجب دراسة قواعدها وتكييف التدريب ليناسبها.", exercises:["تدريب مكثف على الكاتا المختارة للمنافسة مع التركيز على السرعة والقوة والتعبير","تدريبات كوميتيه تركّز على التكتيكات المتقدمة (تسجيل النقاط، إدارة وقت المباراة)","تمارين لياقة بدنية عالية الكثافة (HIIT) لرفع مستوى الأداء"]},
+        { weeks:"41-44", title:"وضع الخطط التكتيكية", note:"تعليم أهمية التخطيط المسبق مع القدرة على التكيّف وتغيير الخطة أثناء الأداء.", exercises:["تحليل المنافسين المحتملين (إن أمكن) ووضع خطط لعب","ممارسة سيناريوهات مختلفة في الكوميتيه (متقدم بنقطة / متأخر بنقطة)","التدريب على التحمل النفسي والقدرة على الحفاظ على التركيز طوال المباراة"]},
+        { weeks:"45-48", title:"ذروة الأداء والجانب الروحاني", note:"تذكير الطلاب بأن الهدف الأسمى ليس الفوز، بل تقديم أفضل ما لديهم وتجسيد روح الكاراتيه.", exercises:["تقليل شدة التدريب في الأسبوع الأخير لتجنب الإرهاق والسماح بالتعافي (Tapering)","التركيز على الجانب النفسي: بناء الثقة والتفكير الإيجابي والروح القتالية (Zanshin)","مراجعة قيم الكاراتيه الأساسية وكيفية تجسيدها في المنافسة أو الاختبار"]}
+      ]}
+    }
+  }
+];
+
+// ---- حالة التطبيق (Mock Data — تُستبدل ببيانات Firebase لاحقًا) ----
+const state = {
+  seasonStart: "2025-09-01", // بداية الموسم الرياضي المعتمدة لحساب المرحلة والأسبوع الحالي
+  groups: [
+    { id:"g1", name:"البراعم", ageRange:"5 – 7 سنوات", belt:"white", athletesCount:14 },
+    { id:"g2", name:"المدارس", ageRange:"8 – 10 سنوات", belt:"yellow", athletesCount:18 },
+    { id:"g3", name:"الأشبال", ageRange:"11 – 13 سنة", belt:"green", athletesCount:12 }
+  ],
+  events: [
+    { id:"e1", groupId:"g2", title:"امتحان تدرّج الأحزمة – الفصل الأول", type:"beltExam", date:addDays(18), notes:"التركيز على كاتا هيان شودان وحركات القدم." },
+    { id:"e2", groupId:"g3", title:"البطولة الولائية للكاراتيه", type:"wilaya", date:addDays(34), notes:"مجموعة الأشبال فقط، التركيز على الكوميتيه." },
+    { id:"e3", groupId:"g1", title:"استعراض نهاية الفصل", type:"exhibition", date:addDays(9), notes:"حركات بسيطة وجماعية للأطفال الصغار." }
+  ],
+  sessions: [
+    { id:"s1", groupId:"g2", date:addDays(-2), duration:60, rating:4, content:"إحماء، تقنيات لكم أساسية، كاتا هيان شودان", title:"", aiGenerated:false },
+    { id:"s2", groupId:"g3", date:addDays(-4), duration:75, rating:5, content:"لياقة بدنية، كوميتيه تحت إشراف، مراجعة القواعد", title:"", aiGenerated:false },
+    { id:"s3", groupId:"g1", date:addDays(-6), duration:45, rating:3, content:"ألعاب حركية، انضباط أساسي، تحية الدوجو", title:"", aiGenerated:false }
+  ],
+  notes: [
+    { id:"n1", groupId:"g3", athlete:"", text:"المجموعة بحاجة إلى تقوية عضلات الرجلين قبل البطولة الولائية.", date:addDays(-3) },
+    { id:"n2", groupId:"g2", athlete:"ياسين ب.", text:"تحسّن ملحوظ في دقة الحركات، يمكن ترشيحه لتمثيل المجموعة.", date:addDays(-1) }
+  ],
+  feedback: [], // { id, sessionId, groupId, text, date } — ملاحظات تطبيقية بعد تنفيذ الحصص
+  draft: null   // الحصة قيد المراجعة حاليًا (الخطوة 2)
+};
+
+function addDays(n){
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+}
+function fmtDate(iso){
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("ar-DZ", { day:"2-digit", month:"long", year:"numeric" });
+}
+function daysUntil(iso){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(iso + "T00:00:00");
+  return Math.round((target - today) / 86400000);
+}
+function groupName(id){
+  const g = state.groups.find(g => g.id === id);
+  return g ? g.name : "—";
+}
+function uid(prefix){ return prefix + "_" + Math.random().toString(36).slice(2,9); }
+
+/* ================== منطق الخطة السنوية ================== */
+// TODO (AI): هذه الدالة تحسب "أين نحن الآن" في الخطة السنوية بناءً على التاريخ.
+// عند الربط بذكاء اصطناعي حقيقي، تُرسَل هذه المعلومات + الملاحظات كسياق (context) للنموذج.
+function getPlanContext(dateISO, groupId){
+  const start = new Date(state.seasonStart + "T00:00:00");
+  const d = new Date((dateISO || new Date().toISOString().slice(0,10)) + "T00:00:00");
+  let diffDays = Math.round((d - start) / 86400000);
+  let week = Math.floor(diffDays / 7) + 1;
+  if (week < 1) week = 1;
+  if (week > 48) week = 48;
+  const phaseIndex = Math.min(3, Math.floor((week - 1) / 12));
+  const weekInPhase = week - phaseIndex * 12;
+  const blockIndex = Math.min(2, Math.floor((weekInPhase - 1) / 4));
+  const phase = ANNUAL_PLAN[phaseIndex];
+  const groupKey = GROUP_PLAN_KEY[groupId];
+  const groupPlan = groupKey ? phase.groups[groupKey] : null;
+  const block = groupPlan ? groupPlan.blocks[blockIndex] : null;
+  return { week, phase, groupPlan, block };
+}
+function getRecentFeedback(groupId, n){
+  return state.feedback.filter(f => f.groupId === groupId)
+    .sort((a,b)=> new Date(b.date) - new Date(a.date)).slice(0, n || 3);
+}
+
+/* ================== التنقل بين الأقسام ================== */
+const viewTitles = {
+  dashboard:["لوحة التحكم","نظرة عامة على الموسم الرياضي الحالي"],
+  groups:["المجموعات","إدارة المجموعات العمرية للفريق"],
+  events:["الأهداف والأحداث","الأحداث التي يُبنى عليها البرنامج التدريبي"],
+  sessions:["الحصص التدريبية","سجلّ الحصص المقدَّمة وتقييمها"],
+  program:["الحصص الذكية","توليد حصص تدريبية بالذكاء الاصطناعي اعتمادًا على الخطة السنوية"],
+  notes:["الملاحظات","ملاحظات المدرّب حول المجموعات واللاعبين"],
+  users:["إدارة المستخدمين", "إضافة وحذف حسابات المدربين"]
+};
+document.querySelectorAll(".nav-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    btn.classList.add("active");
+    const view = btn.dataset.view;
+    document.getElementById("view-"+view).classList.add("active");
+    document.getElementById("topTitle").textContent = viewTitles[view][0];
+    document.getElementById("topSub").textContent = viewTitles[view][1];
+    window.scrollTo({top:0, behavior:"smooth"});
+    if (view === 'users') renderUsers();
+    if (view === 'dashboard') renderDashboard(); // إعادة تحميل بيانات لوحة التحكم عند العودة إليها
+  });
+});
+
+/* ================== ملء قوائم اختيار المجموعات ================== */
+function fillGroupSelects(){
+  const selects = ["ev-group","se-group","pg-group","no-group"];
+  selects.forEach(id=>{
+    const el = document.getElementById(id);
+    el.innerHTML = state.groups.map(g=>`<option value="${g.id}">${g.name} (${g.ageRange})</option>`).join("");
+  });
+}
+function fillEventSelectForGroup(){
+  const groupId = document.getElementById("pg-group").value;
+  const sel = document.getElementById("pg-event");
+  const groupEvents = state.events.filter(e=>e.groupId===groupId).sort((a,b)=> new Date(a.date)-new Date(b.date));
+  sel.innerHTML = `<option value="">بدون هدف محدد</option>` + groupEvents.map(e=>`<option value="${e.id}">${e.title} — ${fmtDate(e.date)}</option>`).join("");
+}
+
+/* ================== لوحة التحكم ================== */
+function renderDashboard(){
+  // تحديث رسالة الترحيب في الشريط العلوي
+  if (state.user && state.user.username) {
+    document.getElementById("topTitle").textContent = `مرحبًا، ${state.user.username}`;
+    document.getElementById("topSub").textContent = "نظرة عامة على الموسم الرياضي الحالي";
+  }
+
+  document.getElementById("statGroups").textContent = state.groups.length;
+
+  const thisMonth = new Date().getMonth();
+  const sessionsThisMonth = state.sessions.filter(s => new Date(s.date).getMonth() === thisMonth).length;
+  document.getElementById("statSessions").textContent = sessionsThisMonth;
+
+  const upcoming = [...state.events].filter(e=>daysUntil(e.date)>=0).sort((a,b)=> new Date(a.date)-new Date(b.date));
+  document.getElementById("statNextEvent").textContent = upcoming[0] ? upcoming[0].title : "لا يوجد";
+
+  const pct = upcoming[0] ? Math.min(100, Math.max(6, 100 - daysUntil(upcoming[0].date))) : 40;
+  const circle = document.getElementById("progressCircle");
+  const r = 24, c = 2*Math.PI*r;
+  circle.style.strokeDasharray = c;
+  circle.style.strokeDashoffset = c;
+  circle.style.transition = "stroke-dashoffset 1s var(--ease)";
+  requestAnimationFrame(()=>{ circle.style.strokeDashoffset = c - (pct/100)*c; });
+  document.getElementById("ringValue").textContent = pct + "%";
+
+  const timeline = document.getElementById("dashboardTimeline");
+  timeline.innerHTML = upcoming.length ? upcoming.slice(0,4).map(eventTimelineItem).join("") : emptyState("لا توجد أهداف قادمة حاليًا");
+
+  const recentSessions = [...state.sessions].sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,4);
+  document.getElementById("dashboardSessions").innerHTML = recentSessions.length ? recentSessions.map(s=>sessionRow(s,false)).join("") : emptyState("لا توجد حصص مسجَّلة بعد");
+}
+
+function eventTimelineItem(e){
+  const type = EVENT_TYPES[e.type];
+  const d = daysUntil(e.date);
+  const countdown = d < 0 ? "انتهى" : d === 0 ? "اليوم" : `بعد ${d} يوم`;
+  return `
+    <div class="t-item" style="--type-color:${type.color}">
+      <span class="t-dot"></span>
+      <div class="t-card">
+        <div class="t-top">
+          <span class="t-title">${e.title}</span>
+          <span class="t-badge" style="background:${type.color}">${type.label}</span>
+        </div>
+        <div class="t-meta">${groupName(e.groupId)} · ${fmtDate(e.date)}</div>
+        <div class="t-countdown">${countdown}</div>
+      </div>
+    </div>`;
+}
+
+function eventTimelineItemEditable(e){
+  const type = EVENT_TYPES[e.type];
+  const d = daysUntil(e.date);
+  const countdown = d < 0 ? "انتهى" : d === 0 ? "اليوم" : `بعد ${d} يوم`;
+  const typeOptions = Object.keys(EVENT_TYPES).map(k=>`<option value="${k}" ${k===e.type?"selected":""}>${EVENT_TYPES[k].label}</option>`).join("");
+  return `
+    <div class="t-item" style="--type-color:${type.color}">
+      <span class="t-dot"></span>
+      <div class="t-card">
+        <div class="t-top">
+          <span class="t-title">${e.title}</span>
+          <span class="t-badge" style="background:${type.color}">${type.label}</span>
+        </div>
+        <div class="t-meta">${groupName(e.groupId)} · ${fmtDate(e.date)}</div>
+        <div class="t-countdown">${countdown}</div>
+        <details class="inline-edit">
+          <summary>تعديل التاريخ أو النوع</summary>
+          <form class="inline-edit-form event-edit-form" data-event="${e.id}">
+            <label style="font-size:12.5px;font-weight:700;color:var(--color-primary-dark);">النوع</label>
+            <select>${typeOptions}</select>
+            <label style="font-size:12.5px;font-weight:700;color:var(--color-primary-dark);">التاريخ</label>
+            <input type="date" value="${e.date}" required />
+            <button class="btn btn-primary btn-sm" type="submit">حفظ</button>
+          </form>
+        </details>
+      </div>
+    </div>`;
+}
+
+function sessionRow(s, withFeedback){
+  const d = new Date(s.date + "T00:00:00");
+  const day = d.toLocaleDateString("ar-DZ",{day:"2-digit"});
+  const month = d.toLocaleDateString("ar-DZ",{month:"short"});  
+  const titleText = s.title || "حصة تدريبية"; // عنوان افتراضي إذا كان فارغًا
+  const aiBadge = s.aiGenerated ? `<span class="ai-badge"><svg viewBox="0 0 24 24"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z"/></svg>ذكاء اصطناعي</span>` : "";
+  const focusBadge = s.focus_level ? `<span class="focus-badge">تركيز ${s.focus_level}</span>` : "";
+  let ratingDisplay;
+  if(s.rating > 0){
+    ratingDisplay = starRow(s.rating);
+  } else if(withFeedback){
+    ratingDisplay = `
+      <select class="rate-select" data-session="${s.id}">
+        <option value="">بانتظار التقييم</option>
+        <option value="5">ممتاز — 5</option>
+        <option value="4">جيد جدًا — 4</option>
+        <option value="3">جيد — 3</option>
+        <option value="2">مقبول — 2</option>
+        <option value="1">ضعيف — 1</option>
+      </select>`;
+  } else {
+    ratingDisplay = `<span style="font-size:11.5px;color:var(--color-muted);font-weight:700;">بانتظار التقييم</span>`;
+  }
+  const deleteButton = withFeedback ? `
+    <button class="delete-btn" data-session-id="${s.id}" title="حذف الحصة">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+    </button>
+  ` : "";
+
+  // بناء قائمة التمارين
+  const exercisesList = s.content ? `<ul>${s.content.split('·').map(ex => `<li>${ex.trim()}</li>`).join('')}</ul>` : '<p>غير محدد</p>';
+  const coachNotes = s.notes_full ? `<h4>ملاحظات المدرب</h4><p>${s.notes_full}</p>` : '';
+
+  const summaryRow = `
+    <summary class="session-row">
+        <div class="session-date"><b>${day}</b><span>${month}</span></div>
+        <div class="session-body">
+            <div class="session-title">
+            <span>${titleText}</span>
+            <span class="session-group-tag">${groupName(s.groupId)}</span>
+            ${focusBadge}
+            ${aiBadge}
+            </div>
+            <div class="session-meta">${s.duration} دقيقة · ${s.content}</div>
+        </div>
+        ${ratingDisplay}
+        ${deleteButton}
+    </summary>`;
+
+  const detailsContent = `
+    <div class="session-details-content">
+        <h4>تمارين الحصة</h4>
+        ${exercisesList}
+        ${coachNotes}
+    </div>`;
+
+  // إذا كانت الصفحة هي لوحة التحكم، نعرض الصف فقط بدون تفاصيل
+  if(!withFeedback) {
+      return `<div class="session-card"><div class="session-row">${summaryRow.replace(/<summary|<\/summary>/g, 'div')}</div></div>`;
+  }
+
+  const fbList = state.feedback.filter(f=>f.sessionId===s.id);
+  const fbHtml = fbList.length ? fbList.map(f=>`<div class="feedback-item">${f.text}<span>${fmtDate(f.date)}</span></div>`).join("") : `<p style="font-size:12.5px;color:var(--color-muted);margin:6px 0;">لا توجد ملاحظات تطبيقية بعد لهذه الحصة.</p>`;
+  return `
+    <div class="session-card">
+      <details class="session-details">
+        ${summaryRow}
+        ${detailsContent}
+      </details>
+      <details class="feedback-block">
+        <summary>ملاحظات تطبيقية (${fbList.length})</summary>
+        ${fbHtml}
+        <form class="feedback-form" data-session="${s.id}" data-group="${s.groupId}">
+          <textarea placeholder="ما الذي نجح؟ وما الذي يجب التركيز عليه في الحصة القادمة؟" required></textarea>
+          <button class="btn btn-ghost btn-sm" type="submit">حفظ الملاحظة</button>
+        </form>
+      </details>
+    </div>`;
+}
+function starRow(rating){
+  let stars = "";
+  for(let i=1;i<=5;i++){
+    stars += `<svg viewBox="0 0 24 24" fill="${i<=rating ? 'var(--color-gold)':'none'}" stroke="var(--color-gold)" stroke-width="1.6"><path d="M12 2l2.9 6 6.6.9-4.8 4.6 1.1 6.6L12 17l-5.8 3.1 1.1-6.6-4.8-4.6 6.6-.9L12 2z"/></svg>`;
+  }
+  return `<div class="stars">${stars}</div>`;
+}
+function emptyState(msg){
+  return `<div class="empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M8 15c1.2 1.2 2.6 1.8 4 1.8s2.8-.6 4-1.8"/></svg>
+    <div>${msg}</div>
+  </div>`;
+}
+
+/* ================== المجموعات ================== */
+async function renderGroups(){
+  const grid = document.getElementById("groupsGrid");
+  const todayISO = new Date().toISOString().slice(0,10);
+
+  try {
+    // جلب البيانات الحقيقية من الخادم
+    const response = await fetch('/api/groups', {
+      credentials: 'include' // مهم جدًا لإرسال الكوكيز الخاصة بالجلسة
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    state.groups = await response.json();
+  } catch (error) {
+    console.error("فشل في جلب بيانات المجموعات:", error);
+    grid.innerHTML = `<div class="card"><p style="color:var(--color-secondary);">حدث خطأ أثناء تحميل بيانات المجموعات.</p></div>`;
+    return;
+  } finally {
+    setupGroupFilter(); // استدعاء الدالة هنا لضمان إنشاء الأزرار بعد جلب البيانات
+  }
+
+  grid.innerHTML = state.groups.map(g=>{
+    const beltColor = BELT_COLORS[g.belt];
+    const sessionsCount = state.sessions.filter(s=>s.groupId===g.id).length;
+    const nextEvent = state.events.filter(e=>e.groupId===g.id && daysUntil(e.date)>=0) // Note: state.events is not yet fetched from DB
+      .sort((a,b)=> new Date(a.date)-new Date(b.date))[0];
+    const ctx = getPlanContext(todayISO, g.id);
+    return `
+      <div class="card group-card">
+        <div class="group-top">
+          <div class="group-avatar" style="--belt-color:${beltColor}">${g.athletes_count}</div>
+          <div>
+            <p class="group-name">${g.name}</p>
+            <p class="group-sub">${g.ageRange}</p>
+            <span class="belt-chip"><span class="belt-swatch" style="--belt-color:${beltColor}"></span>الحزام السائد: ${BELT_LABELS[g.belt]}</span>
+          </div>
+        </div>
+        <div class="group-stats">
+          <div>عدد الأطفال<b>${g.athletes_count}</b></div>
+          <div>حصص مسجَّلة<b>${sessionsCount}</b></div>
+          <div>الهدف القادم<b style="font-size:12.5px;">${nextEvent ? nextEvent.title : "لا يوجد"}</b></div>
+        </div>
+        <div class="plan-context">
+          <b>المرحلة الحالية (الخطة السنوية):</b> ${ctx.phase.title} — ${ctx.block ? ctx.block.title : ""} (الأسبوع ${ctx.week})
+        </div>
+        <details class="inline-edit">
+          <summary>تعديل عدد الرياضيين</summary>
+          <form class="inline-edit-form athletes-form" data-group="${g.id}">
+            <label style="font-size:12.5px;font-weight:700;color:var(--color-primary-dark);">عدد الرياضيين</label>
+            <input type="number" min="0" step="1" value="${g.athletes_count}" required />
+            <button class="btn btn-primary btn-sm" type="submit">حفظ</button>
+          </form>
+        </details>
+      </div>`;
+  }).join("");
+}
+document.getElementById("groupsGrid").addEventListener("submit", async function(e){
+  if(!e.target.classList.contains("athletes-form")) return;
+  e.preventDefault();
+  const groupId = e.target.dataset.group;
+  const val = Number(e.target.querySelector("input[type=number]").value);
+  if(isNaN(val) || val < 0) return;
+
+  try {
+    const response = await fetch(`/api/groups/${groupId}`, {
+      credentials: 'include', // مهم جدًا لإرسال الكوكيز الخاصة بالجلسة
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ athletes_count: val })
+    });
+    if (!response.ok) throw new Error('فشل تحديث المجموعة');
+    // إعادة تحميل وعرض المجموعات بالبيانات المحدّثة من الخادم لضمان التزامن
+    await renderGroups();
+  } catch (error) {
+    console.error("فشل في تحديث عدد الرياضيين:", error);
+  }
+});
+
+/* ================== الأهداف والأحداث ================== */
+function renderEvents(){
+  const timeline = document.getElementById("eventsTimeline");
+  const sorted = [...state.events].sort((a,b)=> new Date(a.date)-new Date(b.date));
+  timeline.innerHTML = sorted.length ? sorted.map(eventTimelineItemEditable).join("") : emptyState("لم تُسجَّل أي أهداف بعد");
+}
+document.getElementById("eventsTimeline").addEventListener("submit", function(e){
+  if(!e.target.classList.contains("event-edit-form")) return;
+  e.preventDefault();
+  const evId = e.target.dataset.event;
+  const newType = e.target.querySelector("select").value;
+  const newDate = e.target.querySelector("input[type=date]").value;
+  const ev = state.events.find(x=>x.id===evId);
+  if(!ev || !newDate) return;
+  // TODO (Firebase): await updateDoc(doc(db, "events", evId), { type: newType, date: newDate });
+  ev.type = newType;
+  ev.date = newDate;
+  renderEvents();
+  renderDashboard();
+  renderGroups();
+  fillEventSelectForGroup();
+});
+
+document.getElementById("eventForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const newEvent = {
+    id: uid("e"),
+    groupId: document.getElementById("ev-group").value,
+    title: document.getElementById("ev-title").value.trim(),
+    type: document.getElementById("ev-type").value,
+    date: document.getElementById("ev-date").value,
+    notes: document.getElementById("ev-notes").value.trim()
+  };
+  if(!newEvent.title || !newEvent.date) return;
+  // TODO (Firebase): await addDoc(collection(db, "events"), newEvent);
+  state.events.push(newEvent);
+  this.reset();
+  renderEvents();
+  renderDashboard();
+  renderGroups();
+  fillEventSelectForGroup();
+});
+
+/* ================== الحصص التدريبية ================== */
+async function renderSessions(){
+  const list = document.getElementById("sessionsList");
+  const response = await fetch('/api/sessions', {
+    credentials: 'include' // مهم جدًا لإرسال الكوكيز الخاصة بالجلسة
+  });
+  if (!response.ok) { list.innerHTML = emptyState("فشل تحميل الحصص."); return; }
+  state.sessions = await response.json();
+  list.innerHTML = state.sessions.length ? state.sessions.map(s=>sessionRow(s,true)).join("") : emptyState("لم تُسجَّل أي حصص بعد");
+}
+
+document.getElementById("sessionForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  const newSession = {
+    id: uid("s"),
+    groupId: document.getElementById("se-group").value,
+    date: document.getElementById("se-date").value,
+    duration: Number(document.getElementById("se-duration").value) || 60,
+    focus_level: document.getElementById("se-focus").value, // الآن هذا العنصر موجود
+    rating: Number(document.getElementById("se-rating").value),
+    content: document.getElementById("se-content").value.trim(),
+    title:"", aiGenerated:false, notes_full: "" // تمت إضافة notes_full للاتساق
+  };
+  if(!newSession.date) return;
+
+  // إرسال الحصة الجديدة إلى الخادم لحفظها
+  await fetch('/api/sessions', {
+    credentials: 'include', // مهم جدًا لإرسال الكوكيز الخاصة بالجلسة
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newSession)
+  });
+
+  // إعادة تحميل وعرض قائمة الحصص المحدّثة من الخادم
+  this.reset();
+  document.getElementById("se-duration").value = 60;
+  await renderSessions(); // انتظر التحديث من الخادم
+  renderDashboard(); // الآن قم بتحديث لوحة التحكم بالبيانات الجديدة
+  renderGroups();
+});
+
+// تقييم الحصص الذكية بعد تطبيقها (كانت تظهر بحالة "بانتظار التقييم")
+document.getElementById("sessionsList").addEventListener("change", async function(e){
+  if(!e.target.classList.contains("rate-select")) return;
+  const val = Number(e.target.value);
+  if(!val) return;
+  const sessionId = e.target.dataset.session;
+  if(!sessionId) return;
+
+  try {
+    await fetch(`/api/sessions/${sessionId}`, {
+      credentials: 'include',
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: val })
+    });
+    await renderSessions(); // إعادة تحميل القائمة من الخادم بعد التحديث
+    renderDashboard();
+  } catch (error) {
+    console.error("فشل في تحديث تقييم الحصة:", error);
+    alert("حدث خطأ أثناء محاولة حفظ التقييم.");
+  }
+});
+
+// حفظ الملاحظات التطبيقية بعد تنفيذ الحصة (يُستخدم في توليد الحصة القادمة لنفس المجموعة)
+document.getElementById("sessionsList").addEventListener("submit", function(e){
+  if(!e.target.classList.contains("feedback-form")) return;
+  e.preventDefault();
+  const form = e.target;
+  const text = form.querySelector("textarea").value.trim();
+  if(!text) return;
+  // TODO (Firebase): await addDoc(collection(db, "sessionFeedback"), {...});
+  state.feedback.push({
+    id: uid("f"),
+    sessionId: form.dataset.session,
+    groupId: form.dataset.group,
+    text,
+    date: new Date().toISOString().slice(0,10)
+  });
+  renderSessions();
+});
+
+// حذف حصة تدريبية
+document.getElementById("sessionsList").addEventListener("click", async function(e){
+  const deleteBtn = e.target.closest(".delete-btn");
+  if (!deleteBtn) return;
+
+  const sessionId = deleteBtn.dataset.sessionId;
+  if (!sessionId) return;
+
+  if (confirm("هل أنت متأكد من رغبتك في حذف هذه الحصة نهائيًا؟")) {
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        credentials: 'include', // مهم جدًا لإرسال الكوكيز الخاصة بالجلسة
+        method: 'DELETE'
+      });
+      await renderSessions(); // إعادة تحميل القائمة من الخادم بعد الحذف
+      renderDashboard();
+    } catch (error) {
+      console.error("فشل في حذف الحصة:", error);
+      alert("حدث خطأ أثناء محاولة حذف الحصة.");
+    }
+  }
+});
+/* ================== الحصص الذكية (توليد بالذكاء الاصطناعي على مرحلتين) ================== */
+function setStep(n){
+  document.querySelectorAll("#stepper .step").forEach(el=>{
+    const s = Number(el.dataset.step);
+    el.classList.remove("active","done");
+    if(s < n) el.classList.add("done");
+    if(s === n) el.classList.add("active");
+  });
+}
+
+function updateContextPreview(){
+  const groupId = document.getElementById("pg-group").value;
+  const date = document.getElementById("pg-date").value || new Date().toISOString().slice(0,10);
+  const ctx = getPlanContext(date, groupId);
+  const el = document.getElementById("planContextPreview");
+  el.innerHTML = `
+    <span class="ci"><svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h9l5 5v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 4v5h5"/></svg></span>
+    <div>
+      <b>${ctx.phase.title} (${ctx.phase.months}) — الأسبوع ${ctx.week} من الموسم</b>
+      <p>${ctx.block ? ctx.block.title + " — " + ctx.block.note : "لا توجد بيانات لهذه الفئة ضمن الخطة"}</p>
+    </div>`;
+  fillEventSelectForGroup();
+}
+document.getElementById("pg-group").addEventListener("change", updateContextPreview);
+document.getElementById("pg-date").addEventListener("change", updateContextPreview);
+
+document.getElementById("generateDraftBtn").addEventListener("click", function(){
+  const groupId = document.getElementById("pg-group").value;
+  const date = document.getElementById("pg-date").value || new Date().toISOString().slice(0,10);
+  const extraNotes = document.getElementById("pg-notes").value.trim();
+  const eventId = document.getElementById("pg-event").value;
+  const relatedEvent = state.events.find(ev=>ev.id === eventId);
+
+  // TODO (AI): هذا هو مكان استدعاء نموذج الذكاء الاصطناعي الحقيقي مستقبلًا.
+  // السياق المُرسَل للنموذج: الخطة السنوية (المرحلة/الأسبوع)، الهدف المرتبط، الملاحظات
+  // التطبيقية السابقة لنفس المجموعة، وملاحظات المدرّب الإضافية.
+  const ctx = getPlanContext(date, groupId);
+  const feedbackList = getRecentFeedback(groupId, 3);
+
+  // بناء السياق الذي سيُرسل للذكاء الاصطناعي
+  // يتضمن الخطة السنوية، الهدف، ملاحظات المدرب، والملاحظات التطبيقية السابقة
+  let coachNote = ctx.block ? ctx.block.note : "";
+  if(relatedEvent) coachNote += (coachNote ? "\n" : "") + "من ملاحظات الهدف المرتبط («"+relatedEvent.title+"»): " + (relatedEvent.notes || "لا توجد ملاحظات إضافية.");
+  if(extraNotes) coachNote += (coachNote ? "\n" : "") + "ملاحظة المدرّب لهذه الحصة: " + extraNotes;
+  if(feedbackList.length > 0){
+    const feedbackText = feedbackList.map(f => `- ${f.text}`).join("\n");
+    coachNote += (coachNote ? "\n\n" : "") + "يرجى أخذ الملاحظات التطبيقية التالية من الحصص السابقة بعين الاعتبار:\n" + feedbackText;
+  }
+  state.draft = {
+    groupId, date,
+    phaseTitle: ctx.phase.title,
+    blockTitle: ctx.block ? ctx.block.title : "بدون تصنيف",
+    weekLabel: ctx.block ? ctx.block.weeks : "-",
+    weekNumber: ctx.week,
+    exercises: ctx.block ? [...ctx.block.exercises] : [],
+    coachNote,
+    considered: feedbackList
+  };
+
+  document.getElementById("df-title").value = state.draft.blockTitle;
+  document.getElementById("df-duration").value = 60;
+  document.getElementById("df-exercises").value = state.draft.exercises.join("\n");
+  document.getElementById("df-focus").value = 'متوسط'; // قيمة افتراضية
+  document.getElementById("df-notes").value = state.draft.coachNote;
+
+  document.getElementById("draftMeta").innerHTML = `
+    <span class="draft-tag">${groupName(groupId)}</span>
+    <span class="draft-tag">${ctx.phase.title} (${ctx.phase.months})</span>
+    <span class="draft-tag">الأسبوع ${ctx.week} · نطاق الخطة: ${state.draft.weekLabel}</span>
+    ${relatedEvent ? `<span class="draft-tag">الهدف: ${relatedEvent.title}</span>` : ""}`;
+
+  const considerBox = document.getElementById("consideredBox");
+  if(feedbackList.length){
+    considerBox.style.display = "block";
+    document.getElementById("consideredList").innerHTML = feedbackList.map(f=>`<li>${f.text} <span style="color:#a08540;">(من حصة ${fmtDate(f.date)})</span></li>`).join("");
+  } else {
+    considerBox.style.display = "none";
+  }
+
+  document.getElementById("successBanner").classList.remove("show");
+  document.getElementById("draftPanel").classList.add("open");
+  setStep(2);
+  document.getElementById("draftPanel").scrollIntoView({behavior:"smooth", block:"nearest"});
+});
+
+document.getElementById("cancelDraftBtn").addEventListener("click", function(){
+  state.draft = null;
+  document.getElementById("draftPanel").classList.remove("open");
+  setStep(1);
+});
+
+document.getElementById("draftForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  if(!state.draft) return;
+  const finalSession = {
+    id: uid("s"),
+    groupId: state.draft.groupId,
+    date: state.draft.date,
+    duration: Number(document.getElementById("df-duration").value) || 60,
+    focus_level: document.getElementById("df-focus").value,
+    rating: null,
+    title: document.getElementById("df-title").value.trim() || state.draft.blockTitle,
+    content: document.getElementById("df-exercises").value.split("\n").map(x=>x.trim()).filter(Boolean).join(" · "),
+    notes_full: document.getElementById("df-notes").value.trim(), // مطابقة اسم العمود في قاعدة البيانات
+    aiGenerated: true
+  };
+
+  // إرسال الحصة الجديدة إلى الخادم لحفظها
+  await fetch('/api/sessions', {
+    credentials: 'include', // مهم جدًا لإرسال الكوكيز الخاصة بالجلسة
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(finalSession)
+  });
+
+  // لم نعد بحاجة لإضافتها يدويًا إلى الحالة المؤقتة
+  state.draft = null;
+
+  await renderSessions(); // الأهم: إعادة تحميل الحصص من الخادم
+  document.getElementById("successBanner").classList.add("show");
+  setStep(4);
+  renderDashboard();
+  renderGroups();
+
+  setTimeout(()=>{
+    document.getElementById("draftPanel").classList.remove("open");
+    setStep(1);
+  }, 3200);
+});
+
+/* ================== الملاحظات ================== */
+function renderNotes(){
+  const list = document.getElementById("notesList");
+  const sorted = [...state.notes].sort((a,b)=> new Date(b.date)-new Date(a.date));
+  list.innerHTML = sorted.length ? sorted.map(n=>`
+    <div class="card note-card" style="margin-bottom:12px;">
+      <div class="note-head">
+        <span class="note-name">${n.athlete ? n.athlete : groupName(n.groupId)}${n.athlete ? " · "+groupName(n.groupId) : ""}</span>
+        <span class="note-date">${fmtDate(n.date)}</span>
+      </div>
+      <div class="note-text">${n.text}</div>
+    </div>
+  `).join("") : emptyState("لا توجد ملاحظات بعد");
+}
+
+document.getElementById("noteForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const newNote = {
+    id: uid("n"),
+    groupId: document.getElementById("no-group").value,
+    athlete: document.getElementById("no-athlete").value.trim(),
+    text: document.getElementById("no-text").value.trim(),
+    date: new Date().toISOString().slice(0,10)
+  };
+  if(!newNote.text) return;
+  // TODO (Firebase): await addDoc(collection(db, "notes"), newNote);
+  state.notes.push(newNote);
+  this.reset();
+  renderNotes();
+});
+
+/* ================== إدارة المستخدمين ================== */
+async function renderUsers() {
+  const listEl = document.getElementById('usersList');
+  try {
+    const response = await fetch('/api/users', { credentials: 'include' });
+    if (!response.ok) throw new Error('فشل تحميل المستخدمين');
+    state.users = await response.json();
+
+    listEl.innerHTML = state.users.map(user => `
+      <div class="user-row">
+        <div class="user-info">
+          <b style="font-family: 'Cairo', sans-serif;">${user.username}</b>
+          <span class="session-group-tag" style="font-size: 10.5px;">${user.role === 'admin' ? 'مدير' : 'مدرب'}</span>
+        </div>
+        <div class="user-actions" style="display: flex; gap: 4px;">
+          <button class="delete-btn change-pass-btn" data-user-id="${user.id}" title="تغيير كلمة المرور"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l-3-3-3 3h2v3H3v-3Z"/><path d="M22 6v3c0 .6-.4 1-1 1h-4v-3h-3v-3h-2l3-3 3 3h-2v3h3v-3Z"/><path d="M12.5 8.5L3 18"/><path d="M21 6l-9.5 9.5"/></svg></button>
+          ${user.role !== 'admin' ? `<button class="delete-btn" data-user-id="${user.id}" title="حذف المستخدم"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    listEl.innerHTML = emptyState(error.message);
+  }
+}
+
+document.getElementById('userForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const username = document.getElementById('new-username').value;
+  const password = document.getElementById('new-password').value;
+
+  try {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message);
+    
+    alert('تمت إضافة المدرب بنجاح!');
+    this.reset();
+    await renderUsers();
+  } catch (error) {
+    alert(`خطأ: ${error.message}`);
+  }
+});
+
+document.getElementById('usersList').addEventListener('click', async function(e) {
+  const btn = e.target.closest('.delete-btn');
+  if (!btn) return;
+  const userId = btn.dataset.userId;
+  if (!userId) return;
+
+  // التعامل مع تغيير كلمة المرور
+  if (btn.classList.contains('change-pass-btn')) {
+    const newPassword = prompt('الرجاء إدخال كلمة المرور الجديدة لهذا المستخدم:');
+    if (!newPassword || newPassword.length < 4) {
+      if (newPassword !== null) alert('كلمة المرور قصيرة جدًا. يجب أن تكون 4 أحرف على الأقل.');
+      return;
+    }
+    try {
+      const response = await fetch(`/api/users/${userId}/password`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      alert(data.message);
+    } catch (error) {
+      alert(`خطأ: ${error.message}`);
+    }
+  } else { // التعامل مع الحذف
+    if (confirm('هل أنت متأكد من رغبتك في حذف هذا المستخدم نهائيًا؟')) {
+      try {
+        const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
+        if (!response.ok) { const data = await response.json(); throw new Error(data.message); }
+        await renderUsers();
+      } catch (error) {
+        alert(`خطأ: ${error.message}`);
+      }
+    }
+  }
+});
+
+/* ================== التهيئة الأولية ================== */
+function initDefaults(){
+  document.getElementById("ev-date").value = addDays(7);
+  document.getElementById("se-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("pg-date").value = new Date().toISOString().slice(0,10);
+}
+
+/* ================== المصادقة وتسجيل الدخول ================== */
+const loginView = document.getElementById('login-view');
+const appView = document.querySelector('.app');
+const usersNavBtn = document.getElementById('usersNavBtn');
+
+async function checkAuth() {
+    try {
+        const response = await fetch('/api/check-auth', {
+            credentials: 'include' // مهم جدًا لإرسال الكوكيز الخاصة بالجلسة
+        });
+        const authData = await response.json();
+        if (authData.isAuthenticated) {
+            state.user = authData.user; // حفظ بيانات المستخدم في الحالة العامة
+            loginView.classList.add('hidden');
+            appView.style.opacity = '1';
+            // إظهار زر إدارة المستخدمين إذا كان المستخدم مديرًا
+            if (authData.user && authData.user.role === 'admin') {
+                usersNavBtn.style.display = 'flex';
+            } else {
+                usersNavBtn.style.display = 'none';
+            }
+            appView.style.opacity = '1';
+            renderAll(); // بدء تحميل وعرض كل شيء بعد التأكد من تسجيل الدخول
+        } else {
+            loginView.classList.remove('hidden');
+            appView.style.opacity = '0';
+        }
+    } catch (error) {
+        state.user = null;
+        console.error('خطأ في التحقق من المصادقة:', error);
+        loginView.classList.remove('hidden');
+        appView.style.opacity = '0';
+    }
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = e.target.username.value;
+    const password = e.target.password.value;
+    const errorEl = document.getElementById('login-error');
+    errorEl.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/login', {
+            credentials: 'include', // مهم جدًا لإرسال الكوكيز الخاصة بالجلسة
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        
+        await checkAuth(); // تحقق مرة أخرى لإظهار التطبيق
+    } catch (error) {
+        handleApiError(error, errorEl);
+        e.target.password.value = ''; // مسح حقل كلمة المرور عند الخطأ
+    }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    usersNavBtn.style.display = 'none'; // إخفاء الزر عند تسجيل الخروج
+    state.user = null; // مسح بيانات المستخدم من الحالة
+    try {
+        await fetch('/api/logout', {
+            credentials: 'include', // مهم جدًا لإرسال الكوكيز الخاصة بالجلسة
+            method: 'POST'
+        });
+    } catch (error) {
+        console.error("فشل تسجيل الخروج:", error);
+        // لا نعرض رسالة للمستخدم هنا، فقط ننتقل لشاشة الدخول
+    } finally {
+        await checkAuth(); // تحقق مرة أخرى لإظهار شاشة الدخول
+    }
+});
+
+async function renderAll(){
+  fillGroupSelects();
+  initDefaults();
+  await renderGroups(); // انتظر تحميل المجموعات أولاً
+  await renderSessions(); // انتظر تحميل الحصص
+  renderDashboard(); // الآن يمكن لهذه الدوال استخدام البيانات المحدّثة
+  renderEvents();
+  renderNotes();
+  updateContextPreview();
+}
+
+// دالة مركزية للتعامل مع أخطاء API وعرضها للمستخدم
+function handleApiError(error, errorElement) {
+    let message;
+
+    if (error.message === 'Failed to fetch') {
+        message = 'فشل الاتصال بالخادم. يرجى التأكد من أن الخادم يعمل وأنك متصل بالشبكة.';
+    } else if (error instanceof SyntaxError) {
+        // هذا الخطأ يحدث عندما تكون الاستجابة فارغة أو ليست بصيغة JSON صالحة
+        message = 'حدث خطأ في الاستجابة من الخادم. الرجاء المحاولة مرة أخرى.';
+    } else if (error.message) {
+        // هذه هي الرسائل المخصصة التي نرسلها من الخادم
+        message = error.message;
+    } else {
+        message = 'حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.';
+    }
+
+    console.error('API Error:', error); // للاحتفاظ بالتفاصيل التقنية في الكونسول للمطور
+
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    } else {
+        // في حال عدم وجود عنصر مخصص، يمكننا عرض تنبيه عام
+        alert(message);
+    }
+}
+
+// بدء التطبيق بالتحقق من حالة تسجيل الدخول
+checkAuth();
+</script> -->
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "karate-program",
+  "version": "1.0.0",
+  "description": "Smart Karate Training System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-session": "^1.19.0",
+    "open": "^8.4.0",
+    "sqlite3": "^5.1.7"
+  }
+}
