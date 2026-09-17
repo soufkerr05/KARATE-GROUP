@@ -24,6 +24,26 @@
     --shadow-soft:0 10px 30px rgba(27,79,145,.12);
     --ease:cubic-bezier(.4,.0,.2,1);
   }
+  body.dark-mode{
+    --color-bg:#111827;
+    --color-surface:#1F2937;
+    --color-primary-dark:#D7E7FF;
+    --color-text:#F3F4F6;
+    --color-muted:#AAB5C4;
+    --color-border:#374151;
+    --shadow-soft:0 10px 30px rgba(0,0,0,.28);
+  }
+  body.dark-mode .topbar{background:rgba(17,24,39,.82);}
+  body.dark-mode .field input,
+  body.dark-mode .field select,
+  body.dark-mode .field textarea,
+  body.dark-mode .search-wrapper input,
+  body.dark-mode .rate-select{background:#111827;color:var(--color-text);}
+  body.dark-mode .btn-ghost{background:#273449;color:var(--color-primary-dark);}
+  body.dark-mode .btn-ghost:hover{background:#334155;}
+  body.dark-mode .t-card,
+  body.dark-mode .pill,
+  body.dark-mode .session-date{background:#273449;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -137,6 +157,8 @@
   .btn-sm{padding:8px 16px;font-size:13px;}
   .btn:active{transform:translateY(0);}
   .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .theme-toggle{margin-top:auto;}
+  .theme-toggle .nav-label{white-space:nowrap;}
 
   /* ===== Timeline (events) ===== */
   .timeline{position:relative;padding-inline-start:26px;}
@@ -495,6 +517,12 @@
       </span>
       <span class="nav-label">العودة للإدارة</span>
     </a>
+    <button class="nav-btn theme-toggle" id="themeToggleBtn" type="button" title="تبديل الوضع الليلي" aria-label="تبديل الوضع الليلي">
+      <span class="nav-circle">
+        <svg id="themeToggleIcon" viewBox="0 0 24 24"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z"/></svg>
+      </span>
+      <span class="nav-label" id="themeToggleLabel">الوضع الليلي</span>
+    </button>
   </aside>
 
   <div class="main">
@@ -1139,7 +1167,7 @@ const viewTitles = {
   notes:["الملاحظات","ملاحظات المدرّب حول المجموعات واللاعبين"],
   users:["إدارة المستخدمين", "إضافة وحذف حسابات المدربين"]
 };
-document.querySelectorAll(".nav-btn").forEach(btn=>{
+document.querySelectorAll(".nav-btn[data-view]").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
     document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
@@ -1152,6 +1180,29 @@ document.querySelectorAll(".nav-btn").forEach(btn=>{
     if (view === 'users') renderUsers();
     if (view === 'dashboard') renderDashboard(); // إعادة تحميل بيانات لوحة التحكم عند العودة إليها
   });
+});
+
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+const themeToggleLabel = document.getElementById("themeToggleLabel");
+const themeToggleIcon = document.getElementById("themeToggleIcon");
+
+function applyTheme(isDark){
+  document.body.classList.toggle("dark-mode", isDark);
+  themeToggleLabel.textContent = isDark ? "الوضع النهاري" : "الوضع الليلي";
+  themeToggleBtn.setAttribute("aria-pressed", String(isDark));
+  themeToggleIcon.innerHTML = isDark
+    ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>'
+    : '<path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z"/>';
+}
+
+const savedTheme = localStorage.getItem("karateProgramTheme");
+const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+applyTheme(savedTheme ? savedTheme === "dark" : prefersDark);
+
+themeToggleBtn.addEventListener("click", function(){
+  const isDark = !document.body.classList.contains("dark-mode");
+  applyTheme(isDark);
+  localStorage.setItem("karateProgramTheme", isDark ? "dark" : "light");
 });
 
 /* ================== ملء قوائم اختيار المجموعات ================== */
