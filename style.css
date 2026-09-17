@@ -91,6 +91,15 @@ form button[type="submit"]:hover,
 .navbar a:hover { background-color: rgba(255, 255, 255, 0.1); }
 .navbar a.active { background-color: #2563eb; color: white; font-weight: bold; border-radius: 6px; }
 
+/* السماح بسحب قائمة الهاتف للأعلى والأسفل عند زيادة عدد الروابط */
+#mobileMenu {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-top: 5rem;
+    padding-bottom: 2rem;
+}
+
 /* إعدادات الحاوية العلوية الجديدة (تقسيم شريط التنقل) */
 .header-wrapper {
     transition: transform 0.4s cubic-bezier(0.3, 0, 0.2, 1);

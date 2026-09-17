@@ -36,7 +36,7 @@
 
         desktop.innerHTML = `
             ${desktopTopLink('index.html', 'إدارة الرياضيين')}
-            ${desktopGroup('التدريب', ['attendance.html', 'payments.html', 'groups.html', 'samurai_competition.html'], `${desktopLink('attendance.html', 'الحضور')}${desktopLink('payments.html', 'الاشتراكات')}${desktopLink('groups.html', 'الأفواج')}<a href="training.html" class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600">الحصص التدريبية</a>${desktopLink('samurai_competition.html', 'مسابقة الساموراي')}`)}
+            ${desktopGroup('التدريب', ['attendance.html', 'payments.html', 'groups.html', 'samurai_competition.html'], `${desktopLink('attendance.html', 'الحضور')}${desktopLink('payments.html', 'الاشتراكات')}${desktopLink('groups.html', 'الأفواج')}<a href="KARATE%20PROGRAM/index_4.html" class="block px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600">الحصص التدريبية</a>${desktopLink('samurai_competition.html', 'مسابقة الساموراي')}`)}
             ${desktopGroup('المالية', ['expenses.html', 'insurance_batches.html', 'contributions.html', 'report.html'], `${desktopLink('expenses.html', 'المصاريف')}${desktopLink('insurance_batches.html', 'دفعات تأمين المركز')}${desktopLink('contributions.html', 'الدعم والمساهمات')}${desktopLink('report.html', 'التقرير المالي')}`)}
             ${desktopGroup('المخزون والإحصائيات', ['dashboard.html', 'kimono.html'], `${desktopLink('dashboard.html', 'الإحصائيات')}${desktopLink('kimono.html', 'المخزون')}`)}
         `;
@@ -46,7 +46,7 @@
             ${mobileLink('attendance.html', 'الحضور')}
             ${mobileLink('payments.html', 'الاشتراكات')}
             ${mobileLink('groups.html', 'الأفواج')}
-            ${mobileLink('training.html', 'الحصص التدريبية')}
+            <a href="KARATE%20PROGRAM/index_4.html" class="${mobileLinkClass('training.html')}">الحصص التدريبية</a>
             ${mobileLink('samurai_competition.html', 'مسابقة الساموراي')}
             ${mobileLink('expenses.html', 'المصاريف')}
             ${mobileLink('insurance_batches.html', 'دفعات تأمين المركز')}
