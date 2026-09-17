@@ -1070,15 +1070,32 @@ function normalizeSession(session){
   };
 }
 
-const storedSmartSessions = JSON.parse(localStorage.getItem("karateSmartSessions") || "[]");
-state.sessions.push(...storedSmartSessions.map(normalizeSession));
+function readStoredSmartSessions(){
+  try {
+    const stored = JSON.parse(localStorage.getItem("karateSmartSessions") || "[]");
+    return Array.isArray(stored) ? stored.map(normalizeSession).filter(session => session.id) : [];
+  } catch (error) {
+    console.warn("تعذر قراءة الحصص الذكية المحفوظة:", error);
+    return [];
+  }
+}
+
+const storedSmartSessions = readStoredSmartSessions();
+const storedSessionIds = new Set(state.sessions.map(session => session.id));
+state.sessions.push(...storedSmartSessions.filter(session => !storedSessionIds.has(session.id)));
 
 function persistSmartSessions(){
-  localStorage.setItem(
-    "karateSmartSessions",
-    JSON.stringify(state.sessions.filter(session => session.ai_generated))
-  );
+  const smartSessions = state.sessions
+    .filter(session => session.ai_generated || session.aiGenerated)
+    .map(normalizeSession);
+  try {
+    localStorage.setItem("karateSmartSessions", JSON.stringify(smartSessions));
+  } catch (error) {
+    console.error("تعذر حفظ الحصص الذكية:", error);
+  }
 }
+
+window.addEventListener("beforeunload", persistSmartSessions);
 
 function addDays(n){
   const d = new Date();
