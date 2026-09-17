@@ -743,11 +743,11 @@ document.getElementById("draftForm").addEventListener("submit", function(e){
 /* ================== الملاحظات ================== */
 function renderNotes(){
   const list = document.getElementById("notesList");
-  const sorted = [...state.notes].sort((a,b)=> new Date(b.date)-new Date(a.date));
+  const sorted = [...(state.notes || [])].sort((a,b)=> new Date(b.date)-new Date(a.date));
   list.innerHTML = sorted.length ? sorted.map(n=>`
     <div class="card note-card" style="margin-bottom:12px;">
       <div class="note-head"> 
-        <span class="note-name">${n.athlete ? n.athlete : groupName(n.groupId)}${n.athlete ? " · "+groupName(n.groupId) : ""}</span>
+        <span class="note-name">${n.athlete ? n.athlete : groupName(n.group_id || n.groupId)}${n.athlete ? " · "+groupName(n.group_id || n.groupId) : ""}</span>
         <span class="note-date">${fmtDate(n.date)}</span>
       </div>
       <div class="note-text">${n.text}</div>
@@ -755,7 +755,7 @@ function renderNotes(){
   `).join("") : emptyState("لا توجد ملاحظات بعد");
 }
 
-document.getElementById("noteForm").addEventListener("submit", function(e){
+document.getElementById("noteForm").addEventListener("submit", async function(e){
   e.preventDefault();
   const newNote = {
     id: uid("n"),
@@ -765,9 +765,25 @@ document.getElementById("noteForm").addEventListener("submit", function(e){
     date: new Date().toISOString().slice(0,10)
   };
   if(!newNote.text) return;
-  state.notes.push(newNote);
-  this.reset();
-  renderNotes();
+
+  try {
+    const response = await fetch('/api/notes', {
+      credentials: 'include',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newNote)
+    });
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({ error: 'تعذر حفظ الملاحظة' }));
+      throw new Error(errBody.error || 'تعذر حفظ الملاحظة');
+    }
+    await loadNotes();
+    this.reset();
+    renderNotes();
+  } catch (error) {
+    console.error('فشل في حفظ الملاحظة:', error);
+    alert('تعذر حفظ الملاحظة. يرجى المحاولة مرة أخرى.');
+  }
 });
 
 /* ================== إدارة المستخدمين ================== */
@@ -837,10 +853,34 @@ function updateSessionContextPreview(){
     </div>`;
 }
 
+async function loadNotes(){
+  try {
+    const response = await fetch('/api/notes', { credentials: 'include' });
+    if (!response.ok) throw new Error('فشل تحميل الملاحظات');
+    state.notes = await response.json();
+  } catch (error) {
+    console.error('فشل جلب الملاحظات:', error);
+    state.notes = [];
+  }
+}
+
+async function loadFeedback(){
+  try {
+    const response = await fetch('/api/feedback', { credentials: 'include' });
+    if (!response.ok) throw new Error('فشل تحميل الملاحظات التطبيقية');
+    state.feedback = await response.json();
+  } catch (error) {
+    console.error('فشل جلب الملاحظات التطبيقية:', error);
+    state.feedback = [];
+  }
+}
+
 async function renderAll(){
   fillGroupSelects();
   initDefaults();
   await loadEvents();
+  await loadNotes();
+  await loadFeedback();
   renderGroups();
   renderSessions();
   renderDashboard();
@@ -1522,21 +1562,38 @@ document.getElementById("sessionsList").addEventListener("change", async functio
 });
 
 // حفظ الملاحظات التطبيقية بعد تنفيذ الحصة (يُستخدم في توليد الحصة القادمة لنفس المجموعة)
-document.getElementById("sessionsList").addEventListener("submit", function(e){
+document.getElementById("sessionsList").addEventListener("submit", async function(e){
   if(!e.target.classList.contains("feedback-form")) return;
   e.preventDefault();
   const form = e.target;
   const text = form.querySelector("textarea").value.trim();
   if(!text) return;
-  // TODO (Firebase): await addDoc(collection(db, "sessionFeedback"), {...});
-  state.feedback.push({
+
+  const payload = {
     id: uid("f"),
     sessionId: form.dataset.session,
     groupId: form.dataset.group,
     text,
     date: new Date().toISOString().slice(0,10)
-  });
-  renderSessions();
+  };
+
+  try {
+    const response = await fetch('/api/feedback', {
+      credentials: 'include',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({ error: 'تعذر حفظ الملاحظة التطبيقية' }));
+      throw new Error(errBody.error || 'تعذر حفظ الملاحظة التطبيقية');
+    }
+    await loadFeedback();
+    await renderSessions();
+  } catch (error) {
+    console.error('فشل في حفظ الملاحظة التطبيقية:', error);
+    alert('تعذر حفظ الملاحظة التطبيقية. يرجى المحاولة مرة أخرى.');
+  }
 });
 
 // حذف حصة تدريبية

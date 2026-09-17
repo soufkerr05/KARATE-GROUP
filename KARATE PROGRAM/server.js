@@ -74,6 +74,24 @@ const db = new sqlite3.Database('./karate.db', (err) => {
                     role TEXT NOT NULL DEFAULT 'coach'
                 );
             `);
+            db.run(`
+                CREATE TABLE IF NOT EXISTS notes (
+                    id TEXT PRIMARY KEY,
+                    group_id TEXT NOT NULL,
+                    athlete TEXT DEFAULT '',
+                    text TEXT NOT NULL,
+                    date TEXT NOT NULL
+                );
+            `);
+            db.run(`
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id TEXT PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    group_id TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    date TEXT NOT NULL
+                );
+            `);
             // إدخال البيانات الأولية للمجموعات إذا لم تكن موجودة
             const stmt = db.prepare("INSERT OR IGNORE INTO groups (id, name, age_range, belt, athletes_count) VALUES (?, ?, ?, ?, ?)");
             stmt.run('g1', 'البراعم', '5 – 7 سنوات', 'white', 14);
@@ -224,6 +242,109 @@ app.get('/api/events', async (req, res) => {
             });
         });
         res.json(rows);
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+app.get('/api/notes', async (req, res) => {
+    try {
+        const rows = await new Promise((resolve, reject) => {
+            db.all("SELECT * FROM notes ORDER BY date DESC", [], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+app.post('/api/notes', async (req, res) => {
+    const { id, groupId, group_id, athlete, text, date } = req.body;
+    const targetGroupId = groupId || group_id;
+
+    if (!id || !targetGroupId || !text || !date) {
+        return res.status(400).json({ "error": "بيانات الملاحظة غير مكتملة." });
+    }
+
+    try {
+        await new Promise((resolve, reject) => {
+            db.run('INSERT INTO notes (id, group_id, athlete, text, date) VALUES (?, ?, ?, ?, ?)',
+                [id, targetGroupId, athlete || '', text.trim(), date],
+                function (err) { if (err) reject(err); else resolve(this); });
+        });
+        res.status(201).json({ "message": "success", "data": { id, group_id: targetGroupId, athlete: athlete || '', text, date } });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+app.delete('/api/notes/:id', async (req, res) => {
+    try {
+        const result = await new Promise((resolve, reject) => {
+            db.run('DELETE FROM notes WHERE id = ?', [req.params.id], function (err) {
+                if (err) reject(err); else resolve(this);
+            });
+        });
+
+        if (result.changes === 0) {
+            return res.status(404).json({ "error": "الملاحظة غير موجودة." });
+        }
+        res.json({ "message": "deleted" });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+app.get('/api/feedback', async (req, res) => {
+    try {
+        const rows = await new Promise((resolve, reject) => {
+            db.all("SELECT * FROM feedback ORDER BY date DESC", [], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+app.post('/api/feedback', async (req, res) => {
+    const { id, sessionId, session_id, groupId, group_id, text, date } = req.body;
+    const targetSessionId = sessionId || session_id;
+    const targetGroupId = groupId || group_id;
+
+    if (!id || !targetSessionId || !targetGroupId || !text || !date) {
+        return res.status(400).json({ "error": "بيانات الملاحظة التطبيقية غير مكتملة." });
+    }
+
+    try {
+        await new Promise((resolve, reject) => {
+            db.run('INSERT INTO feedback (id, session_id, group_id, text, date) VALUES (?, ?, ?, ?, ?)',
+                [id, targetSessionId, targetGroupId, text.trim(), date],
+                function (err) { if (err) reject(err); else resolve(this); });
+        });
+        res.status(201).json({ "message": "success", "data": { id, session_id: targetSessionId, group_id: targetGroupId, text, date } });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+app.delete('/api/feedback/:id', async (req, res) => {
+    try {
+        const result = await new Promise((resolve, reject) => {
+            db.run('DELETE FROM feedback WHERE id = ?', [req.params.id], function (err) {
+                if (err) reject(err); else resolve(this);
+            });
+        });
+
+        if (result.changes === 0) {
+            return res.status(404).json({ "error": "الملاحظة التطبيقية غير موجودة." });
+        }
+        res.json({ "message": "deleted" });
     } catch (err) {
         res.status(500).json({ "error": err.message });
     }
