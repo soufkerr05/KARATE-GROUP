@@ -1,10 +1,17 @@
 // إعدادات الاتصال بقاعدة البيانات
-const { createClient } = supabase;
 const supabaseUrl = 'https://klkvblbtttklzaypnokl.supabase.co';
 const supabaseKey = 'sb_publishable_vnrYeqJxy1OQIwaEvdnc_A_H2R9IC3v';
-const _supabase = createClient(supabaseUrl, supabaseKey);
+const hasSupabaseRuntime = typeof window !== 'undefined' && typeof window.supabase !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function';
+const _supabase = hasSupabaseRuntime ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
+
+window._supabase = _supabase;
+window.supabaseClient = _supabase;
 
 function logoutUser() {
+    if (!_supabase || !_supabase.auth || typeof _supabase.auth.signOut !== 'function') {
+        window.location.replace('login.html');
+        return;
+    }
     _supabase.auth.signOut().finally(() => window.location.replace('login.html'));
 }
 
