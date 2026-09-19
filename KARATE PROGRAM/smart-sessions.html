@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>الحصص الذكية | نظام الكاراتيه</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="training.css">
+</head>
+<body data-page="smart">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">K</div>
+      <a class="nav-btn" data-link="dashboard" href="dashboard.html"><span class="nav-circle">⌂</span><span class="nav-label">الرئيسية</span></a>
+      <a class="nav-btn" data-link="groups" href="groups.html"><span class="nav-circle">♙</span><span class="nav-label">المجموعات</span></a>
+      <a class="nav-btn" data-link="events" href="events.html"><span class="nav-circle">⚑</span><span class="nav-label">الأهداف</span></a>
+      <a class="nav-btn" data-link="sessions" href="sessions.html"><span class="nav-circle">▣</span><span class="nav-label">الحصص</span></a>
+      <a class="nav-btn" data-link="smart" href="smart-sessions.html"><span class="nav-circle">✦</span><span class="nav-label">الحصص الذكية</span></a>
+      <button id="themeToggle" class="nav-btn theme-toggle" type="button"><span class="nav-circle">☾</span><span class="nav-label">الوضع الليلي</span></button>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <div><h1>الحصص الذكية</h1><p class="sub">توليد حصة تدريبية اعتمادًا على الأهداف والملاحظات والحصص السابقة</p></div>
+        <div class="season"><i></i>الموسم الرياضي 2025 - 2026</div>
+      </header>
+      <main>
+        <div class="smart-steps"><span class="active">1 اختيار السياق</span><span>2 مراجعة المسودة</span><span>3 حفظ الحصة</span></div>
+        <section class="card">
+          <form id="smartForm">
+            <div class="form-grid">
+              <div class="field"><label>المجموعة</label><select id="smartGroup"></select></div>
+              <div class="field"><label>تاريخ الحصة</label><input id="smartDate" type="date"></div>
+              <div class="field full"><div id="smartContext" class="notice">اختر المجموعة لعرض السياق.</div></div>
+              <div class="field full"><label>الهدف المرتبط بالحصة</label><select id="smartEvent"><option value="">اختيار الهدف تلقائيًا</option></select></div>
+              <div class="field full"><label>ملاحظات المدرب لهذه الحصة</label><textarea id="smartExtraNotes" placeholder="مثال: أريد حصة إعداد بدني تركز على السرعة والرشاقة وقوة الرجلين، مع شدة مناسبة للمجموعة."></textarea></div>
+              <div class="field full actions"><button type="button" id="generate" class="btn primary">توليد مسودة الحصة</button></div>
+            </div>
+            <div id="success" class="notice" hidden></div>
+            <div id="draft" class="draft">
+              <div class="section-title"><h3>مسودة الحصة</h3></div>
+              <div class="form-grid">
+                <div class="field full"><label>عنوان الحصة</label><input id="draftTitle" required></div>
+                <div class="field"><label>المدة</label><input id="draftDuration" type="number" min="15" value="60"></div>
+                <div class="field"><label>التركيز</label><select id="draftFocus"><option>متوسط</option><option>منخفض</option><option>عالٍ</option></select></div>
+                <div class="field full"><label>التمارين</label><textarea id="draftContent" required></textarea></div>
+                <div class="field full"><label>ملاحظات المدرب</label><textarea id="draftNotes"></textarea></div>
+                <div class="field full actions"><button class="btn primary" type="submit">حفظ الحصة الذكية</button></div>
+              </div>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="training.js"></script>
+  <script>
+    document.addEventListener('click', function(event) {
+      if (event.target.id !== 'generate') return;
+      const status = document.getElementById('success');
+      const draft = document.getElementById('draft');
+      status.hidden = false;
+      status.textContent = 'جارٍ توليد الحصة وقراءة الأهداف والملاحظات والحصص السابقة...';
+      const observer = new MutationObserver(function() {
+        if (draft.classList.contains('show')) {
+          status.textContent = 'تم توليد مسودة الحصة. راجعها ثم احفظها.';
+          observer.disconnect();
+        }
+      });
+      observer.observe(draft, { attributes: true, attributeFilter: ['class'] });
+    });
+  </script>
+</body>
+</html>

@@ -12,13 +12,62 @@ const app = express();
 const port = process.env.PORT || 3000; 
 const isProduction = process.env.NODE_ENV === 'production';
 
+function dbAll(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+}
+
+function parseGeneratedSession(outputText) {
+    const fencedJson = outputText.match(/```json\s*([\s\S]*?)\s*```/i);
+    const candidate = fencedJson ? fencedJson[1] : outputText;
+    const start = candidate.indexOf('{');
+    const end = candidate.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('لم يرجع Gemini مسودة بصيغة صحيحة.');
+    return JSON.parse(candidate.slice(start, end + 1));
+}
+
+function isTransientGeminiError(error) {
+    const message = String(error?.message || '');
+    return [429, 500, 502, 503, 504].some(status => message.includes(String(status))) ||
+        message.includes('UNAVAILABLE') || message.includes('high demand');
+}
+
+async function generateSessionDraft(ai, prompt) {
+    const configuredModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const models = [...new Set([configuredModel, 'gemini-2.5-flash-lite'])];
+    let lastError;
+
+    for (const model of models) {
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+            try {
+                return await ai.models.generateContent({
+                    model,
+                    contents: prompt,
+                    config: { responseMimeType: 'application/json' }
+                });
+            } catch (error) {
+                lastError = error;
+                if (!isTransientGeminiError(error) || attempt === 1) break;
+                await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)));
+            }
+        }
+    }
+
+    throw lastError || new Error('لم يرجع Gemini نتيجة.');
+}
+
 // --- إعدادات الخادم ---
 // في بيئة الإنتاج، اسمح فقط بالنطاق الخاص بك. في التطوير، اسمح بالوصول المحلي.
 const allowedOrigins = isProduction ? [process.env.APP_URL] : [`http://localhost:${port}`, `http://127.0.0.1:${port}`];
 app.use(cors({
     origin: function (origin, callback) {
         // السماح بالطلبات التي لا تحمل origin (مثل Postman أو تطبيقات الموبايل) أو الموجودة في القائمة المسموح بها
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        const isLocalDevelopmentOrigin = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+        if (!origin || isLocalDevelopmentOrigin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             callback(new Error('غير مسموح به بواسطة سياسة CORS'));
@@ -50,9 +99,20 @@ const db = new sqlite3.Database('./karate.db', (err) => {
             db.run(`
                 CREATE TABLE IF NOT EXISTS groups (
                     id TEXT PRIMARY KEY, name TEXT NOT NULL, age_range TEXT NOT NULL,
-                    belt TEXT NOT NULL, athletes_count INTEGER DEFAULT 0
+                    belt TEXT NOT NULL, level TEXT DEFAULT '', seniority TEXT DEFAULT '',
+                    specialty TEXT DEFAULT 'كاتا وكوميتي', athletes_count INTEGER DEFAULT 0
                 );
             `);
+            db.all('PRAGMA table_info(groups)', (err, columns = []) => {
+                if (err) return console.error('تعذر فحص أعمدة الفئات:', err.message);
+                const existing = new Set(columns.map(column => column.name));
+                const migrations = [
+                    ['level', "ALTER TABLE groups ADD COLUMN level TEXT DEFAULT ''"],
+                    ['seniority', "ALTER TABLE groups ADD COLUMN seniority TEXT DEFAULT ''"],
+                    ['specialty', "ALTER TABLE groups ADD COLUMN specialty TEXT DEFAULT 'كاتا وكوميتي'"]
+                ];
+                migrations.filter(([name]) => !existing.has(name)).forEach(([, sql]) => db.run(sql));
+            });
             db.run(`
                 CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY, group_id TEXT REFERENCES groups(id), date DATE NOT NULL,
@@ -92,6 +152,27 @@ const db = new sqlite3.Database('./karate.db', (err) => {
                     date TEXT NOT NULL
                 );
             `);
+
+            // ترقية قواعد البيانات القديمة دون حذف الحصص الموجودة.
+            db.all(`PRAGMA table_info(sessions)`, (columnsError, columns) => {
+                if (columnsError) {
+                    console.error("خطأ في فحص أعمدة جدول الحصص:", columnsError.message);
+                    return;
+                }
+
+                const existingColumns = new Set(columns.map(column => column.name));
+                const missingColumns = [
+                    ["focus_level", "TEXT DEFAULT 'متوسط'"],
+                    ["notes_full", "TEXT"],
+                    ["ai_generated", "BOOLEAN DEFAULT FALSE"]
+                ].filter(([name]) => !existingColumns.has(name));
+
+                missingColumns.forEach(([name, definition]) => {
+                    db.run(`ALTER TABLE sessions ADD COLUMN ${name} ${definition}`, (alterError) => {
+                        if (alterError) console.error(`خطأ في إضافة العمود ${name}:`, alterError.message);
+                    });
+                });
+            });
             // إدخال البيانات الأولية للمجموعات إذا لم تكن موجودة
             const stmt = db.prepare("INSERT OR IGNORE INTO groups (id, name, age_range, belt, athletes_count) VALUES (?, ?, ?, ?, ?)");
             stmt.run('g1', 'البراعم', '5 – 7 سنوات', 'white', 14);
@@ -129,20 +210,20 @@ const db = new sqlite3.Database('./karate.db', (err) => {
 
 // --- نقاط النهاية (API Endpoints) ---
 
-// تقديم الموقع الرئيسي وصفحة الحصص من نفس الخادم
+// تقديم الصفحة الرئيسية الجديدة متعددة الصفحات
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'index.html'));
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
 app.get('/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'index.html'));
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
 app.get('/training.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index_4.html'));
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
-app.use(express.static(path.join(__dirname, '..')));
+app.use(express.static(__dirname));
 
 // --- نقاط نهاية المصادقة (Authentication) ---
 
@@ -312,6 +393,58 @@ app.get('/api/feedback', async (req, res) => {
     }
 });
 
+app.post('/api/smart-sessions/generate', async (req, res) => {
+    const { groupId, groupIds, date, extraNotes = '', eventId = '' } = req.body;
+    const targetGroupIds = [...new Set((Array.isArray(groupIds) ? groupIds : groupId ? [groupId] : []).filter(Boolean))];
+    if (targetGroupIds.length === 0 || !date) {
+        return res.status(400).json({ error: 'المجموعة والتاريخ مطلوبان.' });
+    }
+    if (!process.env.GEMINI_API_KEY) {
+        return res.status(503).json({ error: 'لم يتم إعداد GEMINI_API_KEY في ملف .env.' });
+    }
+
+    try {
+        const placeholders = targetGroupIds.map(() => '?').join(', ');
+        const [groupRows, eventRows, noteRows, feedbackRows, sessionRows] = await Promise.all([
+            dbAll(`SELECT id, name, age_range, belt, athletes_count FROM groups WHERE id IN (${placeholders})`, targetGroupIds),
+            dbAll(`SELECT id, group_id, title, type, date, notes FROM events WHERE group_id IN (${placeholders}) ORDER BY date ASC`, targetGroupIds),
+            dbAll(`SELECT group_id, athlete, text, date FROM notes WHERE group_id IN (${placeholders}) ORDER BY date DESC LIMIT 10`, targetGroupIds),
+            dbAll(`SELECT group_id, session_id, text, date FROM feedback WHERE group_id IN (${placeholders}) ORDER BY date DESC LIMIT 10`, targetGroupIds),
+            dbAll(`SELECT group_id, date, duration, focus_level, rating, title, content, notes_full, ai_generated FROM sessions WHERE group_id IN (${placeholders}) ORDER BY date DESC LIMIT 10`, targetGroupIds)
+        ]);
+
+        if (groupRows.length !== targetGroupIds.length) return res.status(404).json({ error: 'إحدى المجموعات غير موجودة.' });
+        const selectedEvents = eventRows.filter(event => eventId && event.id === eventId);
+        const context = {
+            groups: groupRows,
+            requestedDate: date,
+            coachRequest: extraNotes,
+            selectedGoals: selectedEvents.length ? selectedEvents : eventRows.filter(event => event.date >= date).slice(0, targetGroupIds.length),
+            upcomingGoals: eventRows.filter(event => event.date >= date).slice(0, 5),
+            coachNotes: noteRows,
+            appliedFeedback: feedbackRows,
+            previousSessions: sessionRows
+        };
+
+        const { GoogleGenAI } = await import('@google/genai');
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const prompt = `أنت مدرب كاراتيه خبير. أنشئ مسودة حصة تدريبية آمنة ومناسبة للعمر، اعتمادًا على السياق التالي. اقرأ الأهداف، ملاحظات المدرب، الملاحظات التطبيقية، والحصص السابقة لتجنب التكرار ومعالجة نقاط الضعف. لا تخترع بيانات غير موجودة.\n\nالسياق:\n${JSON.stringify(context, null, 2)}\n\nأعد JSON فقط بهذا الشكل دون Markdown:\n{"title":"عنوان الحصة","duration":60,"focus_level":"متوسط","exercises":["تمرين 1 مع التكرارات والراحة","تمرين 2"],"notes_full":"سبب اختيار الحصة والتعديلات والسلامة"}\nاجعل الحصة بين 45 و90 دقيقة، واكتب باللغة العربية، واذكر التدرج والإحماء والتهدئة والسلامة.`;
+        const result = await generateSessionDraft(ai, prompt);
+        const draft = parseGeneratedSession(result.text || '');
+        if (!draft.title || !Array.isArray(draft.exercises) || draft.exercises.length === 0) {
+            return res.status(502).json({ error: 'مسودة Gemini ناقصة أو غير صالحة.' });
+        }
+        res.json({ draft: { ...draft, group_id: targetGroupIds[0], group_ids: targetGroupIds, date } });
+    } catch (error) {
+        console.error('فشل توليد الحصة الذكية:', error);
+        const status = isTransientGeminiError(error) ? 503 : 502;
+        const message = status === 503
+            ? 'خدمة الذكاء الاصطناعي مشغولة مؤقتًا. حاول بعد قليل.'
+            : (error.message || 'تعذر توليد الحصة الذكية.');
+        res.status(status).json({ error: message });
+    }
+});
+
 app.post('/api/feedback', async (req, res) => {
     const { id, sessionId, session_id, groupId, group_id, text, date } = req.body;
     const targetSessionId = sessionId || session_id;
@@ -386,6 +519,21 @@ app.put('/api/events/:id', async (req, res) => {
     }
 });
 
+app.delete('/api/events/:id', async (req, res) => {
+    try {
+        const result = await new Promise((resolve, reject) => {
+            db.run('DELETE FROM events WHERE id = ?', [req.params.id], function (err) {
+                if (err) reject(err);
+                else resolve(this);
+            });
+        });
+        if (result.changes === 0) return res.status(404).json({ error: 'الهدف غير موجود.' });
+        res.json({ message: 'deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/sessions', async (req, res) => {
     const { id, groupId, date, duration, focus_level, rating, content, title, aiGenerated, notes_full } = req.body;
     if (!id || !groupId || !date) {
@@ -409,30 +557,76 @@ app.post('/api/sessions', async (req, res) => {
     }
 });
 
-// 4. تحديث عدد الرياضيين في مجموعة (محمي)
+app.post('/api/groups', async (req, res) => {
+    const { id, name, age_range, ageRange, belt = '', level = '', seniority = '', specialty = 'كاتا وكوميتي', athletes_count = 0 } = req.body;
+    const age = age_range || ageRange;
+    if (!id || !name || !age || !specialty) {
+        return res.status(400).json({ error: 'بيانات الفئة غير مكتملة.' });
+    }
+    try {
+        await new Promise((resolve, reject) => {
+            db.run('INSERT INTO groups (id, name, age_range, belt, level, seniority, specialty, athletes_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [id, name.trim(), age, belt, level, seniority, specialty, Number(athletes_count) || 0],
+                function (err) { if (err) reject(err); else resolve(this); });
+        });
+        res.status(201).json({ message: 'success' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// تحديث بيانات الفئة (محمي)
 app.put('/api/groups/:id', async (req, res) => {
-    const { athletes_count } = req.body;
+    const { name, age_range, ageRange, belt, level, seniority, specialty, athletes_count } = req.body;
     const { id } = req.params;
 
-    if (athletes_count === undefined || athletes_count < 0) {
-        return res.status(400).json({ "error": "عدد الرياضيين غير صالح." });
+    if (athletes_count !== undefined && (Number.isNaN(Number(athletes_count)) || athletes_count < 0)) {
+        return res.status(400).json({ error: 'عدد الرياضيين غير صالح.' });
     }
     
     try {
         const result = await new Promise((resolve, reject) => {
-            const sql = `UPDATE groups SET athletes_count = ? WHERE id = ?`;
-            db.run(sql, [athletes_count, id], function(err) {
+            const fields = [];
+            const values = [];
+            const updates = { name, age_range: age_range || ageRange, belt, level, seniority, specialty, athletes_count: athletes_count === undefined ? undefined : Number(athletes_count) };
+            Object.entries(updates).forEach(([field, value]) => {
+                if (value !== undefined) { fields.push(`${field} = ?`); values.push(field === 'name' ? String(value).trim() : value); }
+            });
+            if (fields.length === 0) return resolve({ changes: 0 });
+            values.push(id);
+            const sql = `UPDATE groups SET ${fields.join(', ')} WHERE id = ?`;
+            db.run(sql, values, function(err) {
                 if (err) reject(err);
                 else resolve(this);
             });
         });
 
         if (result.changes === 0) {
-            return res.status(404).json({ "error": "المجموعة غير موجودة." });
+            return res.status(404).json({ "error": "الفئة غير موجودة." });
         }
         res.json({ "message": "success", "changes": result.changes });
     } catch (err) {
         res.status(500).json({ "error": err.message });
+    }
+});
+
+app.delete('/api/groups/:id', async (req, res) => {
+    try {
+        const result = await new Promise((resolve, reject) => {
+            db.serialize(() => {
+                db.run('DELETE FROM feedback WHERE group_id = ?', [req.params.id]);
+                db.run('DELETE FROM notes WHERE group_id = ?', [req.params.id]);
+                db.run('DELETE FROM events WHERE group_id = ?', [req.params.id]);
+                db.run('DELETE FROM sessions WHERE group_id = ?', [req.params.id]);
+                db.run('DELETE FROM groups WHERE id = ?', [req.params.id], function (err) {
+                    if (err) reject(err); else resolve(this);
+                });
+            });
+        });
+        if (result.changes === 0) return res.status(404).json({ error: 'الفئة غير موجودة.' });
+        res.json({ message: 'deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
