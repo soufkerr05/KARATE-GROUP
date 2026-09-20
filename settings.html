@@ -245,7 +245,7 @@
                             <div>
                                 <h3 class="font-bold text-emerald-800 text-lg mb-1">رسالة واحدة لجميع أولياء الأمور</h3>
                                 <p class="text-sm text-emerald-700">يمكنك كتابة نص رسالة واحدة ثم فتحها لتوزيعها على جميع أرقام أولياء الأمور المسجلين.</p>
-                                <p class="mt-2 text-sm font-bold text-slate-600">عدد أولياء الأمور المسجلين: <span id="bulkGuardianCount">0</span></p>
+                                <p class="mt-2 text-sm font-bold text-slate-600">عدد أرقام أولياء الأمور الصالحة: <span id="bulkGuardianCount">0</span></p>
                             </div>
                             <button type="button" onclick="openBulkGuardianMessageComposer()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all shadow-md flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16v10H8l-4 4V5z"></path></svg>
@@ -533,10 +533,14 @@
             }
 
             const rows = [];
+            let invalidPhoneCount = 0;
             const seen = new Set();
             (data || []).forEach(row => {
                 const phone = normalizeGuardianPhone(row.guardianPhone);
-                if (!phone) return;
+                if (!phone) {
+                    invalidPhoneCount += 1;
+                    return;
+                }
 
                 const guardianName = String(row.guardianName || '').trim();
                 if (seen.has(phone)) return;
@@ -555,6 +559,10 @@
 
             window.bulkGuardianRecipients = rows.map(row => row.phone);
             window.bulkGuardianRecipientRows = rows;
+
+            if (status && invalidPhoneCount) {
+                status.textContent = `تم استبعاد ${invalidPhoneCount} من السجلات لأن رقم الهاتف غير صالح.`;
+            }
 
             recipientList.innerHTML = '';
             if (!rows.length) {
@@ -601,23 +609,27 @@
         }
 
         function normalizeGuardianPhone(phone) {
-            if (!phone) return '';
-            const digits = String(phone).replace(/[^0-9+]/g, '').trim();
-            if (!digits) return '';
+            if (phone === null || phone === undefined) return '';
 
-            if (digits.startsWith('+')) {
-                return digits.replace(/\s+/g, '');
-            }
+            // Arabic digits are common in manually entered records.
+            const raw = String(phone).trim().replace(/[٠-٩]/g, digit => '٠١٢٣٤٥٦٧٨٩'.indexOf(digit));
+            if (!raw || /[^0-9+\s().-]/.test(raw)) return '';
 
-            if (digits.startsWith('966')) {
-                return '+' + digits;
-            }
+            const plusCount = (raw.match(/\+/g) || []).length;
+            if (plusCount > 1 || (plusCount === 1 && !raw.startsWith('+'))) return '';
 
-            if (digits.startsWith('0')) {
-                return '+966' + digits.slice(1);
-            }
+            let digits = raw.replace(/\D/g, '');
+            if (digits.startsWith('00')) digits = digits.slice(2);
 
-            return '+' + digits;
+            // الجزائر: رقم الجوال المحلي 0 ثم 5 أو 6 أو 7 وتسعة أرقام.
+            if (/^0[567]\d{8}$/.test(digits)) return '+213' + digits.slice(1);
+            if (/^[567]\d{8}$/.test(digits)) return '+213' + digits;
+            if (/^213[567]\d{8}$/.test(digits)) return '+' + digits;
+
+            // Keep explicitly international numbers only when they meet E.164 length.
+            if (raw.startsWith('+') && /^[1-9]\d{7,14}$/.test(digits)) return '+' + digits;
+
+            return '';
         }
 
         function selectAllBulkGuardianRecipients() {
@@ -711,7 +723,9 @@
                 return;
             }
 
-            const phones = Array.isArray(window.bulkGuardianRecipients) ? window.bulkGuardianRecipients : [];
+            const phones = Array.isArray(window.bulkGuardianRecipients)
+                ? [...new Set(window.bulkGuardianRecipients.map(normalizeGuardianPhone).filter(Boolean))]
+                : [];
             if (!phones.length) {
                 status.textContent = 'لا توجد أرقام أولياء أمور مسجلة في المجموعة المحددة.';
                 return;
