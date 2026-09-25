@@ -712,6 +712,25 @@
             if (status) status.textContent = ok ? 'تم نسخ الرسالة' : 'تعذر نسخ الرسالة';
         }
 
+        function isIOSDevice() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        function buildBulkGuardianSmsUri(phones, message) {
+            const body = encodeURIComponent(message);
+
+            // iOS Messages only reads the first recipient from the standard sms:
+            // URI in some Safari/Web App versions. Its composer accepts the
+            // addresses parameter for a prefilled list of recipients instead.
+            if (isIOSDevice()) {
+                const addresses = phones.map(encodeURIComponent).join(',');
+                return `sms://open?addresses=${addresses}&body=${body}`;
+            }
+
+            return 'sms:' + phones.join(',') + '?body=' + body;
+        }
+
         function sendBulkGuardianMessage() {
             const text = document.getElementById('bulkGuardianMessageText');
             const status = document.getElementById('bulkGuardianStatus');
@@ -731,7 +750,7 @@
                 return;
             }
 
-            const smsUri = 'sms:' + phones.map(phone => phone.replace(/^\+/, '')).join(',') + '?body=' + encodeURIComponent(message);
+            const smsUri = buildBulkGuardianSmsUri(phones, message);
             status.textContent = 'جارٍ فتح تطبيق الرسائل...';
             window.location.href = smsUri;
         }
