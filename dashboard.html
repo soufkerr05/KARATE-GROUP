@@ -121,8 +121,61 @@
                 <h2 class="text-3xl font-black text-slate-800">إحصائيات الرياضيين</h2>
                 <p class="text-slate-500 mt-2 font-medium">نظرة عامة على أعداد وتوزيع الرياضيين في النادي.</p>
             </div>
-            <button id="printActiveQrButton" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2.5 rounded-xl shadow-md print:hidden">اختيار وطباعة بطاقات QR</button>
+            <div class="flex flex-wrap items-center gap-2 print:hidden">
+                <button id="printAthletesListButton" type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-md">طباعة قائمة الرياضيين</button>
+                <button id="printActiveQrButton" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2.5 rounded-xl shadow-md">اختيار وطباعة بطاقات QR</button>
+            </div>
         </div>
+
+        <section id="athletesListPrintPanel" class="hidden mb-8 bg-white rounded-2xl border border-blue-100 shadow-sm p-4 print:hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                    <h3 class="font-black text-slate-800">إعداد قائمة الرياضيين</h3>
+                    <p class="text-sm text-slate-500 mt-1">اختر ترتيب القائمة والمعلومات التي تريد إظهارها عند الطباعة.</p>
+                </div>
+                <button id="printConfiguredAthletesListButton" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl transition">طباعة القائمة</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label for="athletesListPrintScope" class="block text-sm font-bold text-slate-700 mb-1">الرياضيون</label>
+                    <select id="athletesListPrintScope" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 font-bold text-slate-700">
+                        <option value="active">النشطون فقط</option>
+                        <option value="all">جميع الرياضيين</option>
+                        <option value="archived">المؤرشفون فقط</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="athletesListPrintSort" class="block text-sm font-bold text-slate-700 mb-1">الترتيب حسب</label>
+                    <select id="athletesListPrintSort" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 font-bold text-slate-700">
+                        <option value="name">الاسم الكامل</option>
+                        <option value="dob">تاريخ الميلاد</option>
+                        <option value="subDate">تاريخ التسجيل</option>
+                        <option value="gender">الجنس</option>
+                        <option value="guardianName">اسم الولي</option>
+                        <option value="group">الفوج</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="athletesListPrintOrder" class="block text-sm font-bold text-slate-700 mb-1">اتجاه الترتيب</label>
+                    <select id="athletesListPrintOrder" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 font-bold text-slate-700">
+                        <option value="asc">تصاعدي</option>
+                        <option value="desc">تنازلي</option>
+                    </select>
+                </div>
+            </div>
+            <fieldset class="border border-slate-200 rounded-xl p-3">
+                <legend class="px-2 text-sm font-black text-slate-700">المعلومات الظاهرة في القائمة</legend>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-1">
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="dob" checked> تاريخ الميلاد</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="subDate" checked> تاريخ التسجيل</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="gender" checked> الجنس</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="guardianName"> اسم الولي</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="guardianPhone"> رقم هاتف الولي</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="group"> الفوج</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="status"> الحالة</label>
+                </div>
+            </fieldset>
+        </section>
 
         <section id="qrSelectionPanel" class="hidden mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 print:hidden">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -345,6 +398,63 @@
                 .replace(/'/g, '&#039;');
         }
 
+        const athletesListPrintFields = {
+            dob: { label: 'تاريخ الميلاد', value: athlete => athlete.dob || 'غير مسجل' },
+            subDate: { label: 'تاريخ التسجيل', value: athlete => athlete.subDate || 'غير مسجل' },
+            gender: { label: 'الجنس', value: athlete => athlete.gender || 'غير مسجل' },
+            guardianName: { label: 'اسم الولي', value: athlete => athlete.guardianName || 'غير مسجل' },
+            guardianPhone: { label: 'رقم هاتف الولي', value: athlete => athlete.guardianPhone || 'غير مسجل' },
+            group: { label: 'الفوج', value: athlete => athlete.group || athlete.groupName || 'غير مسجل' },
+            status: { label: 'الحالة', value: athlete => athlete.isArchived ? 'مؤرشف' : 'نشط' }
+        };
+
+        function printAthletesList(athletes, options) {
+            if (!athletes.length) {
+                alert('لا يوجد رياضيون يطابقون نطاق الطباعة المحدد.');
+                return;
+            }
+
+            const selectedFields = options.fields.filter(field => athletesListPrintFields[field]);
+            const getSortValue = athlete => {
+                if (options.sort === 'name') return `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
+                if (options.sort === 'group') return athlete.group || athlete.groupName || '';
+                return athletesListPrintFields[options.sort]?.value(athlete) || '';
+            };
+            const sortedAthletes = [...athletes].sort((a, b) => {
+                const valueA = getSortValue(a);
+                const valueB = getSortValue(b);
+                const missingA = !valueA || valueA === 'غير مسجل';
+                const missingB = !valueB || valueB === 'غير مسجل';
+                if (missingA !== missingB) return missingA ? 1 : -1;
+                const comparison = String(valueA).localeCompare(String(valueB), 'ar', { numeric: true });
+                return options.order === 'desc' ? -comparison : comparison;
+            });
+            const headers = [
+                '<th>#</th>',
+                '<th>الاسم الكامل</th>',
+                ...selectedFields.map(field => `<th>${escapePrintValue(athletesListPrintFields[field].label)}</th>`)
+            ].join('');
+            const rows = sortedAthletes.map((athlete, index) => {
+                const fullName = `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim() || 'بدون اسم';
+                const cells = selectedFields.map(field => `<td>${escapePrintValue(athletesListPrintFields[field].value(athlete))}</td>`).join('');
+                return `<tr><td>${index + 1}</td><td class="name">${escapePrintValue(fullName)}</td>${cells}</tr>`;
+            }).join('');
+            const sortLabel = options.sort === 'name' ? 'الاسم الكامل' : athletesListPrintFields[options.sort]?.label || 'الاسم الكامل';
+            const orderLabel = options.order === 'desc' ? 'تنازلي' : 'تصاعدي';
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert('تعذر فتح نافذة الطباعة. اسمح بالنوافذ المنبثقة ثم أعد المحاولة.');
+                return;
+            }
+
+            printWindow.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>قائمة الرياضيين</title><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet"><style>
+                *{box-sizing:border-box} body{font-family:'Tajawal',Arial,sans-serif;color:#172033;margin:0;padding:12mm;direction:rtl;font-size:12px} h1{text-align:center;margin:0 0 5px;font-size:24px} .details{text-align:center;color:#475569;margin:0 0 14px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #94a3b8;padding:7px 6px;text-align:right;vertical-align:middle} th{background:#e2e8f0;font-weight:800;white-space:nowrap} td:first-child,th:first-child{text-align:center;width:34px}.name{font-weight:700} .print-button{display:block;margin:18px auto 0;padding:9px 24px;border:0;border-radius:7px;background:#1d4ed8;color:white;font:700 15px 'Tajawal',Arial;cursor:pointer}@media print{@page{size:A4 landscape;margin:9mm}body{padding:0}.print-button{display:none}}
+            </style></head><body><h1>قائمة الرياضيين</h1><p class="details">العدد: ${sortedAthletes.length} — الترتيب حسب: ${escapePrintValue(sortLabel)} (${orderLabel})</p><table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table><button class="print-button" onclick="window.print()">طباعة</button></body></html>`);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.onload = () => printWindow.print();
+        }
+
         function printActiveAthleteQrs(activeAthletes) {
             if (!window.QRCode) {
                 alert('تعذر تحميل مولد رمز QR. تحقق من اتصال الإنترنت.');
@@ -439,11 +549,36 @@
                 const activeAthletes = allAthletes.filter(a => !a.isArchived);
                 const inactiveAthletes = allAthletes.filter(a => a.isArchived);
 
+                const athletesListPrintPanel = document.getElementById('athletesListPrintPanel');
+                const printAthletesListButton = document.getElementById('printAthletesListButton');
+                const printConfiguredAthletesListButton = document.getElementById('printConfiguredAthletesListButton');
+                const athletesListPrintScope = document.getElementById('athletesListPrintScope');
+                const athletesListPrintSort = document.getElementById('athletesListPrintSort');
+                const athletesListPrintOrder = document.getElementById('athletesListPrintOrder');
                 const qrSelectionPanel = document.getElementById('qrSelectionPanel');
                 const qrAthleteSelectionList = document.getElementById('qrAthleteSelectionList');
                 const selectAllQrAthletes = document.getElementById('selectAllQrAthletes');
                 const printSelectedQrButton = document.getElementById('printSelectedQrButton');
                 const printActiveQrButton = document.getElementById('printActiveQrButton');
+
+                printAthletesListButton.addEventListener('click', () => {
+                    athletesListPrintPanel.classList.toggle('hidden');
+                });
+                printConfiguredAthletesListButton.addEventListener('click', () => {
+                    const scope = athletesListPrintScope.value;
+                    const athletesToPrint = scope === 'active'
+                        ? activeAthletes
+                        : scope === 'archived'
+                            ? inactiveAthletes
+                            : allAthletes;
+                    const fields = [...document.querySelectorAll('.athletes-list-print-field:checked')]
+                        .map(input => input.value);
+                    printAthletesList(athletesToPrint, {
+                        fields,
+                        sort: athletesListPrintSort.value,
+                        order: athletesListPrintOrder.value
+                    });
+                });
 
                 qrAthleteSelectionList.innerHTML = activeAthletes.map(athlete => {
                     const fullName = `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
