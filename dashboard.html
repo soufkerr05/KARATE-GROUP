@@ -172,7 +172,7 @@
                     <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="guardianName"> اسم الولي</label>
                     <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="guardianPhone"> رقم هاتف الولي</label>
                     <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="group"> الفوج</label>
-                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="status"> الحالة</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" class="athletes-list-print-field w-4 h-4 accent-blue-600" value="status"> نشط / غير نشط</label>
                 </div>
             </fieldset>
         </section>
@@ -405,7 +405,7 @@
             guardianName: { label: 'اسم الولي', value: athlete => athlete.guardianName || 'غير مسجل' },
             guardianPhone: { label: 'رقم هاتف الولي', value: athlete => athlete.guardianPhone || 'غير مسجل' },
             group: { label: 'الفوج', value: athlete => athlete.group || athlete.groupName || 'غير مسجل' },
-            status: { label: 'الحالة', value: athlete => athlete.isArchived ? 'مؤرشف' : 'نشط' }
+            status: { label: 'الحالة', value: athlete => athlete.isArchived ? 'غير نشط' : 'نشط' }
         };
 
         function printAthletesList(athletes, options) {
