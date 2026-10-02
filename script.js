@@ -263,6 +263,55 @@ async function rejectAthlete(id) {
     fetchAthletes();
 }
 
+// vCard مدعوم مباشرةً عند فتح الملف في جهات اتصال Android وiPhone.
+function escapeVCardValue(value) {
+    return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/\r\n|\r|\n/g, '\\n')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,');
+}
+
+function normalizeContactPhone(phone) {
+    return String(phone ?? '')
+        .trim()
+        .replace(/[٠-٩]/g, digit => '٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
+        .replace(/[^0-9+]/g, '');
+}
+
+function addAthleteContact(id) {
+    const athlete = athletes.find(item => item.id === id);
+    const phone = normalizeContactPhone(athlete?.guardianPhone);
+
+    if (!athlete || !phone) {
+        alert('لا يوجد رقم هاتف مسجل لهذا الرياضي.');
+        return;
+    }
+
+    const firstName = escapeVCardValue(athlete.firstName);
+    const lastName = escapeVCardValue(athlete.lastName);
+    const fullName = escapeVCardValue(`${athlete.firstName || ''} ${athlete.lastName || ''}`.trim());
+    const vCard = [
+        'BEGIN:VCARD',
+        'VERSION:3.0',
+        `N:${lastName};${firstName};;;`,
+        `FN:${fullName}`,
+        `TEL;TYPE=CELL:${phone}`,
+        'END:VCARD'
+    ].join('\r\n');
+    const safeFileName = `${athlete.firstName || ''}-${athlete.lastName || ''}`
+        .trim()
+        .replace(/[\\/:*?"<>|]/g, '-') || 'athlete-contact';
+    const fileUrl = URL.createObjectURL(new Blob(['\uFEFF' + vCard], { type: 'text/vcard;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = `${safeFileName}.vcf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+}
+
 // دالة أرشفة أو استعادة الرياضي
 async function toggleArchive(id, status) {
     const action = status ? 'أرشفة' : 'استعادة';
@@ -480,6 +529,9 @@ function renderTable() {
     `;
 
     const rowsHtml = sortedAthletes.map(athlete => {
+        const contactButton = athlete.guardianPhone
+            ? `<button class="bg-violet-500 hover:bg-violet-600 text-white font-semibold py-1.5 px-3 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" title="حفظ الاسم ورقم الهاتف في جهات الاتصال" onclick="addAthleteContact(${athlete.id})">Add Contact</button>`
+            : `<button class="bg-slate-300 text-slate-500 font-semibold py-1.5 px-3 rounded shadow-sm cursor-not-allowed ml-2" title="لا يوجد رقم هاتف مسجل" disabled>Add Contact</button>`;
         if (viewMode === 'pending') {
             return `
                 <tr class="athlete-row border-b border-slate-100 hover:bg-amber-50/40 transition duration-200">
@@ -497,6 +549,7 @@ function renderTable() {
                         </div>
                     </td>
                     <td class="p-4 align-middle actions-cell text-center admin-only" data-label="إجراءات">
+                        ${contactButton}
                         <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="approveAthlete(${athlete.id})">قبول وإضافة</button>
                         <button class="bg-rose-500 hover:bg-rose-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5" onclick="rejectAthlete(${athlete.id})">رفض</button>
                     </td>
@@ -539,6 +592,7 @@ function renderTable() {
                     </div>
                 </td>
                 <td class="p-4 align-middle actions-cell text-center admin-only" data-label="إجراءات">
+                ${contactButton}
                 ${showMessageBtn ? `<button class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" title="إرسال رسالة هاتفية" onclick="window.location.href='sms:${athlete.guardianPhone.replace(/\s+/g, '')}?body=${encodeURIComponent(messageBody)}'">رسالة</button>` : ''}
                     <button class="bg-slate-700 hover:bg-slate-800 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="printAthleteQr(${athlete.id})">طباعة QR</button>
                     <button class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="editDocs(${athlete.id})">تعديل</button>
