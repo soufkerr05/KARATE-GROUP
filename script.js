@@ -263,50 +263,33 @@ async function rejectAthlete(id) {
     fetchAthletes();
 }
 
-// vCard مدعوم مباشرةً عند فتح الملف في جهات اتصال Android وiPhone.
-function escapeVCardValue(value) {
-    return String(value ?? '')
-        .replace(/\\/g, '\\\\')
-        .replace(/\r\n|\r|\n/g, '\\n')
-        .replace(/;/g, '\\;')
-        .replace(/,/g, '\\,');
-}
-
-function normalizeContactPhone(phone) {
-    return String(phone ?? '')
-        .trim()
-        .replace(/[٠-٩]/g, digit => '٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
-        .replace(/[^0-9+]/g, '');
-}
-
-function addAthleteContact(id) {
+async function copyAthleteContact(id) {
     const athlete = athletes.find(item => item.id === id);
-    const phone = normalizeContactPhone(athlete?.guardianPhone);
+    const phone = String(athlete?.guardianPhone ?? '').trim();
 
     if (!athlete || !phone) {
         alert('لا يوجد رقم هاتف مسجل لهذا الرياضي.');
         return;
     }
 
-    const firstName = escapeVCardValue(athlete.firstName);
-    const lastName = escapeVCardValue(athlete.lastName);
-    const fullName = escapeVCardValue(`${athlete.firstName || ''} ${athlete.lastName || ''}`.trim());
-    const vCard = [
-        'BEGIN:VCARD',
-        'VERSION:3.0',
-        `N:${lastName};${firstName};;;`,
-        `FN:${fullName}`,
-        `TEL;TYPE=CELL:${phone}`,
-        'END:VCARD'
-    ].join('\r\n');
-    const fileUrl = URL.createObjectURL(new Blob(['\uFEFF' + vCard], { type: 'text/vcard;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.type = 'text/vcard';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(fileUrl), 60000);
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(phone);
+        } else {
+            const input = document.createElement('textarea');
+            input.value = phone;
+            input.style.position = 'fixed';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.select();
+            const copied = document.execCommand('copy');
+            input.remove();
+            if (!copied) throw new Error('Clipboard copy failed');
+        }
+        alert('تم نسخ رقم الهاتف.');
+    } catch (error) {
+        alert('تعذر نسخ رقم الهاتف.');
+    }
 }
 
 // دالة أرشفة أو استعادة الرياضي
@@ -527,8 +510,8 @@ function renderTable() {
 
     const rowsHtml = sortedAthletes.map(athlete => {
         const contactButton = athlete.guardianPhone
-            ? `<button class="bg-violet-500 hover:bg-violet-600 text-white font-semibold py-1.5 px-3 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" title="حفظ الاسم ورقم الهاتف في جهات الاتصال" onclick="addAthleteContact(${athlete.id})">Add Contact</button>`
-            : `<button class="bg-slate-300 text-slate-500 font-semibold py-1.5 px-3 rounded shadow-sm cursor-not-allowed ml-2" title="لا يوجد رقم هاتف مسجل" disabled>Add Contact</button>`;
+            ? `<button class="bg-violet-500 hover:bg-violet-600 text-white font-semibold py-1.5 px-3 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" title="نسخ رقم الهاتف" onclick="copyAthleteContact(${athlete.id})">Copy contact</button>`
+            : `<button class="bg-slate-300 text-slate-500 font-semibold py-1.5 px-3 rounded shadow-sm cursor-not-allowed ml-2" title="لا يوجد رقم هاتف مسجل" disabled>Copy contact</button>`;
         if (viewMode === 'pending') {
             return `
                 <tr class="athlete-row border-b border-slate-100 hover:bg-amber-50/40 transition duration-200">
