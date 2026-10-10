@@ -548,6 +548,13 @@
 
                 const activeAthletes = allAthletes.filter(a => !a.isArchived);
                 const inactiveAthletes = allAthletes.filter(a => a.isArchived);
+                const activeAthletesByRegistrationDate = [...activeAthletes].sort((a, b) => {
+                    const dateA = Date.parse(a.subDate || '');
+                    const dateB = Date.parse(b.subDate || '');
+                    if (Number.isNaN(dateA)) return Number.isNaN(dateB) ? 0 : 1;
+                    if (Number.isNaN(dateB)) return -1;
+                    return dateB - dateA || Number(b.id) - Number(a.id);
+                });
 
                 const athletesListPrintPanel = document.getElementById('athletesListPrintPanel');
                 const printAthletesListButton = document.getElementById('printAthletesListButton');
@@ -580,7 +587,7 @@
                     });
                 });
 
-                qrAthleteSelectionList.innerHTML = activeAthletes.map(athlete => {
+                qrAthleteSelectionList.innerHTML = activeAthletesByRegistrationDate.map(athlete => {
                     const fullName = `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
                     return `<label class="flex items-center gap-2 p-2 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer">
                         <input type="checkbox" value="${athlete.id}" class="qr-athlete-checkbox w-4 h-4 accent-emerald-600">
@@ -610,7 +617,7 @@
                 qrAthleteSelectionList.addEventListener('change', updateQrSelectionState);
                 printSelectedQrButton.addEventListener('click', () => {
                     const selectedIds = new Set([...qrAthleteSelectionList.querySelectorAll('.qr-athlete-checkbox:checked')].map(checkbox => checkbox.value));
-                    printActiveAthleteQrs(activeAthletes.filter(athlete => selectedIds.has(String(athlete.id))));
+                    printActiveAthleteQrs(activeAthletesByRegistrationDate.filter(athlete => selectedIds.has(String(athlete.id))));
                 });
         
                 const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
