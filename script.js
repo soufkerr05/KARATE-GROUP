@@ -299,17 +299,14 @@ function addAthleteContact(id) {
         `TEL;TYPE=CELL:${phone}`,
         'END:VCARD'
     ].join('\r\n');
-    const safeFileName = `${athlete.firstName || ''}-${athlete.lastName || ''}`
-        .trim()
-        .replace(/[\\/:*?"<>|]/g, '-') || 'athlete-contact';
     const fileUrl = URL.createObjectURL(new Blob(['\uFEFF' + vCard], { type: 'text/vcard;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = fileUrl;
-    link.download = `${safeFileName}.vcf`;
+    link.type = 'text/vcard';
     document.body.appendChild(link);
     link.click();
     link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+    window.setTimeout(() => URL.revokeObjectURL(fileUrl), 60000);
 }
 
 // دالة أرشفة أو استعادة الرياضي
