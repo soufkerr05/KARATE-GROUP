@@ -379,9 +379,8 @@ paymentForm.addEventListener('submit', async function(e) {
         }
 
         const insertPromises = [];
-        const updatePromises = [];
         const subscriptionPaymentPromises = [];
-        const subscriptionUpdatePromises = [];
+        const athletesWithUpdatedSessionLimits = [];
         
         const totalAmount = subAmount + uniformAmount + insuranceAmount;
         if (targetAthletes.length > 1) {
@@ -401,9 +400,7 @@ paymentForm.addEventListener('submit', async function(e) {
                 athlete.sessionsLimit = distributeSiblingSessions
                     ? (Number(athlete.attendance) || 0) + distributedRemainingSessions
                     : (athlete.sessionsLimit || 0) + addedSessions;
-                const updatePromise = _supabase.from('athletes').update({ sessionsLimit: athlete.sessionsLimit }).eq('id', athlete.id).then(result => result);
-                updatePromises.push(updatePromise);
-                subscriptionUpdatePromises.push(updatePromise);
+                athletesWithUpdatedSessionLimits.push(athlete);
             });
         }
 
@@ -428,7 +425,7 @@ paymentForm.addEventListener('submit', async function(e) {
             });
         }
 
-        await Promise.all([...insertPromises, ...updatePromises]);
+        await Promise.all(insertPromises);
         const subscriptionResults = await Promise.all(subscriptionPaymentPromises);
         const failedSubscription = subscriptionResults.find(result => result.error);
         if (failedSubscription) {
@@ -438,7 +435,9 @@ paymentForm.addEventListener('submit', async function(e) {
             return;
         }
 
-        const subscriptionUpdateResults = await Promise.all(subscriptionUpdatePromises);
+        const subscriptionUpdateResults = await Promise.all(athletesWithUpdatedSessionLimits.map(athlete =>
+            _supabase.from('athletes').update({ sessionsLimit: athlete.sessionsLimit }).eq('id', athlete.id).then(result => result)
+        ));
         const failedSessionUpdate = subscriptionUpdateResults.find(result => result.error);
         if (failedSessionUpdate) {
             console.error('تعذر تحديث عدد حصص الاشتراك:', failedSessionUpdate.error);
@@ -462,6 +461,7 @@ paymentForm.addEventListener('submit', async function(e) {
         document.getElementById('insuranceAmount').value = 0;
         document.getElementById('checkUniform').checked = false;
         document.getElementById('checkInsurance').checked = false;
+        document.getElementById('distributeSiblingSessions').checked = false;
         document.getElementById('uniformAmountContainer').classList.add('hidden');
         document.getElementById('insuranceAmountContainer').classList.add('hidden');
         if (document.getElementById('searchAthleteSelect')) {

@@ -86,7 +86,9 @@
             const payments = paymentsRes.data || [];
             athletes.forEach(athlete => {
                 const subscriptions = payments.filter(payment => payment.athlete_id === athlete.id && (!payment.type || payment.type === 'subscription'));
-                athlete.sessionsLimit = subscriptions.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) / 1000 * 12;
+                if (athlete.sessionsLimit == null) {
+                    athlete.sessionsLimit = subscriptions.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) / 1000 * 12;
+                }
             });
             return { athletes, payments, expenses: expensesRes.data || [] };
         };

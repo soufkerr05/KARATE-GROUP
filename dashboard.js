@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         allAthletes.forEach(a => {
             const subPayments = allPayments.filter(p => p.athlete_id === a.id && (!p.type || p.type === 'subscription'));
             const totalPaid = subPayments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-            a.sessionsLimit = (totalPaid / 1000) * 12;
+            if (a.sessionsLimit == null) a.sessionsLimit = (totalPaid / 1000) * 12;
         });
 
         const activeAthletes = allAthletes.filter(a => !a.isArchived);
