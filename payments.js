@@ -4,6 +4,46 @@ const paymentForm = document.getElementById('paymentForm');
 const payDateInput = document.getElementById('payDate');
 const paymentsList = document.getElementById('paymentsList');
 let athleteOptionsMap = new Map(); // لحفظ معرف الرياضي بناءً على النص
+let athleteGroupsMap = new Map();
+let currentSubscriptionGroupValue = '';
+
+function updateSiblingSubscriptionOptions() {
+    const input = document.getElementById('searchAthleteSelect');
+    const optionsContainer = document.getElementById('siblingSubscriptionOptions');
+    const subscriptionScope = document.getElementById('subscriptionScope');
+    const athleteContainer = document.getElementById('subscriptionAthleteContainer');
+    const subscriptionAthlete = document.getElementById('subscriptionAthlete');
+    const distributeSessions = document.getElementById('distributeSiblingSessions');
+    if (!input || !optionsContainer || !subscriptionScope || !athleteContainer || !subscriptionAthlete || !distributeSessions) return;
+
+    const groupValue = input.value;
+    const siblings = athleteGroupsMap.get(groupValue) || [];
+    const isSiblingGroup = siblings.length > 1;
+    optionsContainer.classList.toggle('hidden', !isSiblingGroup);
+
+    if (groupValue !== currentSubscriptionGroupValue) {
+        subscriptionScope.value = 'all';
+        currentSubscriptionGroupValue = groupValue;
+    }
+
+    subscriptionAthlete.innerHTML = '';
+    siblings.forEach(athlete => {
+        const option = document.createElement('option');
+        option.value = String(athlete.id);
+        option.textContent = `${athlete.firstName} ${athlete.lastName}`;
+        subscriptionAthlete.appendChild(option);
+    });
+    if (siblings.length > 0) subscriptionAthlete.value = String(siblings[0].id);
+
+    const individualSubscription = isSiblingGroup && subscriptionScope.value === 'individual';
+    athleteContainer.classList.toggle('hidden', !individualSubscription);
+    distributeSessions.disabled = individualSubscription;
+    if (individualSubscription) distributeSessions.checked = false;
+}
+
+document.getElementById('searchAthleteSelect').addEventListener('input', updateSiblingSubscriptionOptions);
+document.getElementById('searchAthleteSelect').addEventListener('change', updateSiblingSubscriptionOptions);
+document.getElementById('subscriptionScope').addEventListener('change', updateSiblingSubscriptionOptions);
 
 async function fetchAthletes() {
     const [athletesRes, paymentsRes] = await Promise.all([
@@ -71,6 +111,7 @@ function renderSelect() {
     if (!datalist) return;
     datalist.innerHTML = '';
     athleteOptionsMap.clear();
+    athleteGroupsMap.clear();
     
     // تجميع الرياضيين حسب الولي لتجنب الحلقات المتداخلة (O(N) بدلاً من O(N^2))
     const groupedAthletes = new Map();
@@ -94,9 +135,11 @@ function renderSelect() {
             opt.value = displayText;
             fragment.appendChild(opt);
             athleteOptionsMap.set(displayText, a.id);
+            athleteGroupsMap.set(displayText, siblings);
         }
     });
     datalist.appendChild(fragment);
+    updateSiblingSubscriptionOptions();
 }
 
 // عرض قائمة الاشتراكات أسفل النموذج
@@ -124,7 +167,9 @@ function renderPaymentsTable() {
     });
 
     let rowsHtml = '';
-    groupedAthletes.forEach((siblings, key) => {
+    [...groupedAthletes.entries()]
+        .sort((first, second) => second[1].length - first[1].length)
+        .forEach(([key, siblings]) => {
         if (siblings.length > 0) {
             const a = siblings[0];
             const athleteNames = siblings.map(x => x.firstName).join(' و ');
@@ -139,7 +184,7 @@ function renderPaymentsTable() {
                         </td>
                      </tr>`;
         }
-    });
+        });
     html += rowsHtml + `</tbody></table>`;
     paymentsList.innerHTML = html;
 }
@@ -150,7 +195,8 @@ function showAthletePayments(id) {
     if (selectedAthlete) {
         let targetAthletes = [selectedAthlete];
         if (selectedAthlete.guardianName && selectedAthlete.guardianName.trim() !== '') {
-            targetAthletes = athletes.filter(a => a.guardianName === selectedAthlete.guardianName);
+            const guardianName = selectedAthlete.guardianName.trim();
+            targetAthletes = athletes.filter(a => (a.guardianName || '').trim() === guardianName);
         }
         const athleteNames = targetAthletes.map(x => x.firstName).join(' و ');
         const displayName = selectedAthlete.guardianName ? `${selectedAthlete.guardianName} (عن: ${athleteNames})` : `${selectedAthlete.firstName} ${selectedAthlete.lastName}`;
@@ -310,6 +356,15 @@ paymentForm.addEventListener('submit', async function(e) {
         if (selectedAthlete.guardianName && selectedAthlete.guardianName.trim() !== '') {
             targetAthletes = athletes.filter(a => a.guardianName === selectedAthlete.guardianName);
         }
+        const subscriptionScope = document.getElementById('subscriptionScope').value;
+        const subscriptionAthleteId = document.getElementById('subscriptionAthlete').value;
+        const subscriptionAthletes = subAmount > 0 && targetAthletes.length > 1 && subscriptionScope === 'individual'
+            ? targetAthletes.filter(athlete => String(athlete.id) === subscriptionAthleteId)
+            : targetAthletes;
+        if (subAmount > 0 && subscriptionAthletes.length === 0) {
+            alert('اختر الرياضي المعني بالاشتراك الشهري.');
+            return;
+        }
 
         const guardianPhone = String(selectedAthlete.guardianPhone || '').trim().replace(/[^\d+]/g, '');
         let smsPhone = guardianPhone;
@@ -331,29 +386,36 @@ paymentForm.addEventListener('submit', async function(e) {
         });
         const paidAt = formatDateTime(receiptTime);
         const [paidYear, paidMonth, paidDay] = (payDate || receiptTime.toISOString().slice(0, 10)).split('-').map(Number);
-        const nextSubscriptionDate = new Date(
-            paidYear,
-            paidMonth,
-            Math.min(paidDay, new Date(paidYear, paidMonth + 1, 0).getDate())
-        );
         const distributeSiblingSessions = subAmount > 0 && document.getElementById('distributeSiblingSessions').checked;
         const distributedRemainingSessions = distributeSiblingSessions
             ? (
                 targetAthletes.reduce((total, athlete) => {
                     const remaining = (Number(athlete.sessionsLimit) || 0) - (Number(athlete.attendance) || 0);
                     return total + Math.max(0, remaining);
-                }, 0) + (subAmount / 1000) * 12
+                }, 0) + (subAmount / subscriptionAthletes.length / 1000) * 12
             ) / targetAthletes.length
             : 0;
+        const selectedAthleteRemainingSessions = Math.max(
+            0,
+            (Number(subscriptionAthletes[0]?.sessionsLimit) || 0) -
+                (Number(subscriptionAthletes[0]?.attendance) || 0) +
+                (subAmount / subscriptionAthletes.length / 1000) * 12
+        );
+        const remainingSessionsAfterPayment = distributeSiblingSessions
+            ? distributedRemainingSessions
+            : selectedAthleteRemainingSessions;
+        const daysUntilNextSubscription = Math.ceil((remainingSessionsAfterPayment / 3) * 7);
+        const nextSubscriptionDate = new Date(paidYear, paidMonth - 1, paidDay);
+        nextSubscriptionDate.setDate(nextSubscriptionDate.getDate() + daysUntilNextSubscription);
 
         const brothersCount = targetAthletes.length;
         let messages = [];
 
         // معالجة كل نوع دفع وتسجيله كعملية منفصلة لتظهر في التقرير والسجل
         if (subAmount > 0) {
-            const splitSub = subAmount / brothersCount;
+            const splitSub = subAmount / subscriptionAthletes.length;
             const addedSessions = (splitSub / 1000) * 12;
-            targetAthletes.forEach(athlete => {
+            subscriptionAthletes.forEach(athlete => {
                 if (!athlete.payments) athlete.payments = [];
                 athlete.payments.push({ amount: splitSub, date: payDate, type: 'subscription' });
             });
@@ -385,15 +447,20 @@ paymentForm.addEventListener('submit', async function(e) {
         const totalAmount = subAmount + uniformAmount + insuranceAmount;
         if (targetAthletes.length > 1) {
             const siblingNames = targetAthletes.map(a => a.firstName).join(' و ');
-            alert(`تم تسجيل دفع مبلغ إجمالي ${totalAmount} د.ج من طرف الولي ${selectedAthlete.guardianName}.\nتم التقسيم على الإخوة (${siblingNames})\nالتفاصيل:\n- ` + messages.join('\n- '));
+            const subscriptionSummary = subAmount > 0
+                ? (subscriptionAthletes.length > 1
+                    ? `تم توزيع الاشتراك على الإخوة (${subscriptionAthletes.map(a => a.firstName).join(' و ')})`
+                    : `الاشتراك الشهري للرياضي ${subscriptionAthletes[0].firstName} فقط`)
+                : `تم التقسيم على الإخوة (${siblingNames})`;
+            alert(`تم تسجيل دفع مبلغ إجمالي ${totalAmount} د.ج من طرف الولي ${selectedAthlete.guardianName}.\n${subscriptionSummary}\nالتفاصيل:\n- ` + messages.join('\n- '));
         } else {
             alert(`تم تسجيل دفع مبلغ إجمالي ${totalAmount} د.ج لصالح الرياضي ${selectedAthlete.firstName}.\nالتفاصيل:\n- ` + messages.join('\n- '));
         }
         
         if (subAmount > 0) {
-            const splitSub = subAmount / brothersCount;
+            const splitSub = subAmount / subscriptionAthletes.length;
             const addedSessions = (splitSub / 1000) * 12;
-            targetAthletes.forEach(athlete => {
+            subscriptionAthletes.forEach(athlete => {
                 const paymentPromise = _supabase.from('payments').insert([{ athlete_id: athlete.id, amount: splitSub, date: payDate, type: 'subscription' }]).then(result => result);
                 insertPromises.push(paymentPromise);
                 subscriptionPaymentPromises.push(paymentPromise);
@@ -444,13 +511,13 @@ paymentForm.addEventListener('submit', async function(e) {
         }
 
         if (messageWindow) {
-            const athleteNames = targetAthletes.map(athlete => `${athlete.firstName} ${athlete.lastName}`).join(' و ');
+            const athleteNames = subscriptionAthletes.map(athlete => `${athlete.firstName} ${athlete.lastName}`).join(' و ');
             const nextSubscription = nextSubscriptionDate.toLocaleDateString('ar-DZ', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
             });
-            const message = `السلام عليكم، نؤكد استلام مبلغ ${subAmount} د.ج كاشتراك شهري للرياضي ${athleteNames}. وقت الاستلام: ${paidAt}. موعد الاشتراك القادم التقريبي: ${nextSubscription}. شكراً لكم.`;
+            const message = `السلام عليكم، نؤكد استلام مبلغ ${subAmount} د.ج كاشتراك شهري للرياضي ${athleteNames}. وقت الاستلام: ${paidAt}. موعد الاشتراك القادم التقريبي: ${nextSubscription} (على أساس 3 حصص أسبوعياً). شكراً لكم.`;
             messageWindow.location.href = `sms:${smsPhone}?body=${encodeURIComponent(message)}`;
         }
 
@@ -462,11 +529,13 @@ paymentForm.addEventListener('submit', async function(e) {
         document.getElementById('checkUniform').checked = false;
         document.getElementById('checkInsurance').checked = false;
         document.getElementById('distributeSiblingSessions').checked = false;
+        document.getElementById('subscriptionScope').value = 'all';
         document.getElementById('uniformAmountContainer').classList.add('hidden');
         document.getElementById('insuranceAmountContainer').classList.add('hidden');
         if (document.getElementById('searchAthleteSelect')) {
             document.getElementById('searchAthleteSelect').value = '';
         }
+        updateSiblingSubscriptionOptions();
 
         fetchAthletes();
         if (subAmount > 0) {
