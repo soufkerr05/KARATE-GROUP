@@ -150,16 +150,24 @@ form.addEventListener('submit', async function(e) {
         uniformAmount = unitPrice * uniformQty;
     }
 
+    let whatsappPhone = String(newAthlete.guardianPhone || '').replace(/\D/g, '');
+    if (whatsappPhone.startsWith('00')) whatsappPhone = whatsappPhone.slice(2);
+    if (whatsappPhone.startsWith('0')) whatsappPhone = `213${whatsappPhone.slice(1)}`;
+    const messageWindow = subAmount > 0 && whatsappPhone ? window.open('about:blank', '_blank') : null;
+
     const { data: athleteData, error } = await _supabase.from('athletes').insert([newAthlete]).select();
     if (error) {
+        if (messageWindow) messageWindow.close();
         alert("خطأ في الحفظ: " + error.message);
     } else {
         const addedAthlete = athleteData[0];
         const payDate = document.getElementById('subDate').value;
         const insertPromises = [];
+        let subscriptionPaymentIndex = -1;
         let addedSessions = 0;
         if (subAmount > 0) {
             addedSessions = (subAmount / 1000) * 12;
+            subscriptionPaymentIndex = insertPromises.length;
             insertPromises.push(_supabase.from('payments').insert([{ athlete_id: addedAthlete.id, amount: subAmount, date: payDate, type: 'subscription' }]));
         }
         if (uniformAmount > 0) {
@@ -168,10 +176,33 @@ form.addEventListener('submit', async function(e) {
             insertPromises.push(_supabase.from('kimono_collected').insert([{ date: payDate, type: uniformType, quantity: uniformQty, value: uniformAmount, status: 'تحصيل' }]));
         }
         if (insuranceAmount > 0) insertPromises.push(_supabase.from('payments').insert([{ athlete_id: addedAthlete.id, amount: insuranceAmount, date: payDate, type: 'insurance' }]));
-        if (insertPromises.length > 0) await Promise.all(insertPromises);
-        if (addedSessions > 0) await _supabase.from('athletes').update({ sessionsLimit: addedSessions }).eq('id', addedAthlete.id);
+        const insertResults = await Promise.all(insertPromises);
+        if (subscriptionPaymentIndex >= 0 && insertResults[subscriptionPaymentIndex].error) {
+            if (messageWindow) messageWindow.close();
+            alert('تم تسجيل الرياضي، لكن تعذر تسجيل الاشتراك الشهري: ' + insertResults[subscriptionPaymentIndex].error.message);
+            form.reset();
+            if (document.getElementById('initialUniformContainer')) document.getElementById('initialUniformContainer').classList.add('hidden');
+            if (document.getElementById('initialInsuranceContainer')) document.getElementById('initialInsuranceContainer').classList.add('hidden');
+            closeRegisterModal();
+            fetchAthletes();
+            return;
+        }
+        let registrationWarning = '';
+        if (addedSessions > 0) {
+            const { error: sessionsError } = await _supabase.from('athletes').update({ sessionsLimit: addedSessions }).eq('id', addedAthlete.id);
+            if (sessionsError) {
+                registrationWarning = ' تعذر تحديث عدد الحصص: ' + sessionsError.message;
+            }
+        }
 
-        alert("تم تسجيل الرياضي بنجاح في السحابة!");
+        if (messageWindow) {
+            const message = `السلام عليكم، نعلمكم بأنه تم تسجيل الاشتراك الشهري للرياضي ${newAthlete.firstName} ${newAthlete.lastName} بمبلغ ${subAmount} د.ج بتاريخ ${payDate}. شكراً لثقتكم بنا.`;
+            messageWindow.location.href = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
+        }
+        const messageStatus = subAmount > 0
+            ? (whatsappPhone ? (messageWindow ? ' تم فتح WhatsApp برسالة جاهزة؛ يرجى تأكيد الإرسال.' : ' لم يتمكن المتصفح من فتح WhatsApp؛ تحقق من السماح بالنوافذ المنبثقة.') : ' لم تُفتح رسالة لعدم إدخال رقم هاتف الولي.')
+            : '';
+        alert("تم تسجيل الرياضي بنجاح في السحابة!" + registrationWarning + messageStatus);
         form.reset(); 
         if (document.getElementById('initialUniformContainer')) document.getElementById('initialUniformContainer').classList.add('hidden');
         if (document.getElementById('initialInsuranceContainer')) document.getElementById('initialInsuranceContainer').classList.add('hidden');
@@ -220,11 +251,19 @@ async function copyRegistrationLink() {
 
 // دالة حذف رياضي
 async function deleteAthlete(id) {
-    if (confirm('هل أنت متأكد من رغبتك في حذف هذا الرياضي؟')) {
-        const { error } = await _supabase.from('athletes').delete().eq('id', id);
-        if (error) console.error(error);
-        fetchAthletes();
+    const athlete = athletes.find(item => item.id === id);
+    if (!athlete || !athlete.isArchived) {
+        alert('يمكن حذف الرياضيين غير النشطين (المؤرشفين) فقط.');
+        return;
     }
+    if (!confirm('هل أنت متأكد من رغبتك في حذف هذا الرياضي غير النشط؟')) return;
+
+    const { error } = await _supabase.from('athletes').delete().eq('id', id).eq('isArchived', true);
+    if (error) {
+        alert('حدث خطأ أثناء حذف الرياضي: ' + error.message);
+        return;
+    }
+    await fetchAthletes();
 }
 
 // دالة تبديل العرض بين النشطين والأرشيف
@@ -574,13 +613,12 @@ function renderTable() {
                 <td class="p-4 align-middle actions-cell text-center admin-only" data-label="إجراءات">
                 ${contactButton}
                 ${showMessageBtn ? `<button class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" title="إرسال رسالة هاتفية" onclick="window.location.href='sms:${athlete.guardianPhone.replace(/\s+/g, '')}?body=${encodeURIComponent(messageBody)}'">رسالة</button>` : ''}
-                    <button class="bg-slate-700 hover:bg-slate-800 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="printAthleteQr(${athlete.id})">طباعة QR</button>
-                    <button class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="editDocs(${athlete.id})">تعديل</button>
+                    ${!athlete.isArchived ? `<button class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="editDocs(${athlete.id})">تعديل</button>` : ''}
                     ${viewMode === 'active' 
                         ? `<button class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="toggleArchive(${athlete.id}, true)">أرشفة</button>`
                         : `<button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5 ml-2" onclick="toggleArchive(${athlete.id}, false)">استعادة</button>`
                     }
-                    <button class="bg-rose-500 hover:bg-rose-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5" onclick="deleteAthlete(${athlete.id})">حذف</button>
+                    ${athlete.isArchived ? `<button class="bg-rose-500 hover:bg-rose-600 text-white font-semibold py-1.5 px-4 rounded shadow-sm transition transform hover:-translate-y-0.5" onclick="deleteAthlete(${athlete.id})">حذف</button>` : ''}
                 </td>
             </tr>
         `;
