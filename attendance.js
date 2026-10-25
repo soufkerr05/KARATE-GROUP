@@ -24,7 +24,7 @@ async function fetchAthletes() {
         allAthletes.forEach(a => {
             const subPayments = allPayments.filter(p => p.athlete_id === a.id && (!p.type || p.type === 'subscription'));
             const totalPaid = subPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-            a.sessionsLimit = (totalPaid / 1000) * 12;
+            if (a.sessionsLimit == null) a.sessionsLimit = (totalPaid / 1000) * 12;
         });
 
         athletes = allAthletes.filter(a => !a.isArchived); // إخفاء الرياضيين في الأرشيف

@@ -25,7 +25,7 @@ async function fetchAthletes() {
             // حساب عدد الحصص المستحقة بناءً على الاشتراكات
             const subPayments = a.payments.filter(p => (!p.type || p.type === 'subscription'));
             const totalPaid = subPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-            a.sessionsLimit = (totalPaid / 1000) * 12;
+            if (a.sessionsLimit == null) a.sessionsLimit = (totalPaid / 1000) * 12;
         });
 
         renderSelect();
@@ -311,6 +311,41 @@ paymentForm.addEventListener('submit', async function(e) {
             targetAthletes = athletes.filter(a => a.guardianName === selectedAthlete.guardianName);
         }
 
+        const guardianPhone = String(selectedAthlete.guardianPhone || '').trim().replace(/[^\d+]/g, '');
+        let smsPhone = guardianPhone;
+        if (smsPhone.startsWith('00')) smsPhone = `+${smsPhone.slice(2)}`;
+        if (smsPhone.startsWith('0')) smsPhone = `+213${smsPhone.slice(1)}`;
+        if (!/\d{7,}/.test(smsPhone)) smsPhone = '';
+        const sendReceiptMessage = subAmount > 0 && confirm('هل تريد إرسال رسالة تأكيد استلام الاشتراك؟');
+        if (sendReceiptMessage && !smsPhone) {
+            alert('لا يوجد رقم هاتف مسجل لولي الأمر. سيتم تسجيل الاشتراك دون إرسال رسالة.');
+        }
+        const messageWindow = sendReceiptMessage && smsPhone ? window.open('about:blank', '_blank') : null;
+        const receiptTime = new Date();
+        const formatDateTime = date => date.toLocaleString('ar-DZ', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        const paidAt = formatDateTime(receiptTime);
+        const [paidYear, paidMonth, paidDay] = (payDate || receiptTime.toISOString().slice(0, 10)).split('-').map(Number);
+        const nextSubscriptionDate = new Date(
+            paidYear,
+            paidMonth,
+            Math.min(paidDay, new Date(paidYear, paidMonth + 1, 0).getDate())
+        );
+        const distributeSiblingSessions = subAmount > 0 && document.getElementById('distributeSiblingSessions').checked;
+        const distributedRemainingSessions = distributeSiblingSessions
+            ? (
+                targetAthletes.reduce((total, athlete) => {
+                    const remaining = (Number(athlete.sessionsLimit) || 0) - (Number(athlete.attendance) || 0);
+                    return total + Math.max(0, remaining);
+                }, 0) + (subAmount / 1000) * 12
+            ) / targetAthletes.length
+            : 0;
+
         const brothersCount = targetAthletes.length;
         let messages = [];
 
@@ -321,7 +356,6 @@ paymentForm.addEventListener('submit', async function(e) {
             targetAthletes.forEach(athlete => {
                 if (!athlete.payments) athlete.payments = [];
                 athlete.payments.push({ amount: splitSub, date: payDate, type: 'subscription' });
-                athlete.sessionsLimit = (athlete.sessionsLimit || 0) + addedSessions;
             });
             messages.push(`اشتراك شهري (${subAmount} د.ج) -> إجمالي ${addedSessions} حصة مضافة`);
         }
@@ -346,6 +380,8 @@ paymentForm.addEventListener('submit', async function(e) {
 
         const insertPromises = [];
         const updatePromises = [];
+        const subscriptionPaymentPromises = [];
+        const subscriptionUpdatePromises = [];
         
         const totalAmount = subAmount + uniformAmount + insuranceAmount;
         if (targetAthletes.length > 1) {
@@ -359,9 +395,15 @@ paymentForm.addEventListener('submit', async function(e) {
             const splitSub = subAmount / brothersCount;
             const addedSessions = (splitSub / 1000) * 12;
             targetAthletes.forEach(athlete => {
-                insertPromises.push(_supabase.from('payments').insert([{ athlete_id: athlete.id, amount: splitSub, date: payDate, type: 'subscription' }]));
-                athlete.sessionsLimit = (athlete.sessionsLimit || 0) + addedSessions;
-                updatePromises.push(_supabase.from('athletes').update({ sessionsLimit: athlete.sessionsLimit }).eq('id', athlete.id));
+                const paymentPromise = _supabase.from('payments').insert([{ athlete_id: athlete.id, amount: splitSub, date: payDate, type: 'subscription' }]).then(result => result);
+                insertPromises.push(paymentPromise);
+                subscriptionPaymentPromises.push(paymentPromise);
+                athlete.sessionsLimit = distributeSiblingSessions
+                    ? (Number(athlete.attendance) || 0) + distributedRemainingSessions
+                    : (athlete.sessionsLimit || 0) + addedSessions;
+                const updatePromise = _supabase.from('athletes').update({ sessionsLimit: athlete.sessionsLimit }).eq('id', athlete.id).then(result => result);
+                updatePromises.push(updatePromise);
+                subscriptionUpdatePromises.push(updatePromise);
             });
         }
 
@@ -387,6 +429,31 @@ paymentForm.addEventListener('submit', async function(e) {
         }
 
         await Promise.all([...insertPromises, ...updatePromises]);
+        const subscriptionResults = await Promise.all(subscriptionPaymentPromises);
+        const failedSubscription = subscriptionResults.find(result => result.error);
+        if (failedSubscription) {
+            if (messageWindow) messageWindow.close();
+            await fetchAthletes();
+            alert('تعذر تسجيل الاشتراك الشهري: ' + failedSubscription.error.message);
+            return;
+        }
+
+        const subscriptionUpdateResults = await Promise.all(subscriptionUpdatePromises);
+        const failedSessionUpdate = subscriptionUpdateResults.find(result => result.error);
+        if (failedSessionUpdate) {
+            console.error('تعذر تحديث عدد حصص الاشتراك:', failedSessionUpdate.error);
+        }
+
+        if (messageWindow) {
+            const athleteNames = targetAthletes.map(athlete => `${athlete.firstName} ${athlete.lastName}`).join(' و ');
+            const nextSubscription = nextSubscriptionDate.toLocaleDateString('ar-DZ', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            const message = `السلام عليكم، نؤكد استلام مبلغ ${subAmount} د.ج كاشتراك شهري للرياضي ${athleteNames}. وقت الاستلام: ${paidAt}. موعد الاشتراك القادم التقريبي: ${nextSubscription}. شكراً لكم.`;
+            messageWindow.location.href = `sms:${smsPhone}?body=${encodeURIComponent(message)}`;
+        }
 
         // تصفير الحقول
         document.getElementById('subAmount').value = 0;
@@ -402,6 +469,17 @@ paymentForm.addEventListener('submit', async function(e) {
         }
 
         fetchAthletes();
+        if (subAmount > 0) {
+            const messageStatus = sendReceiptMessage
+                ? (smsPhone
+                    ? (messageWindow ? ' تم فتح تطبيق الرسائل بمحتوى جاهز؛ يرجى تأكيد الإرسال.' : ' لم يتمكن المتصفح من فتح تطبيق الرسائل.')
+                    : '')
+                : ' لم يتم إرسال رسالة.';
+            const updateWarning = failedSessionUpdate
+                ? ' تعذر تحديث عدد حصص الاشتراك: ' + failedSessionUpdate.error.message
+                : '';
+            alert('تم تسجيل الاشتراك الشهري بنجاح.' + updateWarning + messageStatus);
+        }
     }
 });
 
