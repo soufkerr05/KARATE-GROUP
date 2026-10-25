@@ -52,6 +52,9 @@ function updateSiblingSubscriptionOptions() {
     if (groupValue !== currentSubscriptionGroupValue) {
         subscriptionScope.value = 'all';
         currentSubscriptionGroupValue = groupValue;
+        const mergeStatus = document.getElementById('mergeSiblingSessionsStatus');
+        mergeStatus.textContent = '';
+        mergeStatus.className = 'mt-2 hidden text-sm font-semibold';
     }
 
     subscriptionAthlete.innerHTML = '';
@@ -98,6 +101,75 @@ async function fetchAthletes() {
 
         renderSelect();
         renderPaymentsTable();
+    }
+}
+
+async function mergeSiblingSessions() {
+    const groupValue = document.getElementById('searchAthleteSelect').value;
+    const siblings = athleteGroupsMap.get(groupValue) || [];
+    const status = document.getElementById('mergeSiblingSessionsStatus');
+    const button = document.getElementById('mergeSiblingSessionsBtn');
+    if (button.disabled) return;
+    if (siblings.length < 2) {
+        status.textContent = 'اختر وليًا لديه رياضيان أو أكثر لدمج الحصص.';
+        status.className = 'mt-2 text-sm font-semibold text-rose-700';
+        return;
+    }
+
+    const siblingIds = siblings.map(athlete => athlete.id);
+    const { data: latestAthletes, error: fetchError } = await _supabase
+        .from('athletes')
+        .select('id, firstName, lastName, attendance, sessionsLimit')
+        .in('id', siblingIds);
+    if (fetchError) {
+        status.textContent = 'تعذر جلب الأرصدة الحالية: ' + fetchError.message;
+        status.className = 'mt-2 text-sm font-semibold text-rose-700';
+        return;
+    }
+
+    const currentSiblings = latestAthletes || [];
+    if (currentSiblings.length !== siblings.length) {
+        status.textContent = 'تعذر دمج الحصص لأن بيانات بعض الإخوة غير متاحة. حدّث الصفحة وحاول مجددًا.';
+        status.className = 'mt-2 text-sm font-semibold text-rose-700';
+        return;
+    }
+
+    const remainingByAthlete = currentSiblings.map(athlete => ({
+        athlete,
+        remaining: Math.max(0, (Number(athlete.sessionsLimit) || 0) - (Number(athlete.attendance) || 0))
+    }));
+    const totalRemaining = remainingByAthlete.reduce((total, item) => total + item.remaining, 0);
+    const perAthlete = totalRemaining / currentSiblings.length;
+    const names = currentSiblings.map(athlete => `${athlete.firstName} ${athlete.lastName}`).join(' و ');
+    if (!confirm(`سيتم جمع ${totalRemaining} حصة متبقية وتوزيعها بالتساوي بين ${names}، أي ${perAthlete} حصة متبقية لكل رياضي. هل تريد المتابعة؟`)) return;
+
+    button.disabled = true;
+    button.textContent = 'جارٍ دمج الحصص...';
+    status.className = 'mt-2 text-sm font-semibold text-slate-600';
+    status.textContent = 'جارٍ تحديث أرصدة الإخوة...';
+
+    try {
+        const results = await Promise.all(remainingByAthlete.map(({ athlete }) => {
+            const sessionsLimit = (Number(athlete.attendance) || 0) + perAthlete;
+            return _supabase.from('athletes').update({ sessionsLimit }).eq('id', athlete.id);
+        }));
+        const failures = results.filter(result => result.error);
+        if (failures.length > 0) {
+            status.textContent = `تعذر تحديث أرصدة ${failures.length} من الرياضيين: ${failures.map(result => result.error.message).join('؛ ')}`;
+            status.className = 'mt-2 text-sm font-semibold text-rose-700';
+            await fetchAthletes();
+            return;
+        }
+
+        await fetchAthletes();
+        status.textContent = `تم دمج ${totalRemaining} حصة وتوزيعها بالتساوي: ${perAthlete} حصة متبقية لكل رياضي.`;
+        status.className = 'mt-2 text-sm font-semibold text-emerald-700';
+    } catch (error) {
+        status.textContent = 'تعذر إكمال دمج الحصص: ' + error.message;
+        status.className = 'mt-2 text-sm font-semibold text-rose-700';
+    } finally {
+        button.disabled = false;
+        button.textContent = 'دمج الحصص المتبقية بينهم الآن';
     }
 }
 

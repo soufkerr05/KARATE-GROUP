@@ -142,6 +142,11 @@
                         <datalist id="athleteDataList"></datalist>
                     </div>
                     <div id="siblingSubscriptionOptions" class="hidden space-y-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <div class="border-b border-blue-200 pb-3">
+                            <p class="mb-2 text-sm font-semibold text-slate-700">إدارة الحصص الحالية للإخوة</p>
+                            <button type="button" id="mergeSiblingSessionsBtn" onclick="mergeSiblingSessions()" class="w-full rounded-xl bg-indigo-600 px-4 py-2 font-bold text-white transition hover:bg-indigo-700">دمج الحصص المتبقية بينهم الآن</button>
+                            <p id="mergeSiblingSessionsStatus" class="mt-2 hidden text-sm font-semibold" role="status"></p>
+                        </div>
                         <label for="subscriptionScope" class="block text-sm font-semibold text-slate-700">لمن يُسجّل الاشتراك الشهري؟</label>
                         <select id="subscriptionScope" class="w-full rounded-xl border border-gray-300 bg-white p-3 font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
                             <option value="all">كل الإخوة</option>
